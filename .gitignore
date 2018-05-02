@@ -1,0 +1,11 @@
+*.silo
+input_dump
+final_dump
+build
+*~
+*\#
+*.F90
+silo_test
+.#*
+caliper/
+.DS_Store

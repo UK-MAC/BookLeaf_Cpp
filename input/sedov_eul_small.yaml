@@ -1,0 +1,40 @@
+TIME:
+    time_start: 0.0
+    time_end: 1.0
+    dt_initial: 1.0e-4
+    dt_max: 1.0e-1
+    dt_min: 1.0e-6
+    dt_g: 1.02
+
+HYDRO:
+    cfl_sf: 0.5
+    cvisc1: 0.5
+    cvisc2: 0.75
+    kappaall: 0.01
+
+EOS:
+    - { type: ideal gas, params: [1.6666666667] }
+
+MESH:
+    - type: LIN1
+      dims: [45, 45]
+      sides:
+          - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 1.125, 0.0] }
+          - - { type: LINE, bc: FREE,  pos: [1.125, 0.0, 1.125, 1.125] }
+          - - { type: LINE, bc: FREE,  pos: [1.125, 1.125, 0.0, 1.125] }
+          - - { type: LINE, bc: SLIPX, pos: [0.0, 1.125, 0.0, 0.0] }
+
+ALE:
+    zeul: true
+
+INDICATORS:
+    regions:
+        - { type: background, name: air }
+        - { type: cell, name: source, value: 0 }
+    materials:
+        - { type: background, name: air }
+
+INITIAL_CONDITIONS:
+    thermodynamics:
+        - { type: region, value: 0, density: 1.0, energy: 0.0 }
+        - { type: region, value: 1, energy_scale: volume, density: 1.0, energy: 0.2467966 }

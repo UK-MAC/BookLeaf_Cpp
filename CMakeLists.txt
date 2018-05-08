@@ -10,6 +10,13 @@ project(
 
 
 
+# Check platform
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_definitions("-DBOOKLEAF_DARWIN_BUILD")
+endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+
+
 # Build type defaults to Release
 if (NOT DEFINED CMAKE_BUILD_TYPE)
     message(STATUS "Defaulting to Release build as build type was not specified")

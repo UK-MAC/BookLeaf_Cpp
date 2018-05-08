@@ -23,9 +23,12 @@
 #include <fstream>
 #include <regex>
 #include <cassert>
+
+#ifndef BOOKLEAF_DARWIN_BUILD
 #include <sched.h>  // sched_getcpu()
 #include <unistd.h> // gethostname
 #include <limits.h> // HOST_NAME_MAX
+#endif
 
 #ifdef BOOKLEAF_MPI_SUPPORT
 #include <typhon.h>
@@ -106,6 +109,7 @@ printPreprocessingOptions(
 
 
 
+#ifndef BOOKLEAF_DARWIN_BUILD
 void
 printBinding(
         comms::Comm const &comm)
@@ -138,6 +142,7 @@ printBinding(
         std::cout << inf::io::stripe() << "\n";
     }
 }
+#endif // !BOOKLEAF_DARWIN_BUILD
 
 
 
@@ -178,7 +183,14 @@ printConfiguration(
             std::cout << " CPU BINDING\n";
         }
 
+#ifndef BOOKLEAF_DARWIN_BUILD
         printBinding(*config.comms->world);
+#else
+        if (config.comms->world->zmproc) {
+            std::cout << "  (not supported on Darwin)\n";
+            std::cout << inf::io::stripe() << "\n";
+        }
+#endif
     }
 
     if (config.comms->world->zmproc) {

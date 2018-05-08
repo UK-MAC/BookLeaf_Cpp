@@ -87,10 +87,7 @@ setRegionKinematics(
     case KinematicsIC::Geometry::RADIAL:
         for (int iel = 0; iel < nel; iel++) {
             if (elreg(iel) == kic.value) {
-                geometry::kernel::getCentroid(
-                        cnx.row(iel),
-                        cny.row(iel),
-                        point);
+                geometry::kernel::getCentroid(iel, cnx, cny, point);
 
                 double const x = point(0) - kic.params[1];
                 double const y = point(1) - kic.params[2];

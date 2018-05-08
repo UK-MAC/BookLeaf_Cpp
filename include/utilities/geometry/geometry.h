@@ -63,9 +63,9 @@ using constants::NFACE;
 
 inline void
 getCentroid(
-        ConstView<double, 1, NCORN> x,
-        ConstView<double, 1, NCORN> y,
-        View<double, NDIM>          centroid)
+        ConstView<double, NCORN> x,
+        ConstView<double, NCORN> y,
+        View<double, NDIM>       centroid)
 {
     static_assert(NDIM == 2, "this routine only works for NDIM == 2");
 
@@ -77,16 +77,34 @@ getCentroid(
     double rvol = 0.;
     for (int i1 = 0; i1 < NCORN; i1++) {
         int const i2 = (i1 + 1) % NCORN;
-        double const rr = x(0, i1)*y(0, i2) - x(0, i2)*y(0, i1);
+        double const rr = x(i1)*y(i2) - x(i2)*y(i1);
         rvol += rr;
-        centroid(0) += rr * (x(0, i1) + x(0, i2));
-        centroid(1) += rr * (y(0, i1) + y(0, i2));
+        centroid(0) += rr * (x(i1) + x(i2));
+        centroid(1) += rr * (y(i1) + y(i2));
     }
 
     rvol = 0.5 * rvol;
     for (int i = 0; i < NDIM; i++) {
         centroid(i) = (rvol > 0.0) ? (centroid(i) / (6.0 * rvol)) : 0.0;
     }
+}
+
+
+
+inline void
+getCentroid(
+        int iel,
+        ConstView<double, VarDim, NCORN> cnx,
+        ConstView<double, VarDim, NCORN> cny,
+        View<double, NDIM>               centroid)
+{
+    double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
+    double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
+
+    ConstView<double, NCORN> elx(_elx);
+    ConstView<double, NCORN> ely(_ely);
+
+    getCentroid(elx, ely, centroid);
 }
 
 

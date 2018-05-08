@@ -65,30 +65,34 @@ distpl(double x3, double y3, double x4, double y4, double x1, double y1,
 // These two kernels were originally located in the geometry utility
 inline void
 dlm(
-        ConstView<double, 1, NCORN> elx,
-        ConstView<double, 1, NCORN> ely,
-        View<double, NCORN>         res)
+        int iel,
+        ConstView<double, VarDim, NCORN> cnx,
+        ConstView<double, VarDim, NCORN> cny,
+        double res[NCORN])
 {
-    double x1 = elx(0, 0) + elx(0, 1);
-    double x2 = elx(0, 2) + elx(0, 3);
-    double y1 = ely(0, 0) + ely(0, 1);
-    double y2 = ely(0, 2) + ely(0, 3);
+    double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
+    double ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
+
+    double x1 = elx[0] + elx[1];
+    double x2 = elx[2] + elx[3];
+    double y1 = ely[0] + ely[1];
+    double y2 = ely[2] + ely[3];
 
     x1 = 0.5 * (x1 - x2);
     y1 = 0.5 * (y1 - y2);
-    res(0) = x1*x1 + y1*y1;
+    res[0] = x1*x1 + y1*y1;
 
-    x1 = elx(0, 2) + elx(0, 1);
-    x2 = elx(0, 0) + elx(0, 3);
-    y1 = ely(0, 2) + ely(0, 1);
-    y2 = ely(0, 0) + ely(0, 3);
+    x1 = elx[2] + elx[1];
+    x2 = elx[0] + elx[3];
+    y1 = ely[2] + ely[1];
+    y2 = ely[0] + ely[3];
 
     x1 = 0.5 * (x1 - x2);
     y1 = 0.5 * (y1 - y2);
 
-    res(1) = x1*x1 + y1*y1;
-    res(2) = res(0);
-    res(3) = res(1);
+    res[1] = x1*x1 + y1*y1;
+    res[2] = res[0];
+    res[3] = res[1];
 }
 
 
@@ -96,26 +100,30 @@ dlm(
 inline void
 dln(
         double zcut,
-        ConstView<double, 1, NCORN> elx,
-        ConstView<double, 1, NCORN> ely,
-        View<double, NCORN>         res)
+        int iel,
+        ConstView<double, VarDim, NCORN> cnx,
+        ConstView<double, VarDim, NCORN> cny,
+        double res[NCORN])
 {
+    double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
+    double ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
+
     for (int i = 0; i < NCORN; i++) {
         int const j1 = i;
         int const j2 = (i + 1) % NCORN;
         int const j3 = (i + 2) % NCORN;
         int const j4 = (i + 3) % NCORN;
 
-        double const w1 = denom(elx(0, j3), ely(0, j3), elx(0, j4), ely(0, j4));
+        double const w1 = denom(elx[j3], ely[j3], elx[j4], ely[j4]);
 
         double const w2 = w1 < zcut ?
-            distpp(elx(0, j1), ely(0, j1), elx(0, j2),
-                   ely(0, j2), elx(0, j3), ely(0, j3)) :
-            distpl(elx(0, j1), ely(0, j1), elx(0, j2),
-                   ely(0, j2), elx(0, j3), ely(0, j3),
-                   elx(0, j4), ely(0, j4)) / w1;
+            distpp(elx[j1], ely[j1], elx[j2],
+                   ely[j2], elx[j3], ely[j3]) :
+            distpl(elx[j1], ely[j1], elx[j2],
+                   ely[j2], elx[j3], ely[j3],
+                   elx[j4], ely[j4]) / w1;
 
-        res(i) = w2;
+        res[i] = w2;
     }
 }
 
@@ -139,28 +147,23 @@ getDtCfl(
         std::string &sdt,
         Error &err)
 {
-    double _result[NCORN];
-    View<double, NCORN> result(_result);
-
     // Calculate CFL condition
     for (int iel = 0; iel < nel; iel++) {
+        double result[NCORN];
+
         int ireg = elreg(iel);
         if (zdtnotreg[ireg]) {
             rscratch11(iel) = std::numeric_limits<double>::max();
             rscratch12(iel) = std::numeric_limits<double>::min();
 
         } else {
-            if (zmidlength[ireg]) {
-                dlm(cnx.row(iel), cny.row(iel), result);
-
-            } else {
-                dln(zcut, cnx.row(iel), cny.row(iel), result);
-            }
+            if (zmidlength[ireg]) dlm(iel, cnx, cny, result);
+            else                  dln(zcut, iel, cnx, cny, result);
 
             // Minimise result
-            double w1 = result(0);
+            double w1 = result[0];
             for (int i = 1; i < NCORN; i++) {
-                w1 = (result(i) < w1) ? result(i) : w1;
+                w1 = (result[i] < w1) ? result[i] : w1;
             }
 
             rscratch11(iel) = w1/elcs2(iel);

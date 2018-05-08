@@ -60,19 +60,38 @@ insideRectangle(
 inline int
 intersect(
         double const *shape_param,
-        ConstView<double, 1, NCORN> x,
-        ConstView<double, 1, NCORN> y,
+        ConstView<double, NCORN> x,
+        ConstView<double, NCORN> y,
         InsideFunc is_inside_shape)
 {
     using constants::NCORN;
 
     int count = 0;
     for (int icn = 0; icn < NCORN; icn++) {
-        double const point[2] = {x(0, icn), y(0, icn)};
+        double const point[2] = {x(icn), y(icn)};
         if (is_inside_shape(shape_param, point)) count++;
     }
 
     return count;
+}
+
+
+
+inline int
+intersect(
+        double const *shape_param,
+        int iel,
+        ConstView<double, VarDim, NCORN> cnx,
+        ConstView<double, VarDim, NCORN> cny,
+        InsideFunc is_inside_shape)
+{
+    double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
+    double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
+
+    ConstView<double, NCORN> elx(_elx);
+    ConstView<double, NCORN> ely(_ely);
+
+    return intersect(shape_param, elx, ely, is_inside_shape);
 }
 
 
@@ -93,8 +112,8 @@ inline double
 subdivide(
         int nit,
         double const *shape_param,
-        ConstView<double, 1, NCORN> x,
-        ConstView<double, 1, NCORN> y,
+        ConstView<double, NCORN> x,
+        ConstView<double, NCORN> y,
         InsideFunc is_inside_shape)
 {
     using constants::NCORN;
@@ -112,8 +131,8 @@ subdivide(
 
     double _x_loc[NCORN] = {0};
     double _y_loc[NCORN] = {0};
-    View<double, 1, NCORN> x_loc(_x_loc);
-    View<double, 1, NCORN> y_loc(_y_loc);
+    View<double, NCORN> x_loc(_x_loc);
+    View<double, NCORN> y_loc(_y_loc);
 
     //    y
     //    ^
@@ -133,16 +152,16 @@ subdivide(
     //
     double vf = 0.0;
     for (int i = 0; i < NCORN; i++) {
-        x_loc(0, 0) = x(0, i);
-        y_loc(0, 0) = y(0, i);
+        x_loc(0) = x(i);
+        y_loc(0) = y(i);
         int j = (i + 1) % NCORN;
-        x_loc(0, 1) = x(0, j);
-        y_loc(0, 1) = y(0, j);
-        x_loc(0, 2) = centroid(0);
-        y_loc(0, 2) = centroid(1);
+        x_loc(1) = x(j);
+        y_loc(1) = y(j);
+        x_loc(2) = centroid(0);
+        y_loc(2) = centroid(1);
         j = (i + 3) % NCORN;
-        x_loc(0, 3) = x(0, j);
-        y_loc(0, 3) = y(0, j);
+        x_loc(3) = x(j);
+        y_loc(3) = y(j);
 
         int const count = intersect(shape_param, x_loc, y_loc, is_inside_shape);
         if (count == NCORN) {
@@ -154,6 +173,26 @@ subdivide(
     }
 
     return vf * 0.25;
+}
+
+
+
+inline double
+subdivide(
+        int nit,
+        double const *shape_param,
+        int iel,
+        ConstView<double, VarDim, NCORN> cnx,
+        ConstView<double, VarDim, NCORN> cny,
+        InsideFunc is_inside_shape)
+{
+    double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
+    double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
+
+    ConstView<double, NCORN> elx(_elx);
+    ConstView<double, NCORN> ely(_ely);
+
+    return subdivide(nit, shape_param, elx, ely, is_inside_shape);
 }
 
 } // namepsace kernel

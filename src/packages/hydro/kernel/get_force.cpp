@@ -111,12 +111,10 @@ getForceSubzonalPressure(
 
     // XXX Missing code here that can't be merged
 
-    double _lfx[NCORN * NCORN];
-    double _lfy[NCORN * NCORN];
-    View<double, NCORN, NCORN> lfx(_lfx);
-    View<double, NCORN, NCORN> lfy(_lfy);
-
     for (int iel = 0; iel < nel; iel++) {
+
+        double lfx[NCORN][NCORN];
+        double lfy[NCORN][NCORN];
 
         // Info
         int const ireg = std::abs((double) elreg(iel));
@@ -127,9 +125,11 @@ getForceSubzonalPressure(
         double const y3 = 0.25 * (cny(iel, 0) + cny(iel, 1) + cny(iel, 2) + cny(iel, 3));
 
         // Initialise local force
-        for (SizeType i = 0; i < lfx.size(); i++) {
-            lfx[i] = 0.;
-            lfy[i] = 0.;
+        for (int icn = 0; icn < NCORN; icn++) {
+            for (int jcn = 0; jcn < NCORN; jcn++) {
+                lfx[icn][jcn] = 0.;
+                lfy[icn][jcn] = 0.;
+            }
         }
 
         // Loop over sub-elements
@@ -161,38 +161,38 @@ getForceSubzonalPressure(
             w2 = elcs2(iel) * w2;
 
             // Add to forces
-            lfx(0, j1) = w2 * ( w5 - w6);
-            lfx(1, j1) = w2 * ( w5 + w6);
-            lfx(2, j1) = w2 * (-w5 + w6);
-            lfx(3, j1) = w2 * (-w5 - w6);
-            lfy(0, j1) = w2 * (-w3 + w4);
-            lfy(1, j1) = w2 * (-w3 - w4);
-            lfy(2, j1) = w2 * ( w3 - w4);
-            lfy(3, j1) = w2 * ( w3 + w4);
+            lfx[0][j1] = w2 * ( w5 - w6);
+            lfx[1][j1] = w2 * ( w5 + w6);
+            lfx[2][j1] = w2 * (-w5 + w6);
+            lfx[3][j1] = w2 * (-w5 - w6);
+            lfy[0][j1] = w2 * (-w3 + w4);
+            lfy[1][j1] = w2 * (-w3 - w4);
+            lfy[2][j1] = w2 * ( w3 - w4);
+            lfy[3][j1] = w2 * ( w3 + w4);
         }
 
         // Distribute forces
-        double w2 = 0.5  * (lfx(3, 0) + lfx(1, 3));
-        double w3 = 0.5  * (lfx(1, 0) + lfx(3, 1));
-        double w4 = 0.5  * (lfx(1, 1) + lfx(3, 2));
-        double w5 = 0.5  * (lfx(3, 3) + lfx(1, 2));
-        double w6 = 0.25 * (lfx(2, 0) + lfx(2, 1) + lfx(2, 2) + lfx(2, 3));
+        double w2 = 0.5  * (lfx[3][0] + lfx[1][3]);
+        double w3 = 0.5  * (lfx[1][0] + lfx[3][1]);
+        double w4 = 0.5  * (lfx[1][1] + lfx[3][2]);
+        double w5 = 0.5  * (lfx[3][3] + lfx[1][2]);
+        double w6 = 0.25 * (lfx[2][0] + lfx[2][1] + lfx[2][2] + lfx[2][3]);
 
-        cnfx(iel, 0) += w1 * (lfx(0, 0) + w2 + w3 + w6);
-        cnfx(iel, 1) += w1 * (lfx(0, 1) + w4 + w3 + w6);
-        cnfx(iel, 2) += w1 * (lfx(0, 2) + w4 + w5 + w6);
-        cnfx(iel, 3) += w1 * (lfx(0, 3) + w2 + w5 + w6);
+        cnfx(iel, 0) += w1 * (lfx[0][0] + w2 + w3 + w6);
+        cnfx(iel, 1) += w1 * (lfx[0][1] + w4 + w3 + w6);
+        cnfx(iel, 2) += w1 * (lfx[0][2] + w4 + w5 + w6);
+        cnfx(iel, 3) += w1 * (lfx[0][3] + w2 + w5 + w6);
 
-        w2 = 0.5  * (lfy(3, 0) + lfy(1, 3));
-        w3 = 0.5  * (lfy(1, 0) + lfy(3, 1));
-        w4 = 0.5  * (lfy(1, 1) + lfy(3, 2));
-        w5 = 0.5  * (lfy(3, 3) + lfy(1, 2));
-        w6 = 0.25 * (lfy(2, 0) + lfy(2, 1) + lfy(2, 2) + lfy(2, 3));
+        w2 = 0.5  * (lfy[3][0] + lfy[1][3]);
+        w3 = 0.5  * (lfy[1][0] + lfy[3][1]);
+        w4 = 0.5  * (lfy[1][1] + lfy[3][2]);
+        w5 = 0.5  * (lfy[3][3] + lfy[1][2]);
+        w6 = 0.25 * (lfy[2][0] + lfy[2][1] + lfy[2][2] + lfy[2][3]);
 
-        cnfy(iel, 0) += w1 * (lfy(0, 0) + w2 + w3 + w6);
-        cnfy(iel, 1) += w1 * (lfy(0, 1) + w4 + w3 + w6);
-        cnfy(iel, 2) += w1 * (lfy(0, 2) + w4 + w5 + w6);
-        cnfy(iel, 3) += w1 * (lfy(0, 3) + w2 + w5 + w6);
+        cnfy(iel, 0) += w1 * (lfy[0][0] + w2 + w3 + w6);
+        cnfy(iel, 1) += w1 * (lfy[0][1] + w4 + w3 + w6);
+        cnfy(iel, 2) += w1 * (lfy[0][2] + w4 + w5 + w6);
+        cnfy(iel, 3) += w1 * (lfy[0][3] + w2 + w5 + w6);
     }
 }
 

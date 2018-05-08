@@ -307,12 +307,10 @@ getArtificialViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double _edviscx[NFACE];
-    double _edviscy[NFACE];
-    View<double, NFACE> edviscx(_edviscx);
-    View<double, NFACE> edviscy(_edviscy);
-
     for (int iel = 0; iel < nel; iel++) {
+
+        double edviscx[NFACE];
+        double edviscy[NFACE];
 
         double const xmean = 0.25 * (cnx(iel, 0) + cnx(iel, 1) +
                                      cnx(iel, 2) + cnx(iel, 3));
@@ -357,8 +355,8 @@ getArtificialViscosity(
 
             double const dp  = uhat*xhat + vhat*yhat;
             double const den = dp / magc;
-            edviscx(iside) = cnviscx(iel, iside) * uhat * den;
-            edviscy(iside) = cnviscy(iel, iside) * vhat * den;
+            edviscx[iside] = cnviscx(iel, iside) * uhat * den;
+            edviscy[iside] = cnviscy(iel, iside) * vhat * den;
 
             // Apply cut-off
             bool const cond =
@@ -367,19 +365,19 @@ getArtificialViscosity(
                     (side_off <= zerocut) ||
                     (side_len <= zerocut);
 
-            edviscx(iside) = cond ? 0.0 : edviscx(iside);
-            edviscy(iside) = cond ? 0.0 : edviscy(iside);
+            edviscx[iside] = cond ? 0.0 : edviscx[iside];
+            edviscy[iside] = cond ? 0.0 : edviscy[iside];
         }
 
         // convert from edge to corner
-        cnviscx(iel, 0) = edviscx(0) - edviscx(3);
-        cnviscx(iel, 1) = edviscx(1) - edviscx(0);
-        cnviscx(iel, 2) = edviscx(2) - edviscx(1);
-        cnviscx(iel, 3) = edviscx(3) - edviscx(2);
-        cnviscy(iel, 0) = edviscy(0) - edviscy(3);
-        cnviscy(iel, 1) = edviscy(1) - edviscy(0);
-        cnviscy(iel, 2) = edviscy(2) - edviscy(1);
-        cnviscy(iel, 3) = edviscy(3) - edviscy(2);
+        cnviscx(iel, 0) = edviscx[0] - edviscx[3];
+        cnviscx(iel, 1) = edviscx[1] - edviscx[0];
+        cnviscx(iel, 2) = edviscx[2] - edviscx[1];
+        cnviscx(iel, 3) = edviscx[3] - edviscx[2];
+        cnviscy(iel, 0) = edviscy[0] - edviscy[3];
+        cnviscy(iel, 1) = edviscy[1] - edviscy[0];
+        cnviscy(iel, 2) = edviscy[2] - edviscy[1];
+        cnviscy(iel, 3) = edviscy[3] - edviscy[2];
     }
 }
 

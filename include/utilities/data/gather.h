@@ -112,18 +112,17 @@ mxCornerGather(
         ConstView<T, VarDim, NCORN> elarray,
         View<T, VarDim, NCORN>      mxarray)
 {
-    T _w[NCORN];
-    View<T, NCORN> w(_w);
-
     for (int imx = 0; imx < nmx; imx++) {
+        T w[NCORN];
+
         int const iel = imxel(imx);
         for (int j = 0; j < NCORN; j++) {
-            w(j) = elarray(iel, j);
+            w[j] = elarray(iel, j);
         }
 
         for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
             for (int j = 0; j < NCORN; j++) {
-                mxarray(icp, j) = w(j);
+                mxarray(icp, j) = w[j];
             }
         }
     }

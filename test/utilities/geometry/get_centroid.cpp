@@ -37,8 +37,8 @@ main(
     _y[2] = 1.0;
     _y[3] = 1.0;
 
-    ConstView<double, 1, constants::NCORN> x(_x);
-    ConstView<double, 1, constants::NCORN> y(_y);
+    ConstView<double, constants::NCORN> x(_x);
+    ConstView<double, constants::NCORN> y(_y);
 
     double _centroid[constants::NDIM];
     View<double, constants::NDIM> centroid(_centroid);

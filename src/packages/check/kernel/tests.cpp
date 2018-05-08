@@ -115,10 +115,7 @@ testSod(
     for (int iel = 0; iel < nel; iel++) {
 
         // Find centroid
-        geometry::kernel::getCentroid(
-                cnx.row(iel),
-                cny.row(iel),
-                centroid);
+        geometry::kernel::getCentroid(iel, cnx, cny, centroid);
 
         // Find solution
         sodAnalytic(centroid(0) - 50., time, solution);

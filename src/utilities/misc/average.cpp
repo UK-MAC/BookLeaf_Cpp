@@ -67,24 +67,22 @@ average(
         View<double, VarDim, NCORN>      elarray1,
         View<double, VarDim, NCORN>      elarray2)
 {
-    double _w1[NCORN] = {0};
-    double _w2[NCORN] = {0};
-    View<double, NCORN> w1(_w1);
-    View<double, NCORN> w2(_w2);
-
     for (int imx = 0; imx < nmx; imx++) {
+        double w1[NCORN] = {0};
+        double w2[NCORN] = {0};
+
         int const icp = imxfcp(imx);
         for (int ii = 0; ii < imxncp(imx); ii++) {
-            for (int jj = 0; jj < NCORN; jj++) {
-                w1(jj) += mxfraction(icp) * mxarray1(icp, jj);
-                w2(jj) += mxfraction(icp) * mxarray2(icp, jj);
+            for (int icn = 0; icn < NCORN; icn++) {
+                w1[icn] += mxfraction(icp) * mxarray1(icp, icn);
+                w2[icn] += mxfraction(icp) * mxarray2(icp, icn);
             }
         }
 
         int const iel = imxel(imx);
         for (int icn = 0; icn < NCORN; icn++) {
-            elarray1(iel, icn) = w1(icn);
-            elarray2(iel, icn) = w2(icn);
+            elarray1(iel, icn) = w1[icn];
+            elarray2(iel, icn) = w2[icn];
         }
     }
 }

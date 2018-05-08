@@ -116,10 +116,10 @@ public:
         return ptr;
     }
 
-    /** \brief Read-only 1D element accessor */
+    /** \brief Read/write 1D element accessor */
     template <SizeType _NumCols = NumCols>
     BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols == 1, value_type const &>::type
+    typename std::enable_if<_NumCols == 1, value_type &>::type
     operator()(size_type i) const
     {
         assert(i < rows() && "invalid row index");
@@ -127,21 +127,10 @@ public:
         return ptr[i];
     }
 
-    /** \brief Read/write 1D element accessor */
+    /** \brief Read/write 2D element accessor */
     template <SizeType _NumCols = NumCols>
     BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols == 1, value_type &>::type
-    operator()(size_type i)
-    {
-        assert(i < rows() && "invalid row index");
-
-        return ptr[i];
-    }
-
-    /** \brief Read-only 2D element accessor */
-    template <SizeType _NumCols = NumCols>
-    BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols != 1, value_type const &>::type
+    typename std::enable_if<_NumCols != 1, value_type &>::type
     operator()(size_type i, size_type j) const
     {
         assert(i < rows() && "invalid row index");
@@ -150,21 +139,9 @@ public:
         return ptr[i * NumCols + j];
     }
 
-    /** \brief Read/write 2D element accessor */
-    template <SizeType _NumCols = NumCols>
+    /** \brief Read/write flat accessor */
     BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols != 1, value_type &>::type
-    operator()(size_type i, size_type j)
-    {
-        assert(i < rows() && "invalid row index");
-        assert(j < cols() && "invalid column index");
-
-        return ptr[i * NumCols + j];
-    }
-
-    /** \brief Read-only flat accessor */
-    BOOKLEAF_INLINE
-    value_type const &
+    value_type &
     operator[](size_type idx) const
     {
         assert(idx < size() && "invalid index");
@@ -172,27 +149,6 @@ public:
         return ptr[idx];
     }
 
-    /** \brief Read/write flat accessor */
-    BOOKLEAF_INLINE
-    value_type &
-    operator[](size_type idx)
-    {
-        assert(idx < size() && "invalid index");
-
-        return ptr[idx];
-    }
-
-
-    // -------------------------------------------------------------------------
-    // Row accessors
-    // -------------------------------------------------------------------------
-    /** \brief Return a view of a single row */
-    BOOKLEAF_INLINE
-    View<value_type, 1, NumCols>
-    row(size_type i)
-    {
-        return View<value_type, 1, NumCols>(&this->operator()(i, 0));
-    }
 
 private:
     T       * ptr;          //!< Data pointer

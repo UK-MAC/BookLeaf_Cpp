@@ -107,10 +107,7 @@ setShapeRegion(
         double _point[NDIM];
         View<double, NDIM> point(_point);
 
-        geometry::kernel::getCentroid(
-                cnx.row(iel),
-                cny.row(iel),
-                point);
+        geometry::kernel::getCentroid(iel, cnx, cny, point);
 
         // If the centroid of the element is within the shape then set the
         // region.
@@ -135,11 +132,7 @@ setShapeSingleMaterial(
     for (int iel = 0; iel < nel; iel++) {
 
         // If the element is entirely within the shape, assign a single material
-        int const count = intersect(
-                param,
-                cnx.row(iel),
-                cny.row(iel),
-                inside);
+        int const count = intersect(param, iel, cnx, cny, inside);
 
         if (count == NCORN) {
             flag(iel) = itarget;
@@ -168,11 +161,7 @@ countShapeMixedMaterial(
 
         // If the element is only partially within the shape, count how many new
         // mixed elements and components we will need to add.
-        int const count = intersect(
-                param,
-                cnx.row(iel),
-                cny.row(iel),
-                inside);
+        int const count = intersect(param, iel, cnx, cny, inside);
 
         if (count > 0 && count < NCORN) {
 
@@ -218,16 +207,10 @@ setShapeMixedMaterial(
     int icp = ncp;
 
     for (int iel = 0; iel < nel; iel++) {
-        auto xx = cnx.row(iel);
-        auto yy = cny.row(iel);
 
         // If the element is only partially within the shape, update the mixed
         // material data structures.
-        int const count = intersect(
-                param,
-                cnx.row(iel),
-                cny.row(iel),
-                inside);
+        int const count = intersect(param, iel, cnx, cny, inside);
 
         if (count > 0 && count < NCORN) {
 
@@ -235,7 +218,7 @@ setShapeMixedMaterial(
             //     been set.
 
             // Calculate volume fraction
-            double const vf = subdivide(0, param, xx, yy, inside);
+            double const vf = subdivide(0, param, iel, cnx, cny, inside);
 
             // Get the current material index for this element
             int j = elmat(iel);

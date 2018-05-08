@@ -21,7 +21,7 @@ Further documentation can be found in the `doc/` subdirectory. The following
 documentation is available:
 
 - [INSTALL.md](doc/INSTALL.md), manual installation instructions
-- [STRUCUTRE.md](doc/STRUCTURE.md), code and physics structure
+- [STRUCTURE.md](doc/STRUCTURE.md), code and physics structure
 - [CALIPER.md](doc/CALIPER.md), how to use LLNL Caliper
 - [GIT.md](doc/GIT.md), git organisation
 

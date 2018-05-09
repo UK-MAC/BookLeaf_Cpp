@@ -22,38 +22,16 @@
 #include "packages/hydro/kernel/get_dt.h"
 #include "packages/hydro/driver/get.h"
 #include "packages/hydro/config.h"
+#include "packages/hydro/driver/get_cs2.h"
 #include "utilities/data/gather.h"
 #include "utilities/data/global_configuration.h"
 #include "common/data_control.h"
-#include "utilities/misc/average.h"
 
 
 
 namespace bookleaf {
 namespace hydro {
 namespace driver {
-namespace {
-
-inline void
-getCs2(
-        Sizes const &sizes,
-        DataControl &data)
-{
-    auto elcs2  = data[DataID::ELCS2].host<double, VarDim>();
-    auto elvisc = data[DataID::ELVISC].chost<double, VarDim>();
-
-    // Apply Q correction to soundspeed^2 (cs^2 = cs_eos^2 + 2Q/rho)
-    for (int i = 0; i < sizes.nel; i++) {
-        elcs2(i) += elvisc(i);
-    }
-
-    if (sizes.ncp > 0) {
-        utils::driver::average(sizes, DataID::FRMASS, DataID::CPCS2,
-                DataID::CPVISC, DataID::ELCS2, data);
-    }
-}
-
-} // namespace
 
 void
 getDt(

@@ -15,33 +15,23 @@
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
-#ifndef BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETDT_H
-#define BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETDT_H
+#ifndef BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETCS2_H
+#define BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETCS2_H
 
 
 
 namespace bookleaf {
 
 struct Sizes;
-class TimerControl;
 class DataControl;
-struct Dt;
-struct Error;
 
 namespace hydro {
-
-struct Config;
-
 namespace driver {
 
 void
-getDt(
-        hydro::Config const &hydro,
+getCs2(
         Sizes const &sizes,
-        TimerControl &timers,
-        DataControl &data,
-        Dt *&dt,
-        Error &err);
+        DataControl &data);
 
 } // namespace driver
 } // namespace hydro
@@ -49,4 +39,4 @@ getDt(
 
 
 
-#endif // BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETDT_H
+#endif // BOOKLEAF_PACKAGES_HYDRO_DRIVER_GETCS2_H

@@ -123,6 +123,7 @@ set(BOOKLEAF_LIB_SRC
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/get_artificial_viscosity.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/get_state.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/get_dt.cpp
+    ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/get_cs2.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/init.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/print.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/hydro/driver/set.cpp

@@ -17,6 +17,10 @@
  * @HEADER@ */
 #include "packages/ale/kernel/advect.h"
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/data_control.h"
 
@@ -42,6 +46,10 @@ updateBasisEl(
         View<double, VarDim>      eldensity,
         int nel)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // update element basis
     for (int iel = 0; iel < nel; iel++) {
 
@@ -74,6 +82,10 @@ initBasisNd(
         View<double, VarDim> ndm0,
         int nnd)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // initialise basis
     for (int ind = 0; ind < nnd; ind++) {
         ndv0(ind) = 0.;
@@ -97,6 +109,10 @@ calcBasisNd(
         View<double, VarDim, NCORN>      cnm0,
         int nel)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Construct pre/post nodal volumes and pre nodal/corner mass
     for (int icn = 0; icn < NCORN; icn++) {
         for (int ii = 0; ii < nel; ii++) {
@@ -130,6 +146,10 @@ fluxBasisNd(
         View<double, VarDim, NCORN>      cnflux,
         int nel)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     id1--;
     id2--;
 
@@ -194,6 +214,10 @@ massBasisNd(
         View<double, VarDim>             ndm1,
         int nel)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Construct post nodal/corner mass
     for (int icn = 0; icn < NCORN; icn++) {
         for (int ii = 0; ii < nel; ii++) {
@@ -216,6 +240,10 @@ cutBasisNd(
         View<double, VarDim>      cutm,
         int nnd)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Construct cut-offs
     for (int ind = 0; ind < nnd; ind++) {
         cutv(ind) = cut;
@@ -233,6 +261,10 @@ activeNd(
         View<unsigned char, VarDim> active,
         int nnd)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Set active flag
     for (int ind = 0; ind < nnd; ind++) {
         bool const is_active = (ndstatus(ind) > 0) &&

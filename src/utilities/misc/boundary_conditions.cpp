@@ -17,6 +17,10 @@
  * @HEADER@ */
 #include "utilities/misc/boundary_conditions.h"
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "utilities/data/global_configuration.h"
 #include "common/data_control.h"
 #include "common/view.h"
@@ -37,6 +41,10 @@ setBoundaryConditions(
         View<double, VarDim>   ndu,
         View<double, VarDim>   ndv)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     double const w1 = rcut*rcut;
     for (int ind = 0; ind < nnd; ind++) {
 

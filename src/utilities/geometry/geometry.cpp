@@ -201,6 +201,10 @@ checkVolume(
         ConstView<double, VarDim> volume,
         int nel)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     for (int i = 0; i < nel; i++) {
         if (volume(i) < val) return i;
     }

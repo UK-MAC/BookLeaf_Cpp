@@ -18,6 +18,10 @@
 #ifndef BOOKLEAF_UTILITIES_DATA_GATHER_H
 #define BOOKLEAF_UTILITIES_DATA_GATHER_H
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/sizes.h"
 #include "common/data_id.h"
@@ -40,6 +44,10 @@ cornerGather(
         ConstView<T, VarDim>          nd,
         View<T, VarDim, NCORN>        el)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     for (int i = 0; i < nel; i++) {
         for (int j = 0; j < NCORN; j++) {
             el(i, j) = nd(elnd(i, j));

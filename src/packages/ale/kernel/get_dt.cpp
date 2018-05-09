@@ -20,6 +20,10 @@
 #include <limits>
 #include <cmath>
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/data_control.h"
 
@@ -42,6 +46,10 @@ getDt(
         int &idt,
         std::string &sdt)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     double w2 = std::numeric_limits<double>::max();
     int ii = 0;
 

@@ -20,6 +20,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/data_control.h"
 
@@ -42,6 +46,10 @@ fluxElVl(
         ConstView<double, VarDim>        elvar,
         View<double, VarDim, NFACE>      fcflux)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     id1--;
     id2--;
 
@@ -108,6 +116,10 @@ fluxNdVl(
         ConstView<double, VarDim, NCORN> cnvar,
         View<double, VarDim, NCORN>      cnflux)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     #define IX(i) ((i)-1)
 
     // Initialise
@@ -210,6 +222,10 @@ updateEl(
         View<double, VarDim>             elflux,
         View<double, VarDim>             elvar)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Calculate total flux
     kernel::sumFlux(id1, id2, ilsize, iasize, elel, elfc, fcflux, elflux);
 
@@ -238,6 +254,10 @@ updateNd(
         View<double, VarDim>             ndflux,
         View<double, VarDim>             ndvar)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Construct total flux
     for (int ind = 0; ind < insize; ind++) {
         ndflux(ind) = 0.;
@@ -273,6 +293,10 @@ sumFlux(
         ConstView<double, VarDim, NFACE> fcflux,
         View<double, VarDim>             elflux)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     id1--;
     id2--;
 

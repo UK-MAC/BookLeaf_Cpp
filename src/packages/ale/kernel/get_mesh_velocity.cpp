@@ -17,6 +17,10 @@
  * @HEADER@ */
 #include "packages/ale/kernel/get_mesh_velocity.h"
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 
 
 namespace bookleaf {
@@ -30,6 +34,10 @@ getMeshVelocity(
         View<double, VarDim> ndu,
         View<double, VarDim> ndv)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     if (zeul) {
         for (int ind = 0; ind < nnd; ind++) {
             ndu(ind) = -ndu(ind);

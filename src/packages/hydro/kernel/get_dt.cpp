@@ -20,6 +20,10 @@
 #include <limits>
 #include <cmath>
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/error.h"
 #include "common/data_control.h"
@@ -147,6 +151,10 @@ getDtCfl(
         std::string &sdt,
         Error &err)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     // Calculate CFL condition
     for (int iel = 0; iel < nel; iel++) {
         double result[NCORN];
@@ -205,6 +213,10 @@ getDtDiv(
         int &idt,
         std::string &sdt)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     double w2 = std::numeric_limits<double>::min();
     int min_idx = 0;
     double w1;

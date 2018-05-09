@@ -17,6 +17,10 @@
  * @HEADER@ */
 #include "packages/ale/kernel/get_mesh_status.h"
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 
 
 namespace bookleaf {
@@ -29,6 +33,10 @@ getMeshStatus(
         bool zeul,
         View<int, VarDim> ndstatus)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     if (zeul) {
         for (int ind = 0; ind < nnd; ind++) {
             ndstatus(ind) = 2;

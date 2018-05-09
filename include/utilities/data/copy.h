@@ -18,6 +18,10 @@
 #ifndef BOOKLEAF_UTILITIES_DATA_COPY_H
 #define BOOKLEAF_UTILITIES_DATA_COPY_H
 
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+#include <caliper/cali.h>
+#endif
+
 #include "common/constants.h"
 #include "common/view.h"
 
@@ -36,6 +40,10 @@ copy(
         ConstView<T, VarDim> src,
         int len)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     for (int i = 0; i < len; i++) {
         dst(i) = src(i);
     }

@@ -219,16 +219,15 @@ getDtDiv(
 
     double w2 = std::numeric_limits<double>::min();
     int min_idx = 0;
-    double w1;
     for (int iel = 0; iel < nel; iel++) {
-        w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
-             cnv(iel, 0) * ( a3(iel) - a1(iel)) +
-             cnu(iel, 1) * ( b3(iel) + b1(iel)) +
-             cnv(iel, 1) * (-a3(iel) - a1(iel)) +
-             cnu(iel, 2) * ( b3(iel) - b1(iel)) +
-             cnv(iel, 2) * (-a3(iel) + a1(iel)) +
-             cnu(iel, 3) * (-b3(iel) - b1(iel)) +
-             cnv(iel, 3) * ( a3(iel) + a1(iel));
+        double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
+                    cnv(iel, 0) * ( a3(iel) - a1(iel)) +
+                    cnu(iel, 1) * ( b3(iel) + b1(iel)) +
+                    cnv(iel, 1) * (-a3(iel) - a1(iel)) +
+                    cnu(iel, 2) * ( b3(iel) - b1(iel)) +
+                    cnv(iel, 2) * (-a3(iel) + a1(iel)) +
+                    cnu(iel, 3) * (-b3(iel) - b1(iel)) +
+                    cnv(iel, 3) * ( a3(iel) + a1(iel));
 
         w1 = fabs(w1) / elvolume(iel);
         min_idx = w1 > w2 ? iel : min_idx;

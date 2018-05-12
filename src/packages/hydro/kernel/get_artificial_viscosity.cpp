@@ -312,58 +312,55 @@ getArtificialViscosity(
         double edviscx[NFACE];
         double edviscy[NFACE];
 
-        double const xmean = 0.25 * (cnx(iel, 0) + cnx(iel, 1) +
-                                     cnx(iel, 2) + cnx(iel, 3));
-        double const ymean = 0.25 * (cny(iel, 0) + cny(iel, 1) +
-                                     cny(iel, 2) + cny(iel, 3));
+        double const cx = 0.25 * (cnx(iel,0)+cnx(iel,1)+cnx(iel,2)+cnx(iel,3));
+        double const cy = 0.25 * (cny(iel,0)+cny(iel,1)+cny(iel,2)+cny(iel,3));
 
         for (int iside = 0; iside < NFACE; iside++) {
             int const ins = (iside + 1) % NFACE;
 
-            double const x1     = cnx(iel, iside);
-            double const x2     = cnx(iel, ins);
-            double const xmid   = 0.5 * (x1 + x2);
-            double const xsdiff = x2 - x1;
-            double const xcdiff = xmid - xmean;
+            double w1 = cnx(iel, iside);
+            double w2 = cnx(iel, ins);
+            double w3 = 0.5 * (w1 + w2);
+            w1 = w2 - w1;
+            w2 = cx;
 
-            double const y1     = cny(iel, iside);
-            double const y2     = cny(iel, ins);
-            double const ymid   = 0.5 * (y1 + y2);
-            double const ysdiff = y2 - y1;
-            double const ycdiff = -(ymid - ymean);
+            double w4 = cny(iel, iside);
+            double w5 = cny(iel, ins);
+            double w6 = 0.5 * (w4 + w5);
+            w4 = w5 - w4;
+            w5 = cy;
 
-            double const side_len = std::sqrt(xsdiff*xsdiff + ysdiff*ysdiff);
-            double const inv_side_len = 1.0 / side_len;
+            double w7 = std::sqrt((w2-w3)*(w2-w3) + (w5-w6)*(w5-w6));
+            double w8 = std::sqrt(w1*w1 + w4*w4);
 
-            double const side_off = std::sqrt(xcdiff*xcdiff + ycdiff*ycdiff);
-            double const inv_side_off = 1.0 / side_off;
+            double den = 1.0 / w7;
+            double xhat = (w5-w6) * den;
+            double yhat = (w3-w2) * den;
 
-            double const centre_s = ycdiff * inv_side_off;
-            double const centre_c = xcdiff * inv_side_off;
-            double const side_c   = xsdiff * inv_side_len;
-            double const side_s   = ysdiff * inv_side_len;
+            den = 1.0 / w8;
+            w1 = w1 * den;
+            w2 = w4 * den;
+            w3 = xhat * w1 + yhat * w2;
 
-            double const sign = centre_s * side_c + centre_c * side_s;
+            den = -std::copysign(1.0, w3) * w7;
+            xhat = xhat * den;
+            yhat = yhat * den;
+            double uhat = cnu(iel, ins) - cnu(iel, iside);
+            double vhat = cnv(iel, ins) - cnv(iel, iside);
 
-            double const xhat = -ycdiff * sign;
-            double const yhat = -xcdiff * sign;
+            w5 = std::sqrt((uhat*uhat) + (vhat*vhat));
+            w6 = uhat*xhat + vhat*yhat;
 
-            double const uhat = cnu(iel, ins) - cnu(iel, iside);
-            double const vhat = cnv(iel, ins) - cnv(iel, iside);
-            double const mag  = std::sqrt((uhat*uhat) + (vhat*vhat));
-            double const magc = mag > zerocut ? mag : zerocut;
+            den = w6 / (w5 > zerocut ? w5 : zerocut);
 
-            double const dp  = uhat*xhat + vhat*yhat;
-            double const den = dp / magc;
             edviscx[iside] = cnviscx(iel, iside) * uhat * den;
             edviscy[iside] = cnviscy(iel, iside) * vhat * den;
 
-            // Apply cut-off
-            bool const cond =
-                    (mag      <= zerocut) ||
-                    (dp       <= zerocut) ||
-                    (side_off <= zerocut) ||
-                    (side_len <= zerocut);
+            // apply cut-off
+            bool const cond = (w5 <= zerocut) ||
+                              (w6 <= zerocut) ||
+                              (w7 <= zerocut) ||
+                              (w8 <= zerocut);
 
             edviscx[iside] = cond ? 0.0 : edviscx[iside];
             edviscy[iside] = cond ? 0.0 : edviscy[iside];

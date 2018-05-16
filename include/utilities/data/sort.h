@@ -33,11 +33,11 @@ namespace bookleaf {
 namespace utils {
 namespace kernel {
 
-template <typename T>
+template <typename T, typename U>
 void
 sortIndices(
         ConstView<T, VarDim> keys,
-        View<int, VarDim>    indices,
+        View<U, VarDim>    indices,
         int len,
         bool stable = false)
 {
@@ -69,17 +69,17 @@ sortIndices(
 /**
  * @brief   Equivalent to Fortran's arr=arr(idx) syntax.
  */
-template <typename T>
+template <typename T, typename U>
 void
 reorder(
-        ConstView<int, VarDim> idx,
-        View<T, VarDim>        arr,
+        ConstView<T, VarDim> idx,
+        View<U, VarDim>      arr,
         int len)
 {
     // I don't think it's possible to do this without a temporary array, without
     // messing up the indices.
-    std::unique_ptr<T[]> _scratch(new T[len]);
-    View<T, VarDim> scratch(_scratch.get(), len);
+    std::unique_ptr<U[]> _scratch(new U[len]);
+    View<U, VarDim> scratch(_scratch.get(), len);
 
     for (int i = 0; i < len; i++) {
         scratch(i) = arr(idx(i));

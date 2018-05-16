@@ -78,7 +78,7 @@ flatten(
     auto frvolume   = data[DataID::FRVOLUME].host<double, VarDim>();
 
     // Sort mixed elements by cell list
-    utils::kernel::sortIndices<int>(mxel, scratch, sizes.nmx);
+    utils::kernel::sortIndices<int, int>(mxel, scratch, sizes.nmx);
 
     // Set new connectivity
     kernel::flattenIndex(sizes.nmx, sizes.ncp, scratch, mxfcp, mxncp, cpmat,

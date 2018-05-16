@@ -42,17 +42,21 @@ getElementConnectivity(
         View<int, VarDim, NFACE>      elel,
         int nel)
 {
+    // XXX(timrlaw): Need to be careful here---had issues with face IDs
+    //               overflowing 4-byte integers. SizeType should be 8-byte
+    static_assert(sizeof(SizeType) >= 8, "SizeType too small for connectivity");
+
     // Initialise
     int const nsz = NFACE * nel;
-    std::unique_ptr<int[]> iConn(new int[nsz]);
-    std::unique_ptr<int[]> iUind(new int[nsz]);
-    std::unique_ptr<int[]> iWork1(new int[nsz]);
-    std::unique_ptr<int[]> iWork2(new int[nsz]);
+    std::unique_ptr<SizeType[]> iConn(new SizeType[nsz]);
+    std::unique_ptr<SizeType[]> iUind(new SizeType[nsz]);
+    std::unique_ptr<SizeType[]> iWork1(new SizeType[nsz]);
+    std::unique_ptr<SizeType[]> iWork2(new SizeType[nsz]);
 
-    View<int, VarDim> vconn(iConn.get(), nsz);
-    View<int, VarDim> vuind(iUind.get(), nsz);
-    View<int, VarDim> vwork1(iWork1.get(), nsz);
-    View<int, VarDim> vwork2(iWork2.get(), nsz);
+    View<SizeType, VarDim> vconn(iConn.get(), nsz);
+    View<SizeType, VarDim> vuind(iUind.get(), nsz);
+    View<SizeType, VarDim> vwork1(iWork1.get(), nsz);
+    View<SizeType, VarDim> vwork2(iWork2.get(), nsz);
 
     // Transpose elnd into work1 and work2, so that we have two lists of
     // element-node connectivity, offset by nel.
@@ -61,67 +65,72 @@ getElementConnectivity(
         int const i3 = iel + nel*2;
         int const i4 = iel + nel*3;
 
-        vwork1(iel) = elnd(iel, 0);
-        vwork2(iel) = elnd(iel, 1);
-        vwork1(i2) = elnd(iel, 1);
-        vwork2(i2) = elnd(iel, 2);
-        vwork1(i3) = elnd(iel, 2);
-        vwork2(i3) = elnd(iel, 3);
-        vwork1(i4) = elnd(iel, 3);
-        vwork2(i4) = elnd(iel, 0);
+        vwork1(iel) = (SizeType) elnd(iel, 0);
+        vwork2(iel) = (SizeType) elnd(iel, 1);
+        vwork1(i2) = (SizeType) elnd(iel, 1);
+        vwork2(i2) = (SizeType) elnd(iel, 2);
+        vwork1(i3) = (SizeType) elnd(iel, 2);
+        vwork2(i3) = (SizeType) elnd(iel, 3);
+        vwork1(i4) = (SizeType) elnd(iel, 3);
+        vwork2(i4) = (SizeType) elnd(iel, 0);
 
-        vconn(iel) = vconn(i2) = vconn(i3) = vconn(i4) = iel;
+        vconn(iel) = vconn(i2) = vconn(i3) = vconn(i4) = (SizeType) iel;
     }
 
     // Compute unique IDs for each adjacent node pair (equivalent to each face).
     // The ID will be the same regardless of the order of nodes, which allows us
     // to find matching faces by finding matching IDs.
     //
-    //   ID = min_node_num * num_unique_nodes + max_node_num
+    //   ID = lesser_node_num * max_local_node_num + greater_node_num
     //
-    int elnd_max = 0;
+    SizeType elnd_max = 0;
     for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
-            elnd_max = std::max(elnd(iel, icn), elnd_max);
+            elnd_max = (SizeType) std::max((SizeType) elnd(iel, icn), elnd_max);
         }
     }
 
     for (int i = 0; i < nsz; i++) {
-        int const work1 = vwork1(i);
-        int const work2 = vwork2(i);
+        SizeType const work1 = vwork1(i);
+        SizeType const work2 = vwork2(i);
 
-        int const work_max = std::max(work1, work2);
-        int const work_min = std::min(work1, work2);
+        SizeType const work_max = std::max(work1, work2);
+        SizeType const work_min = std::min(work1, work2);
 
         vuind(i) = (work_min * elnd_max) + work_max;
+
+        // Check for overflow
+        if (vuind(i) > (((elnd_max-1) * elnd_max) + elnd_max)) {
+            assert(false && "face ID overflow");
+        }
     }
 
     // Determine sorted order of face IDs (in work1)
-    utils::kernel::sortIndices<int>(vuind, vwork1, nsz);
+    utils::kernel::sortIndices<SizeType, SizeType>(vuind, vwork1, nsz);
 
     // Find matching faces, store match offsets in vwork2
     int num_matches = 0;
     for (int i = 0; i < nsz - 1; i++) {
-        int const cur  = vwork1(i);
-        int const next = vwork1(i + 1);
+        SizeType const cur  = vwork1(i);
+        SizeType const next = vwork1(i + 1);
         if (vuind(cur) == vuind(next)) vwork2(num_matches++) = i;
     }
 
     // Reorder elements numbers in line with faces, so we can figure out which
     // elements share a face
-    for (SizeType i = 0; i < vuind.size(); i++) {
-        vuind[i] = vwork1[i];
+    for (int i = 0; i < nsz; i++) {
+        vuind(i) = vwork1(i);
     }
 
-    utils::kernel::reorder(vwork1, vconn, nsz);
+    utils::kernel::reorder<SizeType, SizeType>(vwork1, vconn, nsz);
 
     // Insert match element numbers into connectivity table (work1)
-    for (SizeType i = 0; i < vwork1.size(); i++) {
-        vwork1[i] = -1;
+    for (int i = 0; i < nsz; i++) {
+        vwork1(i) = (SizeType) -1;
     }
 
     for (int i = 0; i < num_matches; i++) {
-        int const match_offset = vwork2(i);
+        SizeType const match_offset = vwork2(i);
         vwork1(vuind(match_offset))   = vconn(match_offset+1);
         vwork1(vuind(match_offset+1)) = vconn(match_offset);
     }

@@ -148,10 +148,10 @@ initElementOrdering(
     auto elsort2   = data[DataID::IELSORT2].host<int, VarDim>();
 
     if (config.comms->spatial->nproc > 1) {
-        utils::kernel::sortIndices(ellocglob, elsort1, sizes.nel1);
+        utils::kernel::sortIndices<int, int>(ellocglob, elsort1, sizes.nel1);
 
         if (config.ale->zexist) {
-            utils::kernel::sortIndices(ellocglob, elsort2, sizes.nel2);
+            utils::kernel::sortIndices<int, int>(ellocglob, elsort2, sizes.nel2);
         }
 
     } else {

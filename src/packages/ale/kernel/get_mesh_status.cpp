@@ -38,6 +38,7 @@ getMeshStatus(
 #endif
 
     if (zeul) {
+        #pragma omp parallel for
         for (int ind = 0; ind < nnd; ind++) {
             ndstatus(ind) = 2;
         }

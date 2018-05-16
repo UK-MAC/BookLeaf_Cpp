@@ -51,6 +51,10 @@ initArtificialViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel
+    {
+
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         elvisc(iel) = 0.;
 
@@ -66,6 +70,7 @@ initArtificialViscosity(
     }
 
     // initialisation and gradient construction
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
             int const icn2 = (icn + 1) % NCORN;
@@ -75,6 +80,8 @@ initArtificialViscosity(
             dy(iel, icn) = cny(iel, icn2) - cny(iel, icn);
         }
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -104,10 +111,12 @@ limitArtificialViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel
     for (int iside = 0; iside < NFACE / 2; iside++) {
         int const is1 = (iside + 3) % NFACE;
         int const is2 = iside + 1;
 
+        #pragma omp for
         for (int iel = 0; iel < nel; iel++) {
 
             // XXX(timrlaw): Manually fused these three loops
@@ -307,6 +316,7 @@ getArtificialViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
 
         double edviscx[NFACE];

@@ -46,6 +46,7 @@ setBoundaryConditions(
 #endif
 
     double const w1 = rcut*rcut;
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
 
         switch (ndtype(ind)) {

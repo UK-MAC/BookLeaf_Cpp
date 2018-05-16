@@ -46,6 +46,7 @@ getDensity(
 #endif
 
     // Mass conserved, get density from updated volume
+    #pragma omp parallel for
     for (int i = 0; i < len; i++) {
         density(i) = mass(i) / volume(i);
     }

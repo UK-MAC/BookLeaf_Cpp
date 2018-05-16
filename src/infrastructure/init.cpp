@@ -19,6 +19,8 @@
 
 #include <cassert>
 
+#include <omp.h>
+
 #include "common/config.h"
 #include "common/runtime.h"
 #include "common/constants.h"
@@ -60,6 +62,13 @@ initParallelism(
     if (err.failed()) {
         assert(false && "unhandled error");
         return;
+    }
+
+    // Initialise OpenMP
+    #pragma omp parallel
+    {
+        #pragma omp master
+        comms.nthread = omp_get_num_threads();
     }
 }
 

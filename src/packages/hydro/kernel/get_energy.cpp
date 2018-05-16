@@ -47,6 +47,7 @@ getEnergy(
 #endif
 
     // FdS internal energy update
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         double w1 = cnfx(iel, 0) * cnu(iel, 0) +
                     cnfy(iel, 0) * cnv(iel, 0) +

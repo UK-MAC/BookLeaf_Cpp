@@ -48,6 +48,7 @@ cornerGather(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int i = 0; i < nel; i++) {
         for (int j = 0; j < NCORN; j++) {
             el(i, j) = nd(elnd(i, j));
@@ -67,6 +68,7 @@ mxGather(
         ConstView<T, VarDim>   elarray,
         View<T, VarDim>        mxarray)
 {
+    #pragma omp parallel for
     for (int imx = 0; imx < nmx; imx++) {
         T const w = elarray(imxel(imx));
         for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
@@ -93,6 +95,7 @@ mxGather(
         View<T, VarDim>        mxarray3,
         View<T, VarDim>        mxarray4)
 {
+    #pragma omp parallel for
     for (int imx = 0; imx < nmx; imx++) {
         int const iel = imxel(imx);
         T const w1 = elarray1(iel);
@@ -120,6 +123,7 @@ mxCornerGather(
         ConstView<T, VarDim, NCORN> elarray,
         View<T, VarDim, NCORN>      mxarray)
 {
+    #pragma omp parallel for
     for (int imx = 0; imx < nmx; imx++) {
         T w[NCORN];
 

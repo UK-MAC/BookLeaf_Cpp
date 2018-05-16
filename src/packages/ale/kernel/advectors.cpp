@@ -53,7 +53,11 @@ fluxElVl(
     id1--;
     id2--;
 
+    #pragma omp parallel
+    {
+
     // Initialise
+    #pragma omp for
     for (int iel = 0; iel < iasize; iel++) {
         fcflux(iel, 0) = 0.;
         fcflux(iel, 1) = 0.;
@@ -64,6 +68,7 @@ fluxElVl(
     // Construct flux
     for (int i1 = id1; i1 <= id2; i1++) {
         int const i2 = i1 + 2;
+        #pragma omp for
         for (int iel = 0; iel < ilsize; iel++) {
             int const iel2 = elel(iel, i2);
             int j2 = elfc(iel, i2);
@@ -101,6 +106,8 @@ fluxElVl(
             fcflux(iel, i2) = r2;
         }
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -122,7 +129,11 @@ fluxNdVl(
 
     #define IX(i) ((i)-1)
 
+    #pragma omp parallel
+    {
+
     // Initialise
+    #pragma omp for
     for (int iel = 0; iel < iasize; iel++) {
         cnflux(iel, 0) = 0.;
         cnflux(iel, 1) = 0.;
@@ -138,6 +149,7 @@ fluxNdVl(
         for (int icn = 1; icn <= 2; icn++) {
             int const ilndl = ilfcl + icn - 1;
             int const ilndr = (ilfcr - icn + 1) % NCORN + 1;
+            #pragma omp for
             for (int iel = 1; iel <= ilsize; iel++) {
                 double rd = 0.;
 
@@ -202,6 +214,8 @@ fluxNdVl(
         }
     }
 
+    } // #pragma omp parallel
+
     #undef IX
 }
 
@@ -230,6 +244,7 @@ updateEl(
     kernel::sumFlux(id1, id2, ilsize, iasize, elel, elfc, fcflux, elflux);
 
     // Update variable
+    #pragma omp parallel for
     for (int iel = 0; iel < ilsize; iel++) {
         bool const cond = elbase1(iel) > cut(iel);
         elvar(iel) = cond ?
@@ -261,11 +276,16 @@ updateNd(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel
+    {
+
     // Construct total flux
+    #pragma omp for
     for (int ind = 0; ind < insize; ind++) {
         ndflux(ind) = 0.;
     }
 
+    #pragma omp for
     for (int ind = 0; ind < insize; ind++) {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
@@ -285,12 +305,15 @@ updateNd(
     }
 
     // Update variable
+    #pragma omp for
     for (int ind = 0; ind < iusize; ind++) {
         bool const cond = active(ind) && (ndbase1(ind) > cut(ind));
         ndvar(ind) = cond ?
             (ndvar(ind) * ndbase0(ind) + ndflux(ind)) / ndbase1(ind) :
             ndvar(ind);
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -313,12 +336,17 @@ sumFlux(
     id1--;
     id2--;
 
+    #pragma omp parallel
+    {
+
+    #pragma omp for
     for (int iel = 0; iel < iasize; iel++) {
         elflux(iel) = 0.;
     }
 
     for (int i1 = id1; i1 <= id2; i1++) {
         int const i2 = i1 + 2;
+        #pragma omp for
         for (int iel = 0; iel < ilsize; iel++) {
             int const iel1 = elel(iel, i1);
             int const iel2 = elel(iel, i2);
@@ -337,6 +365,8 @@ sumFlux(
             elflux(iel) = elflux(iel) - fcflux(iel, i1) - fcflux(iel, i2) + w1 + w2;
         }
     }
+
+    } // #pragma omp parallel
 }
 
 } // namespace kernel

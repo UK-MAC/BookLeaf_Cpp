@@ -27,6 +27,7 @@
 #include "common/constants.h"
 #include "common/error.h"
 #include "common/data_control.h"
+#include "common/reduce_idx.h"
 
 
 
@@ -156,6 +157,7 @@ getDtCfl(
 #endif
 
     // Calculate CFL condition
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         double result[NCORN];
 
@@ -180,19 +182,20 @@ getDtCfl(
     }
 
     // Find minimum CFL condition
-    int min_idx = 0;
-    for (int iel = 1; iel < nel; iel++) {
-        if (rscratch11(iel) < rscratch11(min_idx)) min_idx = iel;
+    ReduceIdx red { std::numeric_limits<double>::max(), -1 };
+    #pragma omp parallel for reduction(minloc:red)
+    for (int iel = 0; iel < nel; iel++) {
+        ReduceIdx red2 { rscratch11(iel), iel };
+        red = red2 < red ? red2 : red;
     }
 
-    double w1 = rscratch11(min_idx);
-    if (w1 < 0) {
+    if (red.val < 0) {
         FAIL_WITH_LINE(err, "ERROR");
         return;
     }
 
-    rdt = cfl_sf*sqrt(w1);
-    idt = min_idx;
+    rdt = cfl_sf*sqrt(red.val);
+    idt = red.idx;
     sdt = "     CFL";
 }
 
@@ -217,8 +220,8 @@ getDtDiv(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::min();
-    int min_idx = 0;
+    ReduceIdx red { -std::numeric_limits<double>::max(), -1 };
+    #pragma omp parallel for reduction(maxloc:red)
     for (int iel = 0; iel < nel; iel++) {
         double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
                     cnv(iel, 0) * ( a3(iel) - a1(iel)) +
@@ -230,12 +233,13 @@ getDtDiv(
                     cnv(iel, 3) * ( a3(iel) + a1(iel));
 
         w1 = fabs(w1) / elvolume(iel);
-        min_idx = w1 > w2 ? iel : min_idx;
-        w2 = w1 > w2 ? w1 : w2;
+
+        ReduceIdx red2 { w1, iel };
+        red = red2 > red ? red2 : red;
     }
 
-    rdt = div_sf/w2;
-    idt = min_idx;
+    rdt = div_sf/red.val;
+    idt = red.idx;
     sdt = "     DIV";
 }
 

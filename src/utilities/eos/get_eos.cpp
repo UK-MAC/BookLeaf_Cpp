@@ -168,6 +168,7 @@ getEOS(
 #endif
 
     // Update pressure and sound speed
+    #pragma omp parallel for
     for (int i = 0; i < len; i++) {
         pressure(i) = getPressure(
                 mat(i),

@@ -98,6 +98,9 @@ printPreprocessingOptions(
     std::cout << "  MPI parallelism not included\n";
 #endif
 
+    std::cout << "  OpenMP variant\n";
+    std::cout << "  Running " << comms.nthread << " thread(s)\n";
+
 #ifdef BOOKLEAF_SILO_SUPPORT
     std::cout << "  Silo visualisation dumps available\n";
 #else

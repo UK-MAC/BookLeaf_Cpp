@@ -91,6 +91,7 @@ getGeometry(
         // Calculate component volume
         kernel::getVolume(cpa1, cpa3, cpb1, cpb3, cpvolume, sizes.ncp);
 
+        #pragma omp parallel for
         for (int icp = 0; icp < sizes.ncp; icp++) {
             cpvolume(icp) *= frvolume(icp);
         }
@@ -146,6 +147,7 @@ getIso(
 
     double constexpr ONE_BY_NINE = 1.0/9.0;
 
+    #pragma omp parallel for
     for (int i = 0; i < nel; i++) {
         a1(i) = 0.25 * (-cnx(i, 0) + cnx(i, 1) + cnx(i, 2) - cnx(i, 3));
         a2(i) = 0.25 * ( cnx(i, 0) - cnx(i, 1) + cnx(i, 2) - cnx(i, 3));
@@ -188,6 +190,7 @@ getVolume(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int i = 0; i < len; i++) {
         volume(i) = 4.0 * ((a1(i) * b3(i)) - (a3(i) * b1(i)));
     }
@@ -229,7 +232,11 @@ getFluxVolume(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel
+    {
+
     // Initialise
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         fcdv(iel, 0) = 0.;
         fcdv(iel, 1) = 0.;
@@ -238,6 +245,7 @@ getFluxVolume(
     }
 
     // Construct volumes
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         for (int ifc = 0; ifc < NFACE; ifc++) {
 
@@ -263,6 +271,8 @@ getFluxVolume(
             fcdv(iel, ifc) = fcdv(iel, ifc) < cut ? 0. : fcdv(iel, ifc);
         }
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -280,6 +290,7 @@ getVertex(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         ndx(ind) += dt * ndu(ind);
         ndy(ind) += dt * ndv(ind);

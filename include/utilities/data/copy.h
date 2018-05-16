@@ -44,6 +44,7 @@ copy(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int i = 0; i < len; i++) {
         dst(i) = src(i);
     }
@@ -58,6 +59,11 @@ copy(
         ConstView<T, VarDim, NCORN> src,
         int len)
 {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
+    #pragma omp parallel for
     for (int i = 0; i < len; i++) {
         for (int icn = 0; icn < NCORN; icn++) {
             dst(i, icn) = src(i, icn);

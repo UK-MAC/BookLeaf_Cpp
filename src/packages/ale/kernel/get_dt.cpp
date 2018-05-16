@@ -26,6 +26,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/reduce_idx.h"
 
 
 
@@ -50,10 +51,10 @@ getDt(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::max();
-    int ii = 0;
+    ReduceIdx red { std::numeric_limits<double>::max(), -1 };
 
     if (zeul) {
+        #pragma omp parallel for reduction(minloc:red)
         for (int iel = 0; iel < nel; iel++) {
 
             // Minimise node velocity squared
@@ -65,16 +66,16 @@ getDt(
             }
 
             w1 = ellength(iel) / std::max(w1, zerocut);
-            ii = w1 < w2 ? iel : ii;
-            w2 = w1 < w2 ? w1 : w2;
+            ReduceIdx red2 { w1, iel };
+            red = red2 < red ? red2 : red;
         }
 
     } else {
         // XXX Missing code that can't (or hasn't) been merged
     }
 
-    rdt = ale_sf*sqrt(w2);
-    idt = ii;
+    rdt = ale_sf*sqrt(red.val);
+    idt = red.idx;
     sdt = "     ALE";
 }
 

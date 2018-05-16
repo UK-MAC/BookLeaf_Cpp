@@ -42,6 +42,7 @@ average(
         ConstView<double, VarDim> mxarray2,
         View<double, VarDim>      elarray)
 {
+    #pragma omp parallel for
     for (int imx = 0; imx < nmx; imx++) {
         double w1 = 0.;
         int const icp = imxfcp(imx);
@@ -67,6 +68,7 @@ average(
         View<double, VarDim, NCORN>      elarray1,
         View<double, VarDim, NCORN>      elarray2)
 {
+    #pragma omp parallel for
     for (int imx = 0; imx < nmx; imx++) {
         double w1[NCORN] = {0};
         double w2[NCORN] = {0};

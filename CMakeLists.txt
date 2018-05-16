@@ -285,6 +285,11 @@ find_package(YamlCpp REQUIRED)
 target_include_directories(libbookleaf PUBLIC ${YamlCpp_INCLUDES})
 target_link_libraries(libbookleaf PRIVATE ${YamlCpp_LIBRARIES})
 
+# Check OpenMP support
+find_package(OpenMP COMPONENTS CXX REQUIRED)
+target_compile_options(libbookleaf PUBLIC ${OpenMP_CXX_FLAGS})
+target_link_libraries(libbookleaf PUBLIC OpenMP::OpenMP_CXX)
+
 # Locate zlib
 if (ENABLE_ZLIB)
     find_package(ZLIB REQUIRED)

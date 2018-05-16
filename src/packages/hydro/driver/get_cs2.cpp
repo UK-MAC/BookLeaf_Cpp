@@ -42,6 +42,7 @@ getCs2(
 #endif
 
     // Apply Q correction to soundspeed^2 (cs^2 = cs_eos^2 + 2Q/rho)
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         elcs2(iel) += elvisc(iel);
     }

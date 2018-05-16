@@ -51,6 +51,7 @@ updateBasisEl(
 #endif
 
     // update element basis
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
 
         // store basis variables
@@ -87,6 +88,7 @@ initBasisNd(
 #endif
 
     // initialise basis
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         ndv0(ind) = 0.;
         ndv1(ind) = 0.;
@@ -114,6 +116,7 @@ calcBasisNd(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
@@ -162,7 +165,11 @@ fluxBasisNd(
     id1--;
     id2--;
 
+    #pragma omp parallel
+    {
+
     // Initialise flux
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         cnflux(iel, 0) = 0.;
         cnflux(iel, 1) = 0.;
@@ -182,6 +189,7 @@ fluxBasisNd(
         //               either.
         //for (int ii = 0; ii < nel; ii++) {
             //int const iel = elsort(ii);
+        #pragma omp for
         for (int iel = 0; iel < nel; iel++) {
 
             int const ie1 = elel(iel, i1);
@@ -218,6 +226,8 @@ fluxBasisNd(
             cnflux(iel, 3) += w3;
         }
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -238,7 +248,11 @@ massBasisNd(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel
+    {
+
     // Construct post nodal mass
+    #pragma omp for
     for (int ind = 0; ind < nnd; ind++) {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
@@ -258,11 +272,14 @@ massBasisNd(
     }
 
     // Construct post corner mass
+    #pragma omp for
     for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
             cnm1(iel, icn) += cnflux(iel, icn);
         }
     }
+
+    } // #pragma omp parallel
 }
 
 
@@ -281,6 +298,7 @@ cutBasisNd(
 #endif
 
     // Construct cut-offs
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         cutv(ind) = cut;
         cutm(ind) = dencut * ndv0(ind);
@@ -302,6 +320,7 @@ activeNd(
 #endif
 
     // Set active flag
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         bool const is_active = (ndstatus(ind) > 0) &&
                                (ndtype(ind) != ibc) &&

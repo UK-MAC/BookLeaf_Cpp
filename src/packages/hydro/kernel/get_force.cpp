@@ -48,6 +48,7 @@ getForcePressure(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         double const w1 = elpressure(iel);
 
@@ -77,6 +78,7 @@ getForceViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         cnfx(iel, 0) += cnviscx(iel, 0);
         cnfx(iel, 1) += cnviscx(iel, 1);
@@ -111,6 +113,7 @@ getForceSubzonalPressure(
 
     // XXX Missing code here that can't be merged
 
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
 
         double lfx[NCORN][NCORN];
@@ -218,6 +221,8 @@ getForceHourglass(
 
     // Hourglass restoring force
     double const w4 = 1.0 / dt;
+
+    #pragma omp parallel for
     for (int iel = 0; iel < nel; iel++) {
         double w2 = cnu(iel, 0) - cnu(iel, 1) + cnu(iel, 2) - cnu(iel, 3);
         double w3 = cnv(iel, 0) - cnv(iel, 1) + cnv(iel, 2) - cnv(iel, 3);

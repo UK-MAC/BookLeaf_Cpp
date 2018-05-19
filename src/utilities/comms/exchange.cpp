@@ -35,9 +35,9 @@ namespace {
 bool
 inRegistration()
 {
-    bool registration;
-    TYPH_Is_Registering(registration);
-    return registration;
+    int registration;
+    TYPH_Is_Registering(&registration);
+    return registration == 1;
 }
 
 } // namespace
@@ -113,11 +113,12 @@ addCommPhase(
     }
 
     int typh_err = TYPH_Add_Phase(
-            comm_phase.typh_id,
-            name,
+            &comm_phase.typh_id,
+            name.c_str(),
             ghosts,
             TYPH_PURE,
-            comm.key_comm_cells);
+            comm.key_comm_cells,
+            -1);
 
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Add_Phase failed");
@@ -165,7 +166,7 @@ addDataToCommPhase(
     }
 
     // Register quant ID with Typhon
-    int typh_err = TYPH_Add_Quant_To_Phase(phase_id, quant_id);
+    int typh_err = TYPH_Add_Quant_To_Phase(phase_id, quant_id, -1, -1, -1, -1);
 
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Add_Quant_To_Phase failed");

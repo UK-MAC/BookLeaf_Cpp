@@ -77,12 +77,14 @@ testSod(
         double ltotal[2];
         int const ldim = 2;
 
-        int typh_err = TYPH_Reduce(basis.data(), nullptr, 0, &btotal, TYPH_OP_SUM);
+        int typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, basis.data(), nullptr, 0,
+                &btotal, TYPH_OP_SUM);
         if (typh_err != TYPH_SUCCESS) {
             assert(false && "unhandled error");
         }
 
-        typh_err = TYPH_Reduce(l1.data(), &ldim, 1, ltotal, TYPH_OP_SUM);
+        typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, l1.data(), &ldim, 1, ltotal,
+                TYPH_OP_SUM);
         if (typh_err != TYPH_SUCCESS) {
             assert(false && "unhandled error");
         }

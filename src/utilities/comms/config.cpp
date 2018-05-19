@@ -83,7 +83,7 @@ initComms(
 {
     // Initialise MPI
 #ifdef BOOKLEAF_MPI_SUPPORT
-    int typh_err = TYPH_Init();
+    int typh_err = TYPH_Init(nullptr);
 
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Init failed");
@@ -111,7 +111,7 @@ killComms(
 #endif
 {
     #ifdef BOOKLEAF_MPI_SUPPORT
-    int typh_err = TYPH_Kill();
+    int typh_err = TYPH_Kill(true);
 
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Kill failed");

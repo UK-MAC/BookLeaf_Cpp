@@ -29,6 +29,16 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Used in custom Find*.cmake files
 include(FindPackageHandleStandardArgs)
 
+# Set search paths
+string(REPLACE ":" ";" LIBRARY_DIRS $ENV{LD_LIBRARY_PATH})
+list(APPEND CMAKE_LIBRARY_PATH ${LIBRARY_DIRS})
+
+string(REPLACE ":" ";" INCLUDE_DIRS $ENV{C_INCLUDE_PATH})
+list(APPEND CMAKE_INCLUDE_PATH ${INCLUDE_DIRS})
+
+string(REPLACE ":" ";" INCLUDE_DIRS $ENV{CPLUS_INCLUDE_PATH})
+list(APPEND CMAKE_INCLUDE_PATH ${INCLUDE_DIRS})
+
 
 
 # Extra features off by default
@@ -294,7 +304,6 @@ if (ENABLE_TYPHON)
     find_package(Typhon REQUIRED)
 
     # Print some information on the MPI distribution
-    message(STATUS "MPI_CXX_COMPILER = ${MPI_CXX_COMPILER}")
     message(STATUS "MPI_CXX_INCLUDE_DIRS = ${MPI_CXX_INCLUDE_DIRS}")
     message(STATUS "MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
 

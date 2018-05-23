@@ -13,7 +13,7 @@ HYDRO:
 
 EOS:
     - { type: ideal gas, params: [1.4] }
-    - { type: ideal gas, params: [1.4] }
+    - { type: ideal gas, params: [1.2] }
 
 MESH:
     # Regions
@@ -27,18 +27,15 @@ MESH:
 
 INDICATORS:
     regions:
+        - { type: background, name: shocktube }
+    materials:
         - { type: background, name: air }
         - { type: shape, name: helium, value: 0 }
-    materials:
-        - { type: background, name: shocktube }
-        - { type: shape, name: artificial, value: 1 }
 
 INITIAL_CONDITIONS:
     thermodynamics:
         - { type: region, value: 0, density: 1.0, energy: 2.5 }
-        - { type: region, value: 1, density: 0.125, energy: 2.0 }
-        - { type: material, value: 1, density: 1.0, energy: 2.5 }
+        - { type: material, value: 1, density: 0.125, energy: 2.0 }
 
 SHAPES:
-    - { type: rectangle, params: [50.0, -10.0, 150.0, 50.0] }
-    - { type: rectangle, params: [-10., -10.0, 39.5, 50.0] }
+    - { type: rectangle, params: [50.0, -10.0, 150.0, 50.0, 0.5] }

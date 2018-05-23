@@ -172,9 +172,9 @@ distributeMesh(int const *conn_data, int const *conn_dims, int const *part,
     }
 
     int partition_id;
-    typh_err = TYPH_Set_Partition_Info(partition_id, TYPH_SHAPE_QUAD, nlay,
+    typh_err = TYPH_Set_Partition_Info(&partition_id, TYPH_SHAPE_QUAD, nlay,
             nel_total, nnd_total, el_owner, nd_owner, ellocglob.data(),
-            ndlocglob.data(), elnd.data());
+            ndlocglob.data(), elnd.data(), "");
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Set_Partition_Info failed");
         return;
@@ -187,7 +187,7 @@ distributeMesh(int const *conn_data, int const *conn_dims, int const *part,
 
     int key_comm_cells;
     typh_err = TYPH_Create_Key_Set(TYPH_KEYTYPE_CELL, 1, nlay, partition_id,
-            key_comm_cells);
+            &key_comm_cells);
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Create_Key_Set failed");
         return;

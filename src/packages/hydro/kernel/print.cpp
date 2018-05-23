@@ -41,31 +41,40 @@ Flags::reduce()
     int typh_err = TYPH_SUCCESS;
     std::unique_ptr<double[]> rval(new double[len]);
 
-    typh_err |= TYPH_Reduce(vol, &len, 1, rval.get(), TYPH_OP_SUM);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, vol, &len, 1, rval.get(),
+            TYPH_OP_SUM);
     std::copy(&rval[0], &rval[len], vol);
 
-    typh_err |= TYPH_Reduce(mass, &len, 1, rval.get(), TYPH_OP_SUM);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, mass, &len, 1, rval.get(),
+            TYPH_OP_SUM);
     std::copy(&rval[0], &rval[len], mass);
 
-    typh_err |= TYPH_Reduce(ke, &len, 1, rval.get(), TYPH_OP_SUM);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, ke, &len, 1, rval.get(),
+            TYPH_OP_SUM);
     std::copy(&rval[0], &rval[len], ke);
 
-    typh_err |= TYPH_Reduce(ie, &len, 1, rval.get(), TYPH_OP_SUM);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, ie, &len, 1, rval.get(),
+            TYPH_OP_SUM);
     std::copy(&rval[0], &rval[len], ie);
 
-    typh_err |= TYPH_Reduce(dmn, &len, 1, rval.get(), TYPH_OP_MIN);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, dmn, &len, 1, rval.get(),
+            TYPH_OP_MIN);
     std::copy(&rval[0], &rval[len], dmn);
 
-    typh_err |= TYPH_Reduce(dmx, &len, 1, rval.get(), TYPH_OP_MAX);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, dmx, &len, 1, rval.get(),
+            TYPH_OP_MAX);
     std::copy(&rval[0], &rval[len], dmx);
 
-    typh_err |= TYPH_Reduce(pressure, &len, 1, rval.get(), TYPH_OP_SUM);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, pressure, &len, 1, rval.get(),
+            TYPH_OP_SUM);
     std::copy(&rval[0], &rval[len], pressure);
 
-    typh_err |= TYPH_Reduce(pmn, &len, 1, rval.get(), TYPH_OP_MIN);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, pmn, &len, 1, rval.get(),
+            TYPH_OP_MIN);
     std::copy(&rval[0], &rval[len], pmn);
 
-    typh_err |= TYPH_Reduce(pmx, &len, 1, rval.get(), TYPH_OP_MAX);
+    typh_err |= TYPH_Reduce(TYPH_DATATYPE_REAL, pmx, &len, 1, rval.get(),
+            TYPH_OP_MAX);
     std::copy(&rval[0], &rval[len], pmx);
 
     if (typh_err != TYPH_SUCCESS) {

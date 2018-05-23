@@ -84,7 +84,8 @@ metisPartition(
     std::fill(ubvec.get(), ubvec.get() + NCON, UBVEC_VAL);
 
     // Gather each ranks nel
-    int typh_err = TYPH_Gather(&nel, nullptr, 0, nelg.get());
+    int typh_err = TYPH_Gather(TYPH_DATATYPE_INTEGER, &nel, nullptr, 0,
+            nelg.get());
     if (typh_err != TYPH_SUCCESS) {
         err.fail("ERROR: TYPH_Gather failed");
         return;
@@ -140,7 +141,8 @@ metisPartition(
         nelg[partitioning(iel)]++;
     }
 
-    typh_err = TYPH_Reduce(nelg.get(), &nproc, 1, sumg.get(), TYPH_OP_SUM);
+    typh_err = TYPH_Reduce(TYPH_DATATYPE_INTEGER, nelg.get(), &nproc, 1,
+            sumg.get(), TYPH_OP_SUM);
     if (typh_err != TYPH_SUCCESS) {
         err.fail("ERROR: TYPH_Reduce failed");
         return;

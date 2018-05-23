@@ -172,8 +172,9 @@ DataControl::entry(
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (zmpi) {
         int taddr;
-        TYPH_Add_Quant(taddr, name.c_str(), TYPH_GHOSTS_TWO,
-                TYPH_DATATYPE_REAL, TYPH_CENTRING_CELL, TYPH_PURE);
+        TYPH_Add_Quant(&taddr, name.c_str(), TYPH_GHOSTS_TWO,
+                TYPH_DATATYPE_REAL, TYPH_CENTRING_CELL, TYPH_PURE,
+                TYPH_AUXILIARY_NONE, nullptr, 0);
 
         int tdims[2] = { (int) num_rows, (int) num_cols };
         TYPH_Set_Quant_Address(taddr, d.data<T>(), tdims, 2);
@@ -217,7 +218,7 @@ DataControl::entry(
         tdims[mesh_dim] = TYPH_MESH_DIM;
 
         int taddr;
-        TYPH_Add_Quant(taddr, name.c_str(), TYPH_GHOSTS_TWO,
+        TYPH_Add_Quant(&taddr, name.c_str(), TYPH_GHOSTS_TWO,
                 TYPH_DATATYPE_REAL, TYPH_CENTRING_CELL, TYPH_PURE,
                 TYPH_AUXILIARY_NONE, tdims, 2);
 

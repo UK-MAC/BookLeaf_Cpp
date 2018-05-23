@@ -82,9 +82,10 @@ reduceDt(
         ScopedTimer st(timers, timer_id);
 
 #ifdef BOOKLEAF_MPI_DT_CONTEXT
-        int typh_err = TYPH_Reduce_Dt(typh_dt);
+        int typh_err = TYPH_Reduce_Dt(&typh_dt);
 #else
-        int typh_err = TYPH_Reduce(&dt.rdt, nullptr, 0, &rdt, TYPH_OP_MIN);
+        int typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, &dt.rdt, nullptr, 0,
+                &rdt, TYPH_OP_MIN);
 #endif
 
         if (typh_err != TYPH_SUCCESS) {

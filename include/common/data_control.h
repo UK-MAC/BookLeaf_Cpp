@@ -87,6 +87,12 @@ public:
     void dump(std::string filename) const;
 #endif
 
+    /** \brief Sync all data to the device. */
+    void syncAllDevice() const;
+
+    /** \brief Sync all data to the host. */
+    void syncAllHost() const;
+
 private:
     std::vector<Data> data;     //!< Store data
 

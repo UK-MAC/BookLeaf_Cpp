@@ -26,6 +26,7 @@
 
 namespace bookleaf {
 
+struct Sizes;
 struct Error;
 namespace comms { struct Comm; }
 struct GlobalConfiguration;
@@ -66,6 +67,16 @@ operator<<(std::ostream &os, hydro::Config const &rhs);
 
 void
 rationalise(hydro::Config &hydro, int num_regions, Error &err);
+
+void
+initHydroConfig(
+        Sizes const &sizes,
+        hydro::Config &hydro,
+        Error &err);
+
+void
+killHydroConfig(
+        hydro::Config &hydro);
 
 } // namespace hydro
 } // namespace bookleaf

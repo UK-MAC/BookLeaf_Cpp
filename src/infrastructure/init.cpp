@@ -243,6 +243,9 @@ init(
 
     // Initialise hydro
     hydro::driver::init(*config.hydro, *runtime.sizes, data);
+
+    // Sync all data to device
+    data.syncAllDevice();
 }
 
 } // namespace init

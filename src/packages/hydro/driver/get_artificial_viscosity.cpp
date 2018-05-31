@@ -83,7 +83,7 @@ getArtificialViscosity(
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (hydro.comm->nproc > 1) {
         Error err;
-        comms::exchange(*hydro.comm, 0, TimerID::COMMT, timers, err);
+        comms::exchange(*hydro.comm, 0, TimerID::COMMT, timers, data, err);
         if (err.failed()) {
             assert(false && "unhandled error");
         }

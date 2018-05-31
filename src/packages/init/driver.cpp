@@ -180,7 +180,16 @@ initElementState(
     initElementMasses(sizes, data);
 
     // Initialise pressure and sound speed
+    data[DataID::IELMAT].syncDevice();
+    data[DataID::ELDENSITY].syncDevice();
+    data[DataID::ELENERGY].syncDevice();
+    data[DataID::ELPRESSURE].syncDevice();
+    data[DataID::ELCS2].syncDevice();
+
     eos::driver::getEOS(*config.eos, sizes, timers, TimerID::GETEOSI, data);
+
+    data[DataID::ELPRESSURE].syncHost();
+    data[DataID::ELCS2].syncHost();
 }
 
 

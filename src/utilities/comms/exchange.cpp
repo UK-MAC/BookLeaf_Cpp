@@ -182,6 +182,7 @@ exchange(
         CommPhaseID comm_phase_id,
         TimerID timer_id,
         TimerControl &timers,
+        DataControl const &data,
         Error &err)
 {
     if (inRegistration()) {
@@ -198,11 +199,21 @@ exchange(
 
     int const phase_id = comm.phases[comm_phase_id].typh_id;
 
+    // Sync pre-exchange
+    for (DataID id : comm.phases[comm_phase_id].data_ids) {
+        data[id].syncHost();
+    }
+
     int typh_err = TYPH_Exchange(phase_id);
 
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Exchange failed");
         return;
+    }
+
+    // Sync post-exchange
+    for (DataID id : comm.phases[comm_phase_id].data_ids) {
+        data[id].syncDevice();
     }
 }
 

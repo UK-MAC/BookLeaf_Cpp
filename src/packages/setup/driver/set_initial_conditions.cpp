@@ -240,9 +240,24 @@ setState(
     auto elenergy  = data[DataID::ELENERGY].host<double, VarDim>();
 
     // Get geometry
+    data[DataID::IELND].syncDevice();
+    data[DataID::NDX].syncDevice();
+    data[DataID::NDY].syncDevice();
+
     geometry::driver::getGeometry(sizes, timers, TimerID::GETGEOMETRYI, data,
             err);
     if (err.failed()) return;
+
+    data[DataID::CNX].syncHost();
+    data[DataID::CNY].syncHost();
+    data[DataID::CNWT].syncHost();
+    data[DataID::A1].syncHost();
+    data[DataID::A2].syncHost();
+    data[DataID::A3].syncHost();
+    data[DataID::B1].syncHost();
+    data[DataID::B2].syncHost();
+    data[DataID::B3].syncHost();
+    data[DataID::ELVOLUME].syncHost();
 
     // Set thermodynamics
     if (!setup_config.thermo.empty()) {
@@ -264,8 +279,15 @@ setState(
     }
 
     // Enforce boundary conditions
+    data[DataID::INDTYPE].syncDevice();
+    data[DataID::NDU].syncDevice();
+    data[DataID::NDV].syncDevice();
+
     utils::driver::setBoundaryConditions(global, sizes, DataID::NDU,
             DataID::NDV, data);
+
+    data[DataID::NDU].syncHost();
+    data[DataID::NDV].syncHost();
 
     // Check mesh is fully populated
     for (int iel = 0; iel < sizes.nel; iel++) {

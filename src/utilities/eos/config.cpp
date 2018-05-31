@@ -17,6 +17,7 @@
  * @HEADER@ */
 #include "utilities/eos/config.h"
 
+#include "common/sizes.h"
 #include "common/error.h"
 #include "infrastructure/io/output_formatting.h"
 
@@ -114,6 +115,26 @@ rationalise(
             "ERROR: inconsistent no. materials for eos");
 
     #undef CHECK_ARRAY_SIZE
+}
+
+
+
+void
+initEOSConfig(
+        Sizes const &sizes,
+        EOS &eos,
+        Error &err)
+{
+    // XXX Stub for extra variant EOS config init
+}
+
+
+
+void
+killEOSConfig(
+        EOS &eos)
+{
+    // XXX Stub for extra variant EOS config shutdown
 }
 
 } // namespace bookleaf

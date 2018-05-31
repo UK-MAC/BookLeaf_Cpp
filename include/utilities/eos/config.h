@@ -25,6 +25,7 @@
 
 namespace bookleaf {
 
+struct Sizes;
 struct Error;
 
 /** \brief One Equation-of-State per material required. */
@@ -65,6 +66,16 @@ rationalise(
         EOS &eos,
         int num_materials,
         Error &err);
+
+void
+initEOSConfig(
+        Sizes const &sizes,
+        EOS &eos,
+        Error &err);
+
+void
+killEOSConfig(
+        EOS &eos);
 
 } // namespace bookleaf
 

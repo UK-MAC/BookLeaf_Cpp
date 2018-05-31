@@ -251,7 +251,7 @@ advectEl(
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (ale.comm->nproc > 1) {
         Error err;
-        comms::exchange(*ale.comm, 2, TimerID::COMMA, timers, err);
+        comms::exchange(*ale.comm, 2, TimerID::COMMA, timers, data, err);
         if (err.failed()) {
             assert(false && "unhandled error");
         }
@@ -284,7 +284,7 @@ advectNd(
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (ale.comm->nproc > 1) {
         Error err;
-        comms::exchange(*ale.comm, 3, TimerID::COMMA, timers, err);
+        comms::exchange(*ale.comm, 3, TimerID::COMMA, timers, data, err);
         if (err.failed()) {
             assert(false && "unhandled error");
         }

@@ -161,6 +161,9 @@ main(int argc, char *argv[])
     if (CMD_ARGS.dump_final) data.dump("post_solver");
 #endif
 
+    // Sync all data to host
+    data.syncAllHost();
+
     // -------------------------------------------------------------------------
     // Finish
     // -------------------------------------------------------------------------
@@ -169,6 +172,9 @@ main(int argc, char *argv[])
 
     // Validate solution
     check::driver::validate(CMD_ARGS.input_deck_file, config, runtime, data, err);
+
+    // Free memory
+    inf::kill::kill(config);
 
     // Print timers
     timers.stop(TimerID::TOTAL);

@@ -19,6 +19,7 @@
 
 #include <algorithm> // std::any_of
 
+#include "common/sizes.h"
 #include "common/error.h"
 #include "infrastructure/io/output_formatting.h"
 
@@ -132,6 +133,26 @@ rationalise(Config &hydro, int num_regions, Error &err)
     CHECK_ARRAY_SIZE(hydro.zmidlength, num_regions, false);
 
     #undef CHECK_ARRAY_SIZE
+}
+
+
+
+void
+initHydroConfig(
+        Sizes const &sizes,
+        hydro::Config &hydro,
+        Error &err)
+{
+    // XXX Stub for extra variant hydro config init
+}
+
+
+
+void
+killHydroConfig(
+        hydro::Config &hydro)
+{
+    // XXX Stub for extra variant hydro config shutdown
 }
 
 } // namespace hydro

@@ -22,6 +22,8 @@
 
 namespace bookleaf {
 
+struct Config;
+
 namespace comms { struct Comms; }
 
 namespace inf {
@@ -31,6 +33,11 @@ namespace kill {
 void
 parallel(
         comms::Comms &comms);
+
+/** \brief Shut down config. */
+void
+kill(
+        Config &config);
 
 } // namespace kill
 } // namespace inf

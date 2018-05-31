@@ -85,6 +85,7 @@ exchange(
         CommPhaseID comm_phase_id,
         TimerID timer_id,
         TimerControl &timers,
+        DataControl const &data,
         Error &err);
 
 } // namespace comms

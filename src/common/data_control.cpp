@@ -328,4 +328,24 @@ DataControl::resetMxQuant(size_type nsize, Sizes &sizes, Error &err)
     sizes.mmx = nsize;
 }
 
+
+
+void
+DataControl::syncAllDevice() const
+{
+    for (Data const &d : data) {
+        if (d.isAllocated()) d.syncDevice();
+    }
+}
+
+
+
+void
+DataControl::syncAllHost() const
+{
+    for (Data const &d : data) {
+        if (d.isAllocated()) d.syncHost();
+    }
+}
+
 } // namespace bookleaf

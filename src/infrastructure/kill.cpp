@@ -19,9 +19,12 @@
 
 #include <cassert>
 
+#include "common/config.h"
 #include "common/error.h"
 
 #include "utilities/comms/config.h"
+#include "packages/hydro/config.h"
+#include "utilities/eos/config.h"
 
 
 
@@ -39,6 +42,19 @@ parallel(
         assert(false && "unhandled error");
         return;
     }
+}
+
+
+
+void
+kill(
+        Config &config)
+{
+    // Kill hydro config
+    hydro::killHydroConfig(*config.hydro);
+
+    // Kill EOS config
+    killEOSConfig(*config.eos);
 }
 
 } // namespace kill

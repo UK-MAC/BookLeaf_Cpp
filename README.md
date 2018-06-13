@@ -13,7 +13,7 @@ spack install bookleaf-cpp
 ```
 
 For instructions on building BookLeaf manually, see
-[INSTALL.md](docs/INSTALL.md).
+[INSTALL.md](doc/INSTALL.md).
 
 ## Further documentation
 

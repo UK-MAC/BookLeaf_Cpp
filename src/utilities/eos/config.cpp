@@ -121,9 +121,9 @@ rationalise(
 
 void
 initEOSConfig(
-        Sizes const &sizes,
-        EOS &eos,
-        Error &err)
+        Sizes const &sizes __attribute__((unused)),
+        EOS &eos __attribute__((unused)),
+        Error &err __attribute__((unused)))
 {
     // XXX Stub for extra variant EOS config init
 }
@@ -132,7 +132,7 @@ initEOSConfig(
 
 void
 killEOSConfig(
-        EOS &eos)
+        EOS &eos __attribute__((unused)))
 {
     // XXX Stub for extra variant EOS config shutdown
 }

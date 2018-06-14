@@ -139,9 +139,9 @@ rationalise(Config &hydro, int num_regions, Error &err)
 
 void
 initHydroConfig(
-        Sizes const &sizes,
-        hydro::Config &hydro,
-        Error &err)
+        Sizes const &sizes __attribute__((unused)),
+        hydro::Config &hydro __attribute__((unused)),
+        Error &err __attribute__((unused)))
 {
     // XXX Stub for extra variant hydro config init
 }
@@ -150,7 +150,7 @@ initHydroConfig(
 
 void
 killHydroConfig(
-        hydro::Config &hydro)
+        hydro::Config &hydro __attribute__((unused)))
 {
     // XXX Stub for extra variant hydro config shutdown
 }

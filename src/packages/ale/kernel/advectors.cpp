@@ -263,10 +263,9 @@ updateNd(
         ndflux(ind) = 0.;
     }
 
-    for (int icn = 0; icn < NCORN; icn++) {
-        for (int iel = 0; iel < icsize; iel++) {
+    for (int iel = 0; iel < icsize; iel++) {
+        for (int icn = 0; icn < NCORN; icn++) {
             int const ind = elnd(iel, icn);
-            assert(ind < insize);
             ndflux(ind) += cnflux(iel, icn);
         }
     }

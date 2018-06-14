@@ -58,17 +58,16 @@ scatterAcceleration(
         ndvdot(ind) = 0.;
     }
 
-    // Process each corner separately, this way each node corresponds uniquely
-    // to one element for each value of icn (makes threading easier).
-    for (int icn = 0; icn < NCORN; icn++) {
-        for (int i = 0; i < nel; i++) {
+    for (int i = 0; i < nel; i++) {
+        int const iel = elsort(i);
+        double const density = eldensity(iel);
 
-            int const iel = elsort(i);
+        for (int icn = 0; icn < NCORN; icn++) {
             int const ind = elnd(iel, icn);
 
             double w = cnmass(iel, icn);
             w = w > zerocut ? w : cnmass(iel, (icn + (NCORN-1)) % NCORN);
-            w = w > zerocut ? w : eldensity(iel) * cnwt(iel, icn);
+            w = w > zerocut ? w : density * cnwt(iel, icn);
             ndmass(ind) += w;
 
             ndarea(ind) += cnwt(iel, icn);

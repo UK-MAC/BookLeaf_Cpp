@@ -114,12 +114,12 @@ calcBasisNd(
 #endif
 
     // Construct pre/post nodal volumes and pre nodal/corner mass
-    for (int icn = 0; icn < NCORN; icn++) {
-        for (int ii = 0; ii < nel; ii++) {
-            int const iel = elsort(ii);
-            double const w1 = 0.25 * elv0(iel);
-            double const w2 = 0.25 * elv1(iel);
+    for (int ii = 0; ii < nel; ii++) {
+        int const iel = elsort(ii);
+        double const w1 = 0.25 * elv0(iel);
+        double const w2 = 0.25 * elv1(iel);
 
+        for (int icn = 0; icn < NCORN; icn++) {
             double const w3 = cnm1(iel, icn);
             cnm0(iel, icn) = w3;
             int const ind = elnd(iel, icn);
@@ -219,9 +219,9 @@ massBasisNd(
 #endif
 
     // Construct post nodal/corner mass
-    for (int icn = 0; icn < NCORN; icn++) {
-        for (int ii = 0; ii < nel; ii++) {
-            int const iel = elsort(ii);
+    for (int ii = 0; ii < nel; ii++) {
+        int const iel = elsort(ii);
+        for (int icn = 0; icn < NCORN; icn++) {
             cnm1(iel, icn) += cnflux(iel, icn);
             int ind = elnd(iel, icn);
             ndm1(ind) += cnflux(iel, icn);

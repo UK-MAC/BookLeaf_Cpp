@@ -229,6 +229,14 @@ init(
     }
 #endif
 
+    // Initialise EOS config
+    initEOSConfig(*runtime.sizes, *config.eos, err);
+    if (err.failed()) return;
+
+    // Initialise hydro config
+    initHydroConfig(*runtime.sizes, *config.hydro, err);
+    if (err.failed()) return;
+
     // Initialise
     bookleaf::init::driver::initElementOrdering(config, *runtime.sizes, data);
 

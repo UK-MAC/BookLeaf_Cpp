@@ -117,7 +117,8 @@ getForceSubzonalPressure(
         double lfy[NCORN][NCORN];
 
         // Info
-        int const ireg = std::abs((double) elreg(iel));
+        // XXX(timrlaw): Why the abs here? elreg should always be positive
+        int const ireg = std::abs((int) elreg(iel));
         double const w1 = pmeritreg[ireg];
 
         // Centroid
@@ -137,11 +138,11 @@ getForceSubzonalPressure(
 
             // Construct sub-volumes
             double const x1 = cnx(iel, j1);
-            double const y1 = cnx(iel, j1);
+            double const y1 = cny(iel, j1);
 
             int j2 = (j1 + 1) % NCORN;
             double const x2 = 0.5 * (x1 + cnx(iel, j2));
-            double const y2 = 0.5 * (y1 + cnx(iel, j2));
+            double const y2 = 0.5 * (y1 + cny(iel, j2));
 
             j2 = (j1 + 3) % NCORN;
             double const x4 = 0.5 * (x1 + cnx(iel, j2));

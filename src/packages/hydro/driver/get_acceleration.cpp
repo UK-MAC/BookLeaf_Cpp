@@ -7,11 +7,11 @@
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- * 
+ *
  * BookLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
@@ -81,11 +81,12 @@ getAcceleration(
 
     using constants::NCORN;
 
-    int const nel1 = runtime.sizes->nel1;
     int const nnd1 = runtime.sizes->nnd1;
     int const nnd  = runtime.sizes->nnd;
 
-    auto elsort     = data[DataID::IELSORT1].chost<int, VarDim>();
+    auto ndeln      = data[DataID::INDELN].chost<int, VarDim>();
+    auto ndelf      = data[DataID::INDELF].chost<int, VarDim>();
+    auto ndel       = data[DataID::INDEL].chost<int, VarDim>();
     auto elnd       = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
     auto cnwt       = data[DataID::CNWT].chost<double, VarDim, NCORN>();
@@ -99,9 +100,9 @@ getAcceleration(
     auto ndu        = data[DataID::NDU].host<double, VarDim>();
     auto ndv        = data[DataID::NDV].host<double, VarDim>();
 
-    kernel::scatterAcceleration(hydro.global->zerocut, elsort, elnd, eldensity,
-            cnwt, cnmass, lag_cnfx, lag_cnfy, lag_ndarea, lag_ndmass,
-            lag_ndubar, lag_ndvbar, nel1, nnd1);
+    kernel::scatterAcceleration(hydro.global->zerocut, ndeln, ndelf,
+            ndel, elnd, eldensity, cnwt, cnmass, lag_cnfx, lag_cnfy, lag_ndarea,
+            lag_ndmass, lag_ndubar, lag_ndvbar, nnd1);
 
     kernel::getAcceleration(hydro.global->dencut, hydro.global->zerocut,
             lag_ndarea, lag_ndmass, lag_ndubar, lag_ndvbar, runtime.sizes->nnd);

@@ -53,6 +53,23 @@ correctConnectivity(
         View<int, VarDim, NFACE> elfc);
 
 void
+getNodeElementMappingSizes(
+        ConstView<int, VarDim, NCORN> elnd,
+        View<int, VarDim>             ndeln,
+        View<int, VarDim>             ndelf,
+        int nnd,
+        int nel);
+
+void
+getNodeElementMapping(
+        ConstView<int, VarDim, NCORN> elnd,
+        ConstView<int, VarDim>        ndeln,
+        ConstView<int, VarDim>        ndelf,
+        View<int, VarDim>             ndel,
+        int nnd,
+        int nel);
+
+void
 elMass(
         int nel,
         ConstView<double, VarDim>        eldensity,

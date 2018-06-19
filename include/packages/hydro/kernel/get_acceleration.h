@@ -32,7 +32,9 @@ using constants::NCORN;
 void
 scatterAcceleration(
         double zerocut,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<int, VarDim, NCORN>    elnd,
         ConstView<double, VarDim>        eldensity,
         ConstView<double, VarDim, NCORN> cnwt,
@@ -43,7 +45,6 @@ scatterAcceleration(
         View<double, VarDim>             ndmass,
         View<double, VarDim>             ndudot,
         View<double, VarDim>             ndvdot,
-        int nel,
         int nnd);
 
 void

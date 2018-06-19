@@ -33,7 +33,9 @@ namespace kernel {
 void
 scatterAcceleration(
         double zerocut,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<int, VarDim, NCORN>    elnd,
         ConstView<double, VarDim>        eldensity,
         ConstView<double, VarDim, NCORN> cnwt,
@@ -44,7 +46,6 @@ scatterAcceleration(
         View<double, VarDim>             ndmass,
         View<double, VarDim>             ndudot,
         View<double, VarDim>             ndvdot,
-        int nel,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -58,13 +59,21 @@ scatterAcceleration(
         ndvdot(ind) = 0.;
     }
 
-    for (int i = 0; i < nel; i++) {
-        int const iel = elsort(i);
-        double const density = eldensity(iel);
+    for (int ind = 0; ind < nnd; ind++) {
+        for (int i = 0; i < ndeln(ind); i++) {
+            int const iel = ndel(ndelf(ind) + i);
 
-        for (int icn = 0; icn < NCORN; icn++) {
-            int const ind = elnd(iel, icn);
+            // Find element local corner number corresponding to ind
+            int icn = -1;
+            for (int jcn = 0; jcn < NCORN; jcn++) {
+                if (elnd(iel, jcn) == ind) {
+                    icn = jcn;
+                    break;
+                }
+            }
+            assert(icn >= 0 && "broken node-element mapping");
 
+            double const density = eldensity(iel);
             double w = cnmass(iel, icn);
             w = w > zerocut ? w : cnmass(iel, (icn + (NCORN-1)) % NCORN);
             w = w > zerocut ? w : density * cnwt(iel, icn);

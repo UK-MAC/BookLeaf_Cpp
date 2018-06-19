@@ -107,7 +107,9 @@ initConnectivity(
     using constants::NFACE;
 
     int const nel = sizes.nel2;
+    int const nnd = sizes.nnd2;
 
+    // Initialise element-* mappings
     auto elnd = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto elel = data[DataID::IELEL].host<int, VarDim, NFACE>();
     auto elfc = data[DataID::IELFC].host<int, VarDim, NFACE>();
@@ -115,6 +117,17 @@ initConnectivity(
     kernel::getElementConnectivity(elnd, elel, nel);
     kernel::getFaceConnectivity(elel, elfc, nel);
     kernel::correctConnectivity(nel, elel, elfc);
+
+    // Initialise node-element mapping
+    auto ndeln = data[DataID::INDELN].host<int, VarDim>();
+    auto ndelf = data[DataID::INDELF].host<int, VarDim>();
+
+    kernel::getNodeElementMappingSizes(elnd, ndeln, ndelf, nnd, nel);
+    data.setNdEl(sizes);
+
+    auto ndel = data[DataID::INDEL].host<int, VarDim>();
+
+    kernel::getNodeElementMapping(elnd, ndeln, ndelf, ndel, nnd, nel);
 }
 
 
@@ -163,6 +176,31 @@ initElementOrdering(
             for (int iel = 0; iel < sizes.nel2; iel++) {
                 elsort2(iel) = iel;
             }
+        }
+    }
+
+    // Sort node-element mapping by global element number
+    auto ndel  = data[DataID::INDEL].host<int, VarDim>();
+    auto ndeln = data[DataID::INDELN].chost<int, VarDim>();
+    auto ndelf = data[DataID::INDELF].chost<int, VarDim>();
+
+    if (config.comms->spatial->nproc > 1) {
+        for (int ind = 0; ind < sizes.nnd2; ind++) {
+            int *start = &ndel(ndelf(ind));
+            int *end   = start + ndeln(ind);
+
+            std::sort(start, end,
+                    [=](int iel, int jel) {
+                        return ellocglob(iel) < ellocglob(jel);
+                    });
+        }
+
+    } else {
+        for (int ind = 0; ind < sizes.nnd2; ind++) {
+            int *start = &ndel(ndelf(ind));
+            int *end   = start + ndeln(ind);
+
+            std::sort(start, end);
         }
     }
 }

@@ -65,6 +65,9 @@ public:
     /** \brief Initialise mesh representation */
     void setMesh(Sizes const &sizes);
 
+    /** \brief Initialise node-element mapping */
+    void setNdEl(Sizes const &sizes);
+
     /** \brief Initialise mesh quantities */
     void setQuant(Config const &config, Sizes const &sizes);
 

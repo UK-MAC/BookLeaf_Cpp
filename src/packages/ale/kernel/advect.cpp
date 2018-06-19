@@ -99,30 +99,39 @@ initBasisNd(
 void
 calcBasisNd(
         ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<double, VarDim>        elv0,
         ConstView<double, VarDim>        elv1,
         ConstView<double, VarDim, NCORN> cnm1,
         View<double, VarDim>             ndv0,
         View<double, VarDim>             ndv1,
         View<double, VarDim>             ndm0,
-        View<double, VarDim, NCORN>      cnm0,
-        int nel)
+        int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    // Construct pre/post nodal volumes and pre nodal/corner mass
-    for (int ii = 0; ii < nel; ii++) {
-        int const iel = elsort(ii);
-        double const w1 = 0.25 * elv0(iel);
-        double const w2 = 0.25 * elv1(iel);
+    for (int ind = 0; ind < nnd; ind++) {
+        for (int i = 0; i < ndeln(ind); i++) {
+            int const iel = ndel(ndelf(ind) + i);
 
-        for (int icn = 0; icn < NCORN; icn++) {
+            // Find element local corner number corresponding to ind
+            int icn = -1;
+            for (int jcn = 0; jcn < NCORN; jcn++) {
+                if (elnd(iel, jcn) == ind) {
+                    icn = jcn;
+                    break;
+                }
+            }
+            assert(icn >= 0 && "broken node-element mapping");
+
+            double const w1 = 0.25 * elv0(iel);
+            double const w2 = 0.25 * elv1(iel);
             double const w3 = cnm1(iel, icn);
-            cnm0(iel, icn) = w3;
-            int const ind = elnd(iel, icn);
+
             ndv0(ind) += w1;
             ndv1(ind) += w2;
             ndm0(ind) += w3;
@@ -138,7 +147,7 @@ fluxBasisNd(
         int id2,
         ConstView<int, VarDim, NFACE>    elel,
         ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           elsort __attribute__((unused)),
         ConstView<double, VarDim, NFACE> fcdv,
         ConstView<double, VarDim, NFACE> fcdm,
         View<double, VarDim, NCORN>      cndv,
@@ -164,8 +173,17 @@ fluxBasisNd(
     // Construct volume and mass flux
     for (int i1 = id1; i1 <= id2; i1++) {
         int const i2 = i1 + 2;
-        for (int ii = 0; ii < nel; ii++) {
-            int const iel = elsort(ii);
+
+        // XXX(timrlaw): Not clear to me how the sort is having an effect here.
+        //               cndv and cndm are set rather than accumulated, so
+        //               ordering has no effect. cnflux is accumulated, but
+        //               only once per iteration of the i1 loop per element, per
+        //               corner, so changing the order doesn't matter here
+        //               either.
+        //for (int ii = 0; ii < nel; ii++) {
+            //int const iel = elsort(ii);
+        for (int iel = 0; iel < nel; iel++) {
+
             int const ie1 = elel(iel, i1);
             int const ie2 = elel(iel, i2);
             int const is1 = elfc(iel, i1);
@@ -177,9 +195,8 @@ fluxBasisNd(
             double w4 = fcdm(ie2, is2);
 
             w1 = ie1 == iel ? 0. : w1;
-            w3 = ie1 == iel ? 0. : w3;
-
             w2 = ie2 == iel ? 0. : w2;
+            w3 = ie1 == iel ? 0. : w3;
             w4 = ie2 == iel ? 0. : w4;
 
             w1 -= fcdv(iel, i1);
@@ -208,23 +225,42 @@ fluxBasisNd(
 void
 massBasisNd(
         ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<double, VarDim, NCORN> cnflux,
         View<double, VarDim, NCORN>      cnm1,
         View<double, VarDim>             ndm1,
+        int nnd,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    // Construct post nodal/corner mass
-    for (int ii = 0; ii < nel; ii++) {
-        int const iel = elsort(ii);
+    // Construct post nodal mass
+    for (int ind = 0; ind < nnd; ind++) {
+        for (int i = 0; i < ndeln(ind); i++) {
+            int const iel = ndel(ndelf(ind) + i);
+
+            // Find element local corner number corresponding to ind
+            int icn = -1;
+            for (int jcn = 0; jcn < NCORN; jcn++) {
+                if (elnd(iel, jcn) == ind) {
+                    icn = jcn;
+                    break;
+                }
+            }
+            assert(icn >= 0 && "broken node-element mapping");
+
+            ndm1(ind) += cnflux(iel, icn);
+        }
+    }
+
+    // Construct post corner mass
+    for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
             cnm1(iel, icn) += cnflux(iel, icn);
-            int ind = elnd(iel, icn);
-            ndm1(ind) += cnflux(iel, icn);
         }
     }
 }

@@ -56,15 +56,16 @@ initBasisNd(
 void
 calcBasisNd(
         ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<double, VarDim>        elv0,
         ConstView<double, VarDim>        elv1,
         ConstView<double, VarDim, NCORN> cnm1,
         View<double, VarDim>             ndv0,
         View<double, VarDim>             ndv1,
         View<double, VarDim>             ndm0,
-        View<double, VarDim, NCORN>      cnm0,
-        int nel);
+        int nnd);
 
 void
 fluxBasisNd(
@@ -83,10 +84,13 @@ fluxBasisNd(
 void
 massBasisNd(
         ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           elsort,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<double, VarDim, NCORN> cnflux,
         View<double, VarDim, NCORN>      cnm1,
         View<double, VarDim>             ndm1,
+        int nnd,
         int nel);
 
 void

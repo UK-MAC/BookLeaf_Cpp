@@ -48,7 +48,10 @@ enum class DataID : int {
     NDV,            // Node v-velocity
     INDTYPE,        // Mesh node type index
     IELSORT1,       //
-    IELND,          // Mesh element node index
+    IELND,          // Element-node mapping
+    INDEL,          // Node-element mapping
+    INDELN,         // Node-element mapping number per node
+    INDELF,         // Node-element mapping offset per node
     IELEL,          // Element-element mapping
     IELFC,          // Element-face mapping
     IELMAT,         // Mesh element material index

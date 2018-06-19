@@ -243,9 +243,12 @@ updateEl(
 void
 updateNd(
         int iusize, // nnd
-        int icsize, // nel1
+        int icsize __attribute__((unused)), // nel1
         int insize, // nnd1
         ConstView<int, VarDim, NCORN>    elnd,
+        ConstView<int, VarDim>           ndeln,
+        ConstView<int, VarDim>           ndelf,
+        ConstView<int, VarDim>           ndel,
         ConstView<double, VarDim>        ndbase0,
         ConstView<double, VarDim>        ndbase1,
         ConstView<double, VarDim>        cut,
@@ -263,9 +266,20 @@ updateNd(
         ndflux(ind) = 0.;
     }
 
-    for (int iel = 0; iel < icsize; iel++) {
-        for (int icn = 0; icn < NCORN; icn++) {
-            int const ind = elnd(iel, icn);
+    for (int ind = 0; ind < insize; ind++) {
+        for (int i = 0; i < ndeln(ind); i++) {
+            int const iel = ndel(ndelf(ind) + i);
+
+            // Find element local corner number corresponding to ind
+            int icn = -1;
+            for (int jcn = 0; jcn < NCORN; jcn++) {
+                if (elnd(iel, jcn) == ind) {
+                    icn = jcn;
+                    break;
+                }
+            }
+            assert(icn >= 0 && "broken node-element mapping");
+
             ndflux(ind) += cnflux(iel, icn);
         }
     }

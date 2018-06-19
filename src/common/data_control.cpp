@@ -132,8 +132,24 @@ DataControl::setMesh(Sizes const &sizes)
     entry<double>(DataID::NDY, "ndy", nnd);
     entry<int>(DataID::INDTYPE, "ndtype", nnd);
     entry<int>(DataID::IELND, "elnd", nel, NCORN);
+    entry<int>(DataID::INDELN, "ndeln", nnd);
+    entry<int>(DataID::INDELF, "ndelf", nnd);
     entry<int>(DataID::IELMAT, "elmaterial", nel);
     entry<int>(DataID::IELREG, "elregion", nel);
+}
+
+
+
+void
+DataControl::setNdEl(Sizes const &sizes)
+{
+    size_type const nnd = sizes.nnd2;
+
+    auto ndeln = (*this)[DataID::INDELN].chost<int, VarDim>();
+    auto ndelf = (*this)[DataID::INDELF].chost<int, VarDim>();
+
+    size_type len = ndelf(nnd-1) + ndeln(nnd-1);
+    entry<int>(DataID::INDEL, "ndel", len);
 }
 
 

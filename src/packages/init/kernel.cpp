@@ -207,6 +207,76 @@ correctConnectivity(
 
 
 void
+getNodeElementMappingSizes(
+        ConstView<int, VarDim, NCORN> elnd,
+        View<int, VarDim>             ndeln,
+        View<int, VarDim>             ndelf,
+        int nnd,
+        int nel)
+{
+    for (int ind = 0; ind < nnd; ind++) {
+        ndeln(ind) = 0;
+    }
+
+    // Get number of elements per node (XXX not thread-safe)
+    for (int iel = 0; iel < nel; iel++) {
+        for (int icn = 0; icn < NCORN; icn++) {
+            int const ind = elnd(iel, icn);
+            ndeln(ind)++;
+        }
+    }
+
+    // Get mapping offsets
+    ndelf(0) = 0;
+    for (int ind = 1; ind < nnd; ind++) {
+        ndelf(ind) = ndelf(ind-1) + ndeln(ind-1);
+    }
+}
+
+
+
+void
+getNodeElementMapping(
+        ConstView<int, VarDim, NCORN> elnd,
+#ifdef BOOKLEAF_DEBUG
+        ConstView<int, VarDim>        ndeln,
+#else
+        ConstView<int, VarDim>        ndeln __attribute__((unused)),
+#endif
+        ConstView<int, VarDim>        ndelf,
+        View<int, VarDim>             ndel,
+        int nnd,
+        int nel)
+{
+    std::unique_ptr<int[]> ndoffsets(new int[nnd]);
+    std::fill(&ndoffsets[0], &ndoffsets[0] + nnd, 0);
+
+    for (int iel = 0; iel < nel; iel++) {
+        for (int icn = 0; icn < NCORN; icn++) {
+            int const ind = elnd(iel, icn);
+
+            int const start  = ndelf(ind);
+            int const offset = ndoffsets[ind];
+
+            ndel(start+offset) = iel;
+
+            ndoffsets[ind]++;
+        }
+    }
+
+#ifdef BOOKLEAF_DEBUG
+    // Check the lengths match up
+    for (int ind = 0; ind < nnd; ind++) {
+        if (ndoffsets[ind] != ndeln(ind)) {
+            assert(false && "unhandled error");
+        }
+    }
+#endif
+}
+
+
+
+void
 elMass(
         int nel,
         ConstView<double, VarDim>        eldensity,

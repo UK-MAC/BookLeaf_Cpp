@@ -150,6 +150,9 @@ advectBasisNd(
     auto elel     = data[DataID::IELEL].chost<int, VarDim, NFACE>();
     auto elfc     = data[DataID::IELFC].chost<int, VarDim, NFACE>();
     auto elsort   = data[DataID::IELSORT2].chost<int, VarDim>();
+    auto ndeln    = data[DataID::INDELN].chost<int, VarDim>();
+    auto ndelf    = data[DataID::INDELF].chost<int, VarDim>();
+    auto ndel     = data[DataID::INDEL].chost<int, VarDim>();
     auto elvolume = data[DataID::ELVOLUME].chost<double, VarDim>();
     auto cnmass   = data[DataID::CNMASS].host<double, VarDim, NCORN>();
     auto fcdv     = data[DataID::ALE_FCDV].chost<double, VarDim, NFACE>();
@@ -169,8 +172,9 @@ advectBasisNd(
     kernel::initBasisNd(store3, store4, store2, sizes.nnd2);
 
     // Construct pre/post nodal volumes and pre nodal/corner mass
-    kernel::calcBasisNd(elnd, elsort, store1, elvolume, cnmass, store3,
-            store4, store2, rwork3, sizes.nel2);
+    utils::kernel::copy<double>(rwork3, cnmass, sizes.nel2);
+    kernel::calcBasisNd(elnd, ndeln, ndelf, ndel, store1, elvolume,
+            cnmass, store3, store4, store2, sizes.nnd2);
 
     // Construct volume and mass flux
     kernel::fluxBasisNd(id1, id2, elel, elfc, elsort, fcdv, fcdm, rwork1,
@@ -178,7 +182,8 @@ advectBasisNd(
 
     // Construct post nodal/corner mass
     utils::kernel::copy<double>(store1, store2, sizes.nnd2);
-    kernel::massBasisNd(elnd, elsort, flux, cnmass, store1, sizes.nel2);
+    kernel::massBasisNd(elnd, ndeln, ndelf, ndel, flux, cnmass, store1,
+            sizes.nnd2, sizes.nel2);
 
     // Construct cut-offs
     kernel::cutBasisNd(ale.global->zerocut, ale.global->dencut, store3, store5,
@@ -202,6 +207,9 @@ advectVarNd(
     auto elnd     = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto elel     = data[DataID::IELEL].chost<int, VarDim, NFACE>();
     auto elfc     = data[DataID::IELFC].chost<int, VarDim, NFACE>();
+    auto ndeln    = data[DataID::INDELN].chost<int, VarDim>();
+    auto ndelf    = data[DataID::INDELF].chost<int, VarDim>();
+    auto ndel     = data[DataID::INDEL].chost<int, VarDim>();
     auto cnu      = data[DataID::ALE_CNU].chost<double, VarDim, NCORN>();
     auto cnv      = data[DataID::ALE_CNV].chost<double, VarDim, NCORN>();
     auto ndu      = data[DataID::NDU].host<double, VarDim>();
@@ -223,16 +231,16 @@ advectVarNd(
     kernel::fluxNdVl(sizes.nel1, sizes.nel2, elel, elfc, rwork3, rwork2, cnu,
             flux);
 
-    kernel::updateNd(sizes.nnd, sizes.nel1, sizes.nnd1, elnd, store2, store1,
-            store6, active, flux, fcdm, ndu);
+    kernel::updateNd(sizes.nnd, sizes.nel1, sizes.nnd1, elnd, ndeln, ndelf,
+            ndel, store2, store1, store6, active, flux, fcdm, ndu);
 
     kernel::activeNd(-2, ndstatus, ndtype, active, sizes.nnd);
 
     kernel::fluxNdVl(sizes.nel1, sizes.nel2, elel, elfc, rwork3, rwork2, cnv,
             flux);
 
-    kernel::updateNd(sizes.nnd, sizes.nel1, sizes.nnd1, elnd, store2, store1,
-            store6, active, flux, fcdm, ndv);
+    kernel::updateNd(sizes.nnd, sizes.nel1, sizes.nnd1, elnd, ndeln, ndelf,
+            ndel, store2, store1, store6, active, flux, fcdm, ndv);
 }
 
 

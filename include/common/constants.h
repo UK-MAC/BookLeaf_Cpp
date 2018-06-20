@@ -34,10 +34,6 @@ int constexpr NFACE = 4;
 /** \brief Mesh element # vertices. */
 int constexpr NCORN = 4;
 
-// TODO(timrlaw): Can we not remove all references to NFACE, since any polygon
-// is always going to have the same number of vertices and faces?
-static_assert(NFACE == NCORN, "true by definition");
-
 /** \brief Floating point comparison epsilon. */
 double constexpr EPSILON = 1e-10;
 

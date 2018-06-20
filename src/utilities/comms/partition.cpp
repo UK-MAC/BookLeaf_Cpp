@@ -98,14 +98,15 @@ metisPartition(
     }
 
     // Convert global mesh into a format understood by Metis
-    int j = 0;
-    eptr[0] = 0;
-    for (int i = 0; i < nel; i++) {
-        for (int k = 3; k < NCORN + 3; k++) {
-            eind[j] = conn_data(i, k);
-            j++;
+    for (int iel = 0; iel < nel; iel++) {
+        for (int icn = 0; icn < NCORN; icn++) {
+            eind[iel*NCORN+icn] = conn_data(iel, 3+icn);
         }
-        eptr[i+1] = j;
+    }
+
+    eptr[0] = 0;
+    for (int iel = 0; iel < nel; iel++) {
+        eptr[iel+1] = eptr[iel] + NCORN;;
     }
 
     // Perform partitioning

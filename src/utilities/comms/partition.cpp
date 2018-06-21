@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <iostream>
 
 #include <typhon.h>
 

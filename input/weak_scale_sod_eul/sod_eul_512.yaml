@@ -39,4 +39,4 @@ INITIAL_CONDITIONS:
         - { type: region, value: 1, density: 0.125, energy: 2.0 }
 
 SHAPES:
-    - { type: rectangle, params: [100.0, -20.0, 300.0, 100.0] }
+    - { type: rectangle, params: [100.0, -10.0, 300.0, 60.0] }

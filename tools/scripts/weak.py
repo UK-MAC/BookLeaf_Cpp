@@ -54,6 +54,8 @@ elperpe = (15000.0 * 3750.0) / (512.0 * 24.0)
 meshprod = elperpe * (24.0 * N)
 meshh = sqrt(meshprod / 4.0)
 meshw = 4.0 * meshh
+meshh = int(meshh + 0.5)
+meshw = int(meshw + 0.5)
 
 # Domain size
 domx = 200. / (15000.0 / meshw)
@@ -70,7 +72,7 @@ y2 = domy + 10.0
 # Print deck
 print(yaml1)
 
-print("      dims: [{0}, {1}]".format(int(meshw + 0.5), int(meshh + 0.5)))
+print("      dims: [{0}, {1}]".format(meshw, meshh))
 
 print(yaml2)
 

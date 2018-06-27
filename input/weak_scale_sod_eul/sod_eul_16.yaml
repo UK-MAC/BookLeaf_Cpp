@@ -18,10 +18,10 @@ MESH:
     - type: LIN1
       dims: [2652, 663]
       sides:
-          - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 35.35533905932737, 0.0] }
-          - - { type: LINE, bc: SLIPX, pos: [35.35533905932737, 0.0, 35.35533905932737, 8.838834764831843] }
-          - - { type: LINE, bc: SLIPY, pos: [35.35533905932737, 8.838834764831843, 0.0, 8.838834764831843] }
-          - - { type: LINE, bc: SLIPX, pos: [0.0, 8.838834764831843, 0.0, 0.0] }
+          - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 35.36, 0.0] }
+          - - { type: LINE, bc: SLIPX, pos: [35.36, 0.0, 35.36, 8.84] }
+          - - { type: LINE, bc: SLIPY, pos: [35.36, 8.84, 0.0, 8.84] }
+          - - { type: LINE, bc: SLIPX, pos: [0.0, 8.84, 0.0, 0.0] }
 
 ALE:
     zeul: true
@@ -39,4 +39,4 @@ INITIAL_CONDITIONS:
         - { type: region, value: 1, density: 0.125, energy: 2.0 }
 
 SHAPES:
-    - { type: rectangle, params: [17.677669529663685, -10.0, 53.03300858899105, 18.838834764831844] }
+    - { type: rectangle, params: [17.68, -10.0, 53.04, 18.84] }

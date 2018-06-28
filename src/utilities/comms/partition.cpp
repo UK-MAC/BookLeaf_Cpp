@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <iostream>
 
 #include <typhon.h>
 
@@ -28,8 +29,8 @@
 
 #include "common/error.h"
 #include "common/constants.h"
-
 #include "utilities/comms/config.h"
+#include "infrastructure/io/output_formatting.h"
 
 
 
@@ -46,6 +47,7 @@ metisPartition(
         MPI_Comm *comm,
         int const *_conn_data,
         View<int, VarDim> partitioning,
+        int *psizes,
         Error &err)
 {
     using constants::NCORN;
@@ -54,11 +56,10 @@ metisPartition(
     ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel);
 
     std::unique_ptr<int[]> nelg(new int[nproc]);
-    std::unique_ptr<int[]> sumg(new int[nproc]);
 
     int constexpr NCON = 1;
     int ncon = NCON;
-    double constexpr UBVEC_VAL = 1.05;
+    double constexpr UBVEC_VAL = 1.001;
     int edgecut, nndcomm, numflag, wgtflag;
 
     std::unique_ptr<float[]> tpgwgts(new float[NCON * nproc]);
@@ -143,18 +144,19 @@ metisPartition(
     }
 
     typh_err = TYPH_Reduce(TYPH_DATATYPE_INTEGER, nelg.get(), &nproc, 1,
-            sumg.get(), TYPH_OP_SUM);
+            psizes, TYPH_OP_SUM);
     if (typh_err != TYPH_SUCCESS) {
         err.fail("ERROR: TYPH_Reduce failed");
         return;
     }
 
     for (int i = 0; i < nproc; i++) {
-        if (sumg[i] == 0) {
+        if (psizes[i] == 0) {
             err.fail("ERROR: METIS has given a processor no work");
             return;
         }
     }
+
 }
 #endif
 
@@ -365,13 +367,14 @@ improvePartition(
         View<int, VarDim> partitioning,
         Error &err)
 {
+    int *psizes = new int[comm.nproc];
+    std::fill(psizes, psizes+comm.nproc, 0);
+
 #ifdef BOOKLEAF_PARMETIS_SUPPORT
     // Use the connectivity to compute a good partitioning in parallel.
     metisPartition(nel, comm.nproc, comm.rank, &comm.comm, connectivity,
-            partitioning, err);
-    if (err.failed()) {
-        return;
-    }
+            partitioning, psizes, err);
+    if (err.failed()) return;
 #else
     // If ParMETIS isn't available, just use RCB. Each processor needs to
     // partition the entire mesh.
@@ -410,8 +413,46 @@ improvePartition(
         return;
     }
 
+    // Calculate partition sizes
+    // ... Reuse colouring space as scratch
+    std::fill(colouring, colouring+comm.nproc, 0);
+
+    iel = 0;
+    for (; iel < nel; iel++) {
+        colouring[partitioning(iel)]++;
+    }
+
+    int typh_err = TYPH_Reduce(TYPH_DATATYPE_INTEGER, colouring, &comm.nproc, 1,
+            psizes, TYPH_OP_SUM);
+    if (typh_err != TYPH_SUCCESS) {
+        err.fail("ERROR: TYPH_Reduce failed");
+        return;
+    }
+
     delete[] colouring;
 #endif
+
+    // Print partition sizes
+    if (comm.zmproc) {
+        std::cout << " MESH PARTITIONING\n";
+        std::cout << "  Partition sizes\n";
+        for (int iproc = 0; iproc < comm.nproc; iproc++) {
+            std::cout << inf::io::format_value(
+                            " Rank " + std::to_string(iproc) + " partition size",
+                            "",
+                            psizes[iproc]);
+        }
+
+        std::cout << "\n";
+        std::cout << "  Partition statistics\n";
+        int const imb = *std::max_element(psizes, psizes+comm.nproc) -
+                        *std::min_element(psizes, psizes+comm.nproc);
+        std::cout << inf::io::format_value(" Max imbalance", "", imb);
+
+        std::cout << inf::io::stripe() << "\n";
+    }
+
+    delete[] psizes;
 }
 
 } // namespace comms

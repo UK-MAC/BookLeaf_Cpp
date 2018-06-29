@@ -182,6 +182,7 @@ getDtCfl(
     }
 
     // Find minimum CFL condition
+#if BOOKLEAF_OPENMP_USER_REDUCTIONS
     ReduceIdx red { std::numeric_limits<double>::max(), -1 };
     #pragma omp parallel for reduction(minloc:red)
     for (int iel = 0; iel < nel; iel++) {
@@ -197,6 +198,31 @@ getDtCfl(
     rdt = cfl_sf*sqrt(red.val);
     idt = red.idx;
     sdt = "     CFL";
+#else
+    double w2 = std::numeric_limits<double>::max();
+    #pragma omp parallel for reduction(min:w2)
+    for (int iel = 0; iel < nel; iel++) {
+        w2 = std::min(w2, rscratch11(iel));
+    }
+
+    if (w2 < 0) {
+        FAIL_WITH_LINE(err, "ERROR");
+        return;
+    }
+
+    int minloc = nel;
+    #pragma omp parallel for reduction(min:minloc)
+    for (int iel = 0; iel < nel; iel++) {
+        double const w1 = rscratch11(iel);
+        minloc = ((w1 == w2) && (minloc > iel)) ?
+            iel :
+            std::min(minloc, std::numeric_limits<int>::max());
+    }
+
+    rdt = cfl_sf*sqrt(w2);
+    idt = minloc;
+    sdt = "     CFL";
+#endif
 }
 
 
@@ -212,6 +238,7 @@ getDtDiv(
         ConstView<double, VarDim>        elvolume,
         ConstView<double, VarDim, NCORN> cnu,
         ConstView<double, VarDim, NCORN> cnv,
+        View<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -220,6 +247,7 @@ getDtDiv(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+#ifdef BOOKLEAF_OPENMP_USER_REDUCTIONS
     ReduceIdx red { -std::numeric_limits<double>::max(), -1 };
     #pragma omp parallel for reduction(maxloc:red)
     for (int iel = 0; iel < nel; iel++) {
@@ -241,6 +269,41 @@ getDtDiv(
     rdt = div_sf/red.val;
     idt = red.idx;
     sdt = "     DIV";
+#else
+    #pragma omp parallel for
+    for (int iel = 0; iel < nel; iel++) {
+        double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
+                    cnv(iel, 0) * ( a3(iel) - a1(iel)) +
+                    cnu(iel, 1) * ( b3(iel) + b1(iel)) +
+                    cnv(iel, 1) * (-a3(iel) - a1(iel)) +
+                    cnu(iel, 2) * ( b3(iel) - b1(iel)) +
+                    cnv(iel, 2) * (-a3(iel) + a1(iel)) +
+                    cnu(iel, 3) * (-b3(iel) - b1(iel)) +
+                    cnv(iel, 3) * ( a3(iel) + a1(iel));
+
+        w1 = fabs(w1) / elvolume(iel);
+        scratch(iel) = w1;
+    }
+
+    double w2 = -std::numeric_limits<double>::max();
+    #pragma omp parallel for reduction(max:w2)
+    for (int iel = 0; iel < nel; iel++) {
+        w2 = std::max(w2, scratch(iel));
+    }
+
+    int minloc = nel;
+    #pragma omp parallel for reduction(min:minloc)
+    for (int iel = 0; iel < nel; iel++) {
+        double const w1 = scratch(iel);
+        minloc = ((w1 == w2) && (minloc > iel)) ?
+            iel :
+            std::min(minloc, std::numeric_limits<int>::max());
+    }
+
+    rdt = div_sf/w2;
+    idt = minloc;
+    sdt = "     DIV";
+#endif
 }
 
 } // namespace kernel

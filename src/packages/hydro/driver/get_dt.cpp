@@ -84,7 +84,7 @@ getDt(
     dt->next = new Dt();
     dt = dt->next;
     hydro::kernel::getDtDiv(sizes.nel, hydro.div_sf, a1, a3, b1, b3, elvolume,
-            cnu, cnv, dt->rdt, dt->idt, dt->sdt);
+            cnu, cnv, scratch, dt->rdt, dt->idt, dt->sdt);
 }
 
 } // namespace driver

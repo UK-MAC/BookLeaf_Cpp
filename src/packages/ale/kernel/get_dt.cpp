@@ -51,6 +51,7 @@ getDt(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+#ifdef BOOKLEAF_OPENMP_USER_REDUCTIONS
     ReduceIdx red { std::numeric_limits<double>::max(), -1 };
 
     if (zeul) {
@@ -77,6 +78,9 @@ getDt(
     rdt = ale_sf*sqrt(red.val);
     idt = red.idx;
     sdt = "     ALE";
+#else
+    // TODO
+#endif
 }
 
 } // namespace kernel

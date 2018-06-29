@@ -5,6 +5,8 @@
 
 namespace bookleaf {
 
+#ifdef BOOKLEAF_OPENMP_USER_REDUCTIONS
+
 /** \brief Helper for performing reductions over a value and associated index. */
 struct ReduceIdx
 {
@@ -23,6 +25,8 @@ struct ReduceIdx
 #pragma omp declare reduction \
     (maxloc : ReduceIdx : omp_out = omp_in.val > omp_out.val ? omp_in : omp_out) \
     initializer(omp_priv=ReduceIdx { -std::numeric_limits<double>::max(), -1 })
+
+#endif // BOOKLEAF_OPENMP_USER_REDUCTIONS
 
 } // namespace bookleaf
 

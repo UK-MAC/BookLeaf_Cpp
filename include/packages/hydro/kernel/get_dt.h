@@ -63,6 +63,7 @@ getDtDiv(
         ConstView<double, VarDim>        elvolume,
         ConstView<double, VarDim, NCORN> cnu,
         ConstView<double, VarDim, NCORN> cnv,
+        View<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt);

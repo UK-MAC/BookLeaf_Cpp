@@ -289,6 +289,7 @@ target_link_libraries(libbookleaf PRIVATE ${YamlCpp_LIBRARIES})
 find_package(OpenMP COMPONENTS CXX REQUIRED)
 target_compile_options(libbookleaf PUBLIC ${OpenMP_CXX_FLAGS})
 target_link_libraries(libbookleaf PUBLIC OpenMP::OpenMP_CXX)
+add_definitions("-DBOOKLEAF_OPENMP_USER_REDUCTIONS")
 
 # Locate zlib
 if (ENABLE_ZLIB)

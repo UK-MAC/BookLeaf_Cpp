@@ -208,11 +208,16 @@ checkVolume(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    int minloc = nel;
+    #pragma omp parallel for reduction(min:minloc)
     for (int i = 0; i < nel; i++) {
-        if (volume(i) < val) return i;
+        minloc = (volume(i) < val) && (i < minloc) ?
+            i :
+            std::min(minloc, std::numeric_limits<int>::max());
+
     }
 
-    return -1;
+    return minloc < nel ? minloc : -1;
 }
 
 

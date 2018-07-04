@@ -34,6 +34,8 @@
 #include <typhon.h>
 #endif
 
+#include <omp.h>
+
 #include "common/runtime.h"
 #include "common/config.h"
 #include "common/error.h"
@@ -125,6 +127,15 @@ printBinding(
         hostname = std::string(_hostname);
     }
 
+    int nt;
+    #pragma omp parallel
+    {
+        #pragma omp master
+        nt = omp_get_num_threads();
+    }
+
+    int *thread_bind = new int[nt];
+
 #ifdef BOOKLEAF_MPI_SUPPORT
     TYPH_Barrier();
 #endif
@@ -132,14 +143,25 @@ printBinding(
     // Print binding
     for (int iproc = 0; iproc < comm.nproc; iproc++) {
         if (iproc == comm.rank) {
-            std::cout << "  rank " << iproc << " -> " << hostname << ":"
-                      << sched_getcpu() << "\n";
+
+            #pragma omp parallel
+            {
+                thread_bind[omp_get_thread_num()] = sched_getcpu();
+            }
+
+            std::cout << "  rank " << iproc << " -> " << hostname << ":[";
+            for (int it = 0; it < nt; it++) {
+                std::cout << thread_bind[it] << ", ";
+            }
+            std::cout << "]\n";
         }
 
 #ifdef BOOKLEAF_MPI_SUPPORT
         TYPH_Barrier();
 #endif
     }
+
+    delete[] thread_bind;
 
     if (comm.zmproc) {
         std::cout << inf::io::stripe() << "\n";

@@ -40,6 +40,7 @@ getDt(
         ConstView<double, VarDim, NCORN> cnu,
         ConstView<double, VarDim, NCORN> cnv,
         ConstView<double, VarDim>        ellength,
+        View<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt);

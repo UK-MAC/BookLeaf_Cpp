@@ -35,16 +35,17 @@ getDt(ale::Config const &ale, Sizes const &sizes, DataControl &data, Dt *&dt)
 {
     using constants::NCORN;
 
-    auto cnu   = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
-    auto cnv   = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
-    auto ellen = data[DataID::TIME_ELLENGTH].chost<double, VarDim>();
+    auto cnu     = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
+    auto cnv     = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
+    auto ellen   = data[DataID::TIME_ELLENGTH].chost<double, VarDim>();
+    auto scratch = data[DataID::TIME_SCRATCH].host<double, VarDim>();
 
     dt->next = new Dt();
     dt = dt->next;
 
     // Calculate ALE timestep control
     kernel::getDt(sizes.nel, ale.global->zerocut, ale.sf, ale.zeul, cnu, cnv,
-            ellen, dt->rdt, dt->idt, dt->sdt);
+            ellen, scratch, dt->rdt, dt->idt, dt->sdt);
 }
 
 } // namespace driver

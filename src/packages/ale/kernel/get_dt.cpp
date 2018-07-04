@@ -43,6 +43,7 @@ getDt(
         ConstView<double, VarDim, NCORN> cnu,
         ConstView<double, VarDim, NCORN> cnv,
         ConstView<double, VarDim>        ellength,
+        View<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -79,7 +80,41 @@ getDt(
     idt = red.idx;
     sdt = "     ALE";
 #else
-    // TODO
+    double w2 = std::numeric_limits<double>::max();
+    int minloc = nel;
+    if (zeul) {
+        #pragma omp parallel for reduction(min:w2)
+        for (int iel = 0; iel < nel; iel++) {
+
+            // Minimise node velocity squared
+            double w1 = -std::numeric_limits<double>::max();
+            for (int icn = 0; icn < NCORN; icn++) {
+                double w2 = cnu(iel, icn) * cnu(iel, icn) +
+                            cnv(iel, icn) * cnv(iel, icn);
+                w1 = std::max(w1, w2);
+            }
+
+            w1 = ellength(iel) / std::max(w1, zerocut);
+
+            scratch(iel) = w1;
+            w2 = std::min(w2, w1);
+        }
+
+        #pragma omp parallel for reduction(min:minloc)
+        for (int iel = 0; iel < nel; iel++) {
+            double const w1 = scratch(iel);
+            minloc = ((w1 == w2) && (minloc > iel)) ?
+                iel :
+                std::min(minloc, std::numeric_limits<int>::max());
+        }
+
+    } else {
+        // XXX Missing code that can't (or hasn't) been merged
+    }
+
+    rdt = ale_sf*sqrt(w2);
+    idt = minloc;
+    sdt = "     ALE";
 #endif
 }
 

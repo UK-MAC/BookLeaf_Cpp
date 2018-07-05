@@ -340,10 +340,10 @@ if (ENABLE_TYPHON)
         find_package(ParMETIS REQUIRED)
 
         add_definitions("-DBOOKLEAF_PARMETIS_SUPPORT")
-        target_include_directories(libbookleaf PUBLIC ${METIS_INCLUDES})
-        target_link_libraries(libbookleaf PRIVATE ${METIS_LIBRARIES})
         target_include_directories(libbookleaf PUBLIC ${ParMETIS_INCLUDES})
         target_link_libraries(libbookleaf PRIVATE ${ParMETIS_LIBRARIES})
+        target_include_directories(libbookleaf PUBLIC ${METIS_INCLUDES})
+        target_link_libraries(libbookleaf PRIVATE ${METIS_LIBRARIES})
     endif (ENABLE_PARMETIS)
 endif (ENABLE_TYPHON)
 

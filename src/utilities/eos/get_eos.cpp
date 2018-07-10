@@ -85,7 +85,7 @@ getPressure(int mat, double density, double energy, EOS const &eos)
         pressure = -1.;
     }
 
-    if (std::abs(pressure) < eos.pcut) pressure = 0.;
+    if (std::fabs(pressure) < eos.pcut) pressure = 0.;
     return pressure;
 }
 

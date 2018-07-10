@@ -92,12 +92,16 @@ fluxElVl(
 
             double const w1 = rv - elvar(iel2);
             double const w2 = elvar(iel1) - rv;
-            double const w3 = std::abs(w1);
-            double const w4 = std::abs(w2);
+            double const w3 = std::fabs(w1);
+            double const w4 = std::fabs(w2);
             double const w7 = std::copysign(1.0, w2);
             double const w8 = (w1*w6*w6+w2*w5*w5)/(w5*w6*(w5+w6));
 
-            double grad = w7 * std::min(std::abs(w8), std::min(w3/w5, w4/w6));
+            double tmp = std::fabs(w8);
+                   tmp = std::min(tmp, w3/w5);
+                   tmp = std::min(tmp, w4/w6);
+
+            double grad = w7 * tmp;
             if (w1 * w2 <= 0.) grad = 0.;
 
             r1 *= rv + grad*(r3 - 0.5 * r1);
@@ -172,12 +176,16 @@ fluxNdVl(
                     double const w1 = rv - cnvar(IX(iell), IX(ilnndl));
                     double const w2 = cnvar(IX(iel), IX(ilndr)) - rv;
 
-                    double const w3 = std::abs(w1);
-                    double const w4 = std::abs(w2);
+                    double const w3 = std::fabs(w1);
+                    double const w4 = std::fabs(w2);
                     double const w7 = std::copysign(1.0, w2);
                     double const w8 = (w2*w6*w6+w1*w5*w5)/(w5*w6*(w5+w6));
 
-                    double grad = w7 * std::min({std::abs(w8), w3/w6, w4/w5});
+                    double tmp = std::fabs(w8);
+                           tmp = std::min(tmp, w3/w6);
+                           tmp = std::min(tmp, w4/w5);
+
+                    double grad = w7 * tmp;
                     if (w1 * w2 <= 0.) grad = 0.;
                     rd = cndbasis(IX(iel), IX(ii)) * (rv + grad * rd);
 
@@ -198,12 +206,16 @@ fluxNdVl(
                     double const w1 = rv - cnvar(IX(iel), IX(ilndl));
                     double const w2 = cnvar(IX(ielr), IX(ilnndr)) - rv;
 
-                    double const w3 = std::abs(w1);
-                    double const w4 = std::abs(w2);
+                    double const w3 = std::fabs(w1);
+                    double const w4 = std::fabs(w2);
                     double const w7 = std::copysign(1.0, w2);
                     double const w8 = (w1*w6*w6+w2*w5*w5)/(w5*w6*(w5+w6));
 
-                    double grad = -w7 * std::min({std::abs(w8), w3/w5, w4/w6});
+                    double tmp = std::fabs(w8);
+                           tmp = std::min(tmp, w3/w5);
+                           tmp = std::min(tmp, w4/w6);
+
+                    double grad = -w7 * tmp;
                     if (w1 * w2 <= 0.) grad = 0.;
                     rd = cndbasis(IX(iel), IX(ii)) * (rv + grad * rd);
                 }

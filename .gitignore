@@ -1,7 +1,8 @@
 *.silo
 input_dump
 final_dump
-build
+build/
+build-*/
 *~
 *\#
 *.F90

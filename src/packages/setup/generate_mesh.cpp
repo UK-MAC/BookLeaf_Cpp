@@ -68,8 +68,8 @@ initialiseRegionWeights(MeshRegion &mr, double zerocut, Error &err)
                     [](double v) { return v != 0.; });
             if (nz) {
                 double sum = std::accumulate(mr.r_wgt, mr.r_wgt+8, 0,
-                        [](double sum, double v) { return sum += std::abs(v); });
-                if (std::abs(sum) > zerocut) {
+                        [](double sum, double v) { return sum += std::fabs(v); });
+                if (std::fabs(sum) > zerocut) {
                     std::copy(mr.wgt+8, mr.wgt+16, mr.s_wgt);
                 }
 
@@ -86,7 +86,7 @@ initialiseRegionWeights(MeshRegion &mr, double zerocut, Error &err)
 
     double tl0 = std::accumulate(mr.r_wgt, mr.r_wgt+8, 0.);
     double tl1 = std::accumulate(mr.s_wgt, mr.s_wgt+8, 0.);
-    if (std::abs(tl0) < zerocut || std::abs(tl1) < zerocut) {
+    if (std::fabs(tl0) < zerocut || std::fabs(tl1) < zerocut) {
         err.fail("ERROR: ill defined user weights in mesh generation");
     }
 
@@ -164,7 +164,7 @@ calculateLineBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
                     ds = w1 * mr.ss[IX(l1, km)] +
                          w2 * mr.ss[IX(l1, kp)] - mr.ss[IX(l1, kk)];
 
-                    if (std::abs(dr) > tol || std::abs(ds) > tol) {
+                    if (std::fabs(dr) > tol || std::fabs(ds) > tol) {
                         exit_status = false;
                     }
 
@@ -199,7 +199,7 @@ calculateLineBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
                     ds = w1 * mr.ss[IX(lm, k1)] +
                          w2 * mr.ss[IX(lp, k1)] - mr.ss[IX(ll, k1)];
 
-                    if (std::abs(dr) > tol || std::abs(ds) > tol) {
+                    if (std::fabs(dr) > tol || std::fabs(ds) > tol) {
                         exit_status = false;
                     }
 
@@ -272,7 +272,7 @@ calculateArcBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
     double dd = s1 - s0;
     double w3 = r1 - r0;
     double d2;
-    if (std::abs(w3) < zerocut) {
+    if (std::fabs(w3) < zerocut) {
         d2 = zerocut;
     } else {
         d2 = w3;
@@ -287,7 +287,7 @@ calculateArcBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
 
     double d1 = s2 - s0;
     double w4 = r2 - r0;
-    if (std::abs(w4) < zerocut) {
+    if (std::fabs(w4) < zerocut) {
         d2 = zerocut;
     } else {
         d2 = w4;
@@ -343,7 +343,7 @@ calculateArcBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
                     int kp = kk + 1;
                     d1 = w1 * mr.rr[IX(l1, km)] + w2 * mr.rr[IX(l1, kp)] -
                         mr.rr[IX(l1, kk)];
-                    if (std::abs(d1) > tol) exit_status = false;
+                    if (std::fabs(d1) > tol) exit_status = false;
                     mr.rr[IX(l1, kk)] += d1;
                 }
                 if (exit_status) break;
@@ -394,7 +394,7 @@ calculateArcBoundary(MeshRegion &mr, int side, int segment, int l1, int l2,
                     int lp = ll + 1;
                     d1 = w1 * mr.rr[IX(lm, k1)] + w2 * mr.rr[IX(lp, k1)] -
                         mr.rr[IX(ll, k1)];
-                    if (std::abs(d1) > tol) exit_status = false;
+                    if (std::fabs(d1) > tol) exit_status = false;
                     mr.rr[IX(ll, k1)] += d1;
                 }
                 if (exit_status) break;
@@ -544,7 +544,7 @@ calculateRegionInterior(MeshRegion &mr, double zerocut,
         tk0 = mr.r_wgt[3];
         tk1 = mr.r_wgt[4];
         fac = tl0 + tl1 + tk0 + tk1;
-        if (std::abs(fac) <= zerocut) fac = 1.0;
+        if (std::fabs(fac) <= zerocut) fac = 1.0;
     }
 
     tl0 = 2. * tl0 / fac;
@@ -621,7 +621,7 @@ calculateRegionInterior(MeshRegion &mr, double zerocut,
                     double r_phi = 0.5 * (mr.rr[IX(lp, kk)] - mr.rr[IX(lm, kk)]);
                     double s_phi = 0.5 * (mr.ss[IX(lp, kk)] - mr.ss[IX(lm, kk)]);
                     double zeta = s_psi*r_phi - s_phi*r_psi;
-                    if (std::abs(zeta) < zerocut) continue;
+                    if (std::fabs(zeta) < zerocut) continue;
 
                     double alph = s_psi*s_psi + r_psi*r_psi;
                     double beta = s_phi*s_psi + r_phi*r_psi;
@@ -680,7 +680,7 @@ calculateRegionInterior(MeshRegion &mr, double zerocut,
                             s8 * mr.ss[IX(lm, kp)] - mr.ss[IX(ll, kk)];
 
                 // If hasn't converged
-                if (std::abs(dr) > tol || std::abs(ds) > tol) {
+                if (std::fabs(dr) > tol || std::fabs(ds) > tol) {
                     exit_status = false;
                     mr.rr[IX(ll, kk)] = mr.rr[IX(ll, kk)] + om*dr;
                     mr.ss[IX(ll, kk)] = mr.ss[IX(ll, kk)] + om*ds;

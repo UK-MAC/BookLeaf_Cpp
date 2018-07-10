@@ -132,7 +132,7 @@ rationaliseKinematics(
         View<double, VarDim>      vv)
 {
     for (int ii = 0; ii < nsize; ii++) {
-        if (std::abs(wt(ii)) < cutoff) {
+        if (std::fabs(wt(ii)) < cutoff) {
             uu(ii) = 0.;
             vv(ii) = 0.;
 

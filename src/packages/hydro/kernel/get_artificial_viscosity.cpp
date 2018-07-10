@@ -146,17 +146,17 @@ limitArtificialViscosity(
                 double yhat = fw4 * den;
 
                 den = fw3*xhat + fw4*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw1 = (fw1*uhat + fw2*vhat) / std::copysign(tmp, den);
-                tmp = std::abs(fw1);
+                tmp = std::fabs(fw1);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw1 = 1.0 / std::copysign(tmp, fw1);
 
                 int ins = elfc(iel, iside);
                 ins = (ins + 1) % NFACE;
                 den = dx(in1, ins)*xhat + dy(in1, ins)*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / std::copysign(tmp, den);
                 scratch(iel, 0) = fw2*fw1;
@@ -164,7 +164,7 @@ limitArtificialViscosity(
                 ins = elfc(iel, iside+2);
                 ins = (ins + 3) % NFACE;
                 den = dx(in2, ins)*xhat + dy(in2, ins)*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / std::copysign(tmp, den);
                 scratch(iel, 1) = fw3*fw1;
@@ -188,17 +188,17 @@ limitArtificialViscosity(
                 yhat = fw4 * den;
 
                 den = fw3*xhat + fw4*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw1 = (fw1*uhat + fw2*vhat) / std::copysign(tmp, den);
-                tmp = std::abs(fw1);
+                tmp = std::fabs(fw1);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw1 = 1.0 / std::copysign(tmp, fw1);
 
                 ins = elfc(iel, iside);
                 ins = (ins + 3) % NFACE;
                 den = dx(in1, ins)*xhat + dy(in1, ins)*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / std::copysign(tmp, den);
                 scratch(iel, 2) = fw2*fw1;
@@ -206,7 +206,7 @@ limitArtificialViscosity(
                 ins = elfc(iel, iside+2);
                 ins = (ins + 1) % NFACE;
                 den = dx(in2, ins)*xhat + dy(in2, ins)*yhat;
-                tmp = std::abs(den);
+                tmp = std::fabs(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
                 fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / std::copysign(tmp, den);
                 scratch(iel, 3) = fw3*fw1;

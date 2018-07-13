@@ -21,6 +21,17 @@
 
 namespace bookleaf {
 
+bool            Data::partial_sync         = false;
+int            *Data::host_sync_send_idx   = nullptr;
+int            *Data::device_sync_send_idx = nullptr;
+int            *Data::host_sync_recv_idx   = nullptr;
+int            *Data::device_sync_recv_idx = nullptr;
+Data::size_type Data::sync_send_nidx       = 0;
+Data::size_type Data::sync_recv_nidx       = 0;
+unsigned char  *Data::host_sync_buf        = nullptr;
+unsigned char  *Data::device_sync_buf      = nullptr;
+Data::size_type Data::sync_buf_size        = 0;
+
 void
 Data::deallocate()
 {
@@ -42,7 +53,11 @@ Data::deallocate()
 
 
 void
-Data::syncHost() const
+Data::initPartialSync(
+        int *send_indices __attribute__((unused)),
+        int *recv_indices __attribute__((unused)),
+        int nsend __attribute__((unused)),
+        int nrecv __attribute__((unused)))
 {
     // No-op in reference version
 }
@@ -50,7 +65,23 @@ Data::syncHost() const
 
 
 void
-Data::syncDevice() const
+Data::killPartialSync()
+{
+    // No-op in reference version
+}
+
+
+
+void
+Data::syncHost(bool allow_partial __attribute__((unused))) const
+{
+    // No-op in reference version
+}
+
+
+
+void
+Data::syncDevice(bool allow_partial __attribute__((unused))) const
 {
     // No-op in reference version
 }

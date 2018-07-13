@@ -350,7 +350,7 @@ void
 DataControl::syncAllDevice() const
 {
     for (Data const &d : data) {
-        if (d.isAllocated()) d.syncDevice();
+        if (d.isAllocated()) d.syncDevice(false);
     }
 }
 
@@ -360,7 +360,7 @@ void
 DataControl::syncAllHost() const
 {
     for (Data const &d : data) {
-        if (d.isAllocated()) d.syncHost();
+        if (d.isAllocated()) d.syncHost(false);
     }
 }
 

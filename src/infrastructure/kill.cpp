@@ -21,6 +21,7 @@
 
 #include "common/config.h"
 #include "common/error.h"
+#include "common/data.h"
 
 #include "utilities/comms/config.h"
 #include "packages/hydro/config.h"
@@ -55,6 +56,9 @@ kill(
 
     // Kill EOS config
     killEOSConfig(*config.eos);
+
+    // Kill partial sync
+    Data::killPartialSync();
 }
 
 } // namespace kill

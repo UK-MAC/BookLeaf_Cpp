@@ -5,6 +5,7 @@ TIME:
     dt_max: 1.0e-2
     dt_min: 1.0e-8
     dt_g: 1.02
+    kappaall: 0.01  # Enables hourglass forces
 
 HYDRO:
     cfl_sf: 0.5
@@ -21,7 +22,7 @@ CUTOFF:
 
 MESH:
     - type: LIN2
-      dims: [1800, 720]
+      dims: [7200, 360]
       material: 0
       sides:
           - - { type: LINE,  bc: SLIPY, pos: [0.005,0.0,1.0,0.0] }

@@ -240,6 +240,8 @@ printConfiguration(
         std::cout << "\n";
         std::cout << config.setup->thermo;
         std::cout << config.setup->kinematics;
+        std::cout << "\n";
+        std::cout << config.setup->shapes;
         std::cout << stripe() << "\n";
     }
 }

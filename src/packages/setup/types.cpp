@@ -26,14 +26,14 @@ namespace bookleaf {
 namespace setup {
 
 void
-Shape::rationalise(Error &err)
+Shape::rationalise(Error &err) const
 {
     switch (type) {
     case Shape::Type::RECTANGLE:
         break;
 
     case Shape::Type::CIRCLE:
-        if (params[3] < 0.) {
+        if (params[2] < 0.) {
             err.fail("ERROR: shape radius < 0");
             return;
         }
@@ -43,6 +43,54 @@ Shape::rationalise(Error &err)
         err.fail("ERROR: unrecognised shape type");
         return;
     }
+
+    // Check fixed volume fraction
+    if (!(0.0 <= params[4] && params[4] <= 1.0)) {
+        err.fail("ERROR: shape fixed fraction <0 or >1");
+        return;
+    }
+}
+
+
+
+std::ostream &
+operator<<(std::ostream &os, std::vector<Shape> const &rhs)
+{
+    for (int i = 0; i < (int) rhs.size(); i++) {
+        Shape const &shape = rhs[i];
+        os << "  Shape: " << i << "\n";
+
+        std::string pos;
+        switch (shape.type) {
+            case Shape::Type::RECTANGLE:
+                os << inf::io::format_value(" Shape type", "", "RECTANGLE");
+                pos = "(" + std::to_string(shape.params[0]) + ", " +
+                            std::to_string(shape.params[1]) + ", " +
+                            std::to_string(shape.params[2]) + ", " +
+                            std::to_string(shape.params[3]) + ")";
+                os << inf::io::format_value(" Shape position", "", pos);
+                break;
+
+            case Shape::Type::CIRCLE:
+                os << inf::io::format_value(" Shape type", "", "CIRCLE");
+                pos = "(" + std::to_string(shape.params[0]) + ", " +
+                            std::to_string(shape.params[1]) + ", " +
+                            std::to_string(shape.params[2]) + ")";
+                os << inf::io::format_value(" Shape position", "", pos);
+                break;
+
+            default:
+                os << inf::io::format_value(" Shape type", "", "UNKNOWN");
+                break;
+        }
+
+        if (shape.params[4] > 0.0) {
+            os << inf::io::format_value(" Fixed user defined volume fraction",
+                    "", shape.params[4]);
+        }
+    }
+
+    return os;
 }
 
 

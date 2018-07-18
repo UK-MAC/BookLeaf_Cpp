@@ -42,6 +42,11 @@ struct Config {
     bool mmesh = false;
 };
 
+
+
+void
+rationalise(setup::Config &setup, Error &err);
+
 } // namespace setup
 } // namespace bookleaf
 

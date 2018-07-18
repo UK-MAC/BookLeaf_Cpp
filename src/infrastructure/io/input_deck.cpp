@@ -208,11 +208,6 @@ InputDeck::readShapes(std::vector<setup::Shape> &shapes)
                 }
             }
 
-            // Zero last parameter of circle
-            if (shape.type == Shape::Type::CIRCLE) {
-                shape.params[3] = 0.;
-            }
-
             shapes.push_back(shape);
         }
     }
@@ -386,13 +381,16 @@ InputDeck::readMaterialEOS(YAML::Node node)
         else if (stype == "IDEAL GAS") meos.type = MaterialEOS::Type::IDEAL_GAS;
         else if (stype == "TAIT")      meos.type = MaterialEOS::Type::TAIT;
         else if (stype == "JWL")       meos.type = MaterialEOS::Type::JWL;
+        else {
+            assert(false && "unhandled error");
+        }
     }
 
     // Read params
     if (node["params"]) {
         std::vector<double> dims = node["params"].as<std::vector<double>>();
-        std::copy(dims.begin(), dims.begin() + MaterialEOS::NUM_PARAMS,
-                meos.params);
+        std::fill(meos.params, meos.params + MaterialEOS::NUM_PARAMS, 0.0);
+        std::copy(dims.begin(), dims.end(), meos.params);
     }
 
     return meos;

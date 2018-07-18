@@ -177,6 +177,9 @@ rationalise(
     rationalise(*config.ale, *config.time, err);
     if (err.failed()) return;
 
+    rationalise(*config.setup, err);
+    if (err.failed()) return;
+
     rationaliseRegions(
             config.setup->regions,
             config.setup->materials,

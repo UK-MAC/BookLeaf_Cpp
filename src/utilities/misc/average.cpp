@@ -44,9 +44,10 @@ average(
 {
     for (int imx = 0; imx < nmx; imx++) {
         double w1 = 0.;
-        int const icp = imxfcp(imx);
+        int icp = imxfcp(imx);
         for (int ii = 0; ii < imxncp(imx); ii++) {
             w1 += mxfraction(icp) * (mxarray1(icp) + mxarray2(icp));
+            icp++;
         }
 
         elarray(imxel(imx)) = w1;
@@ -71,12 +72,13 @@ average(
         double w1[NCORN] = {0};
         double w2[NCORN] = {0};
 
-        int const icp = imxfcp(imx);
+        int icp = imxfcp(imx);
         for (int ii = 0; ii < imxncp(imx); ii++) {
             for (int icn = 0; icn < NCORN; icn++) {
                 w1[icn] += mxfraction(icp) * mxarray1(icp, icn);
                 w2[icn] += mxfraction(icp) * mxarray2(icp, icn);
             }
+            icp++;
         }
 
         int const iel = imxel(imx);

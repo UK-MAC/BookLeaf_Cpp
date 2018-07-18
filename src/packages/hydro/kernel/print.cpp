@@ -121,6 +121,7 @@ calcShortPrint(
         Flags &flags)
 {
     for (int ii = 0; ii < nsize; ii++) {
+
         int iflag = flag(ii);
         if (iflag < 0) continue;
         assert(iflag < flags.len);
@@ -147,10 +148,10 @@ calcShortPrint(
             flags.dmx[iflag] = std::max(flags.dmx[iflag], dens);
             flags.dmn[iflag] = std::min(flags.dmn[iflag], dens);
 
-            for (int ic = 0; ic < NCORN; ic++) {
-                double const u = cnu(ii, ic);
-                double const v = cnv(ii, ic);
-                flags.ke[iflag] += 0.5 * cnwt(ii, ic) * dens * (u*u + v*v);
+            for (int icn = 0; icn < NCORN; icn++) {
+                double const u = cnu(ii, icn);
+                double const v = cnv(ii, icn);
+                flags.ke[iflag] += 0.5 * cnwt(ii, icn) * dens * (u*u + v*v);
             }
         }
     }

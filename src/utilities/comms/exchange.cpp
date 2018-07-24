@@ -201,7 +201,7 @@ exchange(
 
     // Sync pre-exchange
     for (DataID id : comm.phases[comm_phase_id].data_ids) {
-        data[id].syncHost();
+        data[id].syncHost(true);
     }
 
     int typh_err = TYPH_Exchange(phase_id);
@@ -213,7 +213,7 @@ exchange(
 
     // Sync post-exchange
     for (DataID id : comm.phases[comm_phase_id].data_ids) {
-        data[id].syncDevice();
+        data[id].syncDevice(true);
     }
 }
 

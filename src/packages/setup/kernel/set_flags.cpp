@@ -217,8 +217,14 @@ setShapeMixedMaterial(
             // XXX This logic assumes that a background material has already
             //     been set.
 
-            // Calculate volume fraction
-            double const vf = subdivide(0, param, iel, cnx, cny, inside);
+            // Calculate volume fraction, check if the user has given a fixed
+            // volume fraction
+            double vf;
+            if (param[4] > 0.0) {
+                vf = param[4];
+            } else {
+                vf = subdivide(0, param, iel, cnx, cny, inside);
+            }
 
             // Get the current material index for this element
             int j = elmat(iel);

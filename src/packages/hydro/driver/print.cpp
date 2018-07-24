@@ -108,7 +108,7 @@ shortPrint(hydro::Config const &hydro, Runtime const &runtime,
         auto ccpv  = data[CPV].chost<double, VarDim, NCORN>();
 
         kernel::calcShortPrint(runtime.sizes->ncp, hydro.global->dencut, cpmat,
-                cpdensity, cpenergy, cppressure, cpvolume, cpmass, ccpwt, ccpu,
+                cpenergy, cpdensity, cpmass, cpvolume, cppressure, ccpwt, ccpu,
                 ccpv, mat);
     }
 

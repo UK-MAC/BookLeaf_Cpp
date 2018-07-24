@@ -193,6 +193,62 @@ distributeMesh(int const *conn_data, int const *conn_dims, int const *part,
         return;
     }
     config.comms->spatial->key_comm_cells = key_comm_cells;
+
+    // Get key set indices so we can minimise device sync
+    int nsidx = 0;
+    typh_err = TYPH_Get_Key_Set_Num_Indices(key_comm_cells, TYPH_SENDRECV_SEND,
+            &nsidx);
+    if (typh_err != TYPH_SUCCESS) {
+        FAIL_WITH_LINE(err, "ERROR: TYPH_Get_Key_Set_Num_Indices failed");
+        return;
+    }
+
+    int nridx = 0;
+    typh_err = TYPH_Get_Key_Set_Num_Indices(key_comm_cells, TYPH_SENDRECV_RECV,
+            &nridx);
+    if (typh_err != TYPH_SUCCESS) {
+        FAIL_WITH_LINE(err, "ERROR: TYPH_Get_Key_Set_Num_Indices failed");
+        return;
+    }
+
+    int *sidx = nullptr;
+    if (nsidx > 0) {
+        sidx = new int[nsidx];
+
+        typh_err = TYPH_Get_Key_Set_Indices(key_comm_cells, TYPH_SENDRECV_SEND,
+                sidx);
+        if (typh_err != TYPH_SUCCESS) {
+            FAIL_WITH_LINE(err, "ERROR: TYPH_Get_Key_Set_Indices failed");
+            return;
+        }
+    }
+
+    int *ridx = nullptr;
+    if (nridx > 0) {
+        ridx = new int[nridx];
+
+        typh_err = TYPH_Get_Key_Set_Indices(key_comm_cells, TYPH_SENDRECV_RECV,
+                ridx);
+        if (typh_err != TYPH_SUCCESS) {
+            FAIL_WITH_LINE(err, "ERROR: TYPH_Get_Key_Set_Indices failed");
+            return;
+        }
+    }
+
+    if (nsidx > 0 || nridx > 0) {
+        assert(nsidx > 0 && nridx > 0); // Should always be the case
+        Data::initPartialSync(sidx, ridx, nsidx, nridx);
+    }
+
+    if (sidx != nullptr) {
+        delete[] sidx;
+        sidx = nullptr;
+    }
+
+    if (ridx != nullptr) {
+        delete[] ridx;
+        ridx = nullptr;
+    }
 }
 
 } // namespace bookleaf

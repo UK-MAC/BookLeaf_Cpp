@@ -78,8 +78,8 @@ initElementMasses(
         utils::kernel::mxGather<double>(sizes.nmx, mxel, mxfcp, mxncp, elmass,
                 rcpscratch);
 
-        for (int i = 0; i < sizes.ncp; i++) {
-            frmass(i) = cpmass(i) / rcpscratch(i);
+        for (int icp = 0; icp < sizes.ncp; icp++) {
+            frmass(icp) = cpmass(icp) / rcpscratch(icp);
         }
     }
 }

@@ -7,11 +7,11 @@
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- * 
+ *
  * BookLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
@@ -173,18 +173,41 @@ public:
     /** \brief Set the Typhon quant ID for this data. */
     void setTyphonHandle(int taddr) { typh_quant_id = taddr; }
 
+    /** \brief Initialise partial sync data. */
+    static void initPartialSync(
+            int *send_indices,
+            int *recv_indices,
+            int nsend,
+            int nrecv);
+
+    /** \brief Clean up partial sync data. */
+    static void killPartialSync();
+
 
     // -------------------------------------------------------------------------
     // Device sync
     // -------------------------------------------------------------------------
     /** \brief Copy the contents of device memory to host memory. */
-    void syncHost() const;
+    void syncHost(bool allow_partial = false) const;
 
     /** \brief Copy the contents of host memory to device memory. */
-    void syncDevice() const;
+    void syncDevice(bool allow_partial = false) const;
 
 
 private:
+    static bool partial_sync;               //!< Partial sync enabled?
+
+    static int      *host_sync_send_idx;    //!< Host partial sync send indices
+    static int      *device_sync_send_idx;  //!< Device partial sync send indices
+    static int      *host_sync_recv_idx;    //!< Host partial sync recv indices
+    static int      *device_sync_recv_idx;  //!< Device partial sync recv indices
+    static size_type sync_send_nidx;        //!< Number of sync send indices
+    static size_type sync_recv_nidx;        //!< Number of sync recv indices
+
+    static unsigned char *host_sync_buf;    //!< Host buffer for partial sync
+    static unsigned char *device_sync_buf;  //!< Device buffer for partial sync
+    static size_type      sync_buf_size;    //!< Partial sync buffer size (bytes)
+
     DataID         id;                //!< Global data ID
     std::string    name;              //!< Human-readable name
 
@@ -336,7 +359,7 @@ Data::allocate(
     T *thost_ptr = (T *) host_ptr;
     std::fill(thost_ptr, thost_ptr + len, initial_value);
 
-    syncDevice();
+    syncDevice(false);
 
     allocated_T_size = sizeof(T);
     allocated_type = getTypeName<T>();

@@ -258,8 +258,8 @@ DataControl::resetCpQuant(size_type nsize, Sizes &sizes, Error &err)
         entry<double>(DataID::FRVOLUME, "frvolume", nsize);
         entry<double>(DataID::CPMASS, "cpmass", nsize);
         entry<double>(DataID::FRMASS, "frmass", nsize);
-        entry<double>(DataID::CPVISCX, "cpviscx", nsize);
-        entry<double>(DataID::CPVISCY, "cpviscy", nsize);
+        entry<double>(DataID::CPVISCX, "cpviscx", nsize, NCORN);
+        entry<double>(DataID::CPVISCY, "cpviscy", nsize, NCORN);
         entry<double>(DataID::CPVISC, "cpvisc", nsize);
         entry<double>(DataID::CPA1, "cpa1", nsize);
         entry<double>(DataID::CPA3, "cpa3", nsize);
@@ -285,8 +285,8 @@ DataControl::resetCpQuant(size_type nsize, Sizes &sizes, Error &err)
         reset<double>(DataID::FRVOLUME, nsize);
         reset<double>(DataID::CPMASS, nsize);
         reset<double>(DataID::FRMASS, nsize);
-        reset<double>(DataID::CPVISCX, nsize);
-        reset<double>(DataID::CPVISCY, nsize);
+        reset<double>(DataID::CPVISCX, nsize, NCORN);
+        reset<double>(DataID::CPVISCY, nsize, NCORN);
         reset<double>(DataID::CPVISC, nsize);
         reset<double>(DataID::CPA1, nsize);
         reset<double>(DataID::CPA3, nsize);
@@ -350,7 +350,7 @@ void
 DataControl::syncAllDevice() const
 {
     for (Data const &d : data) {
-        if (d.isAllocated()) d.syncDevice();
+        if (d.isAllocated()) d.syncDevice(false);
     }
 }
 
@@ -360,7 +360,7 @@ void
 DataControl::syncAllHost() const
 {
     for (Data const &d : data) {
-        if (d.isAllocated()) d.syncHost();
+        if (d.isAllocated()) d.syncHost(false);
     }
 }
 

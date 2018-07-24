@@ -81,16 +81,13 @@ getEnergy(
         utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
                 lag_cnv, lag_cpv);
 
-        auto clag_cpu = data[DataID::LAG_CPU].chost<double, VarDim, NCORN>();
-        auto clag_cpv = data[DataID::LAG_CPV].chost<double, VarDim, NCORN>();
-
         hydro::kernel::getEnergy(
                 dt,
                 zerocut,
                 lag_cpfx,
                 lag_cpfy,
-                clag_cpu,
-                clag_cpv,
+                lag_cpu,
+                lag_cpv,
                 cpmass,
                 cpenergy,
                 ncp);

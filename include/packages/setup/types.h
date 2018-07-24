@@ -55,13 +55,13 @@ typedef std::function<void(
 
 struct Shape
 {
-    static constexpr int NUM_PARAMS = 4;
+    static constexpr int NUM_PARAMS = 5;
     enum Type : int { UNKNOWN, RECTANGLE, CIRCLE };
 
     Type type;
     double params[NUM_PARAMS];
 
-    void rationalise(Error &err);
+    void rationalise(Error &err) const;
 };
 
 
@@ -94,6 +94,9 @@ struct KinematicsIC
 };
 
 
+
+std::ostream &
+operator<<(std::ostream &os, std::vector<Shape> const &rhs);
 
 std::ostream &
 operator<<(std::ostream &os, std::vector<ThermodynamicsIC> const &rhs);

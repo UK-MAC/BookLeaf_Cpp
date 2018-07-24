@@ -163,6 +163,7 @@ set(BOOKLEAF_LIB_SRC
     ${PROJECT_SOURCE_DIR}/src/packages/setup/generate_mesh.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/transfer_mesh.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/types.cpp
+    ${PROJECT_SOURCE_DIR}/src/packages/setup/config.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/driver/set_shape_flags.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/driver/set_thermodynamics.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/driver/set_kinematics.cpp

@@ -41,17 +41,17 @@ TimerControl::TimerControl()
     add(TimerID::SOLVER,           "   time in solver                  ");
     add(TimerID::GETDT,            "     time in getdt                 ");
     add(TimerID::GETVISCOSITY,     "       time in getviscosity        ");
-    add(TimerID::COMMT,            "         time in MPI exchanges     ");
+    add(TimerID::COMMT,            "       time in MPI exchanges       ");
     add(TimerID::COLLECTIVET,      "       time in MPI collectives     ");
     add(TimerID::LAGSTEP,          "     time in lagstep               ");
     add(TimerID::GETEOSL,          "       time in geteos              ");
     add(TimerID::GETACCELERATION,  "       time in getacceleration     ");
-    add(TimerID::COMML,            "         time in MPI exchanges     ");
     add(TimerID::GETGEOMETRYL,     "       time in getgeometry         ");
     add(TimerID::GETENERGY,        "       time in getenergy           ");
     add(TimerID::GETFORCE,         "       time in getforce            ");
     add(TimerID::GETHG,            "       time in gethg               ");
     add(TimerID::GETSP,            "       time in getsp               ");
+    add(TimerID::COMML,            "       time in MPI exchanges       ");
     add(TimerID::ALESTEP,          "     time in alestep               ");
     add(TimerID::ALEGETMESHSTATUS, "       time in getmeshstatus       ");
     add(TimerID::ALEGETFLUXVOLUME, "       time in getfluxvolume       ");
@@ -62,10 +62,10 @@ TimerControl::TimerControl()
     add(TimerID::ALEADVECTND,      "         time in advectnd          ");
     add(TimerID::ALEADVECTBASISND, "           time in advectbasisnd   ");
     add(TimerID::ALEADVECTVARND,   "           time in advectvarnd     ");
-    add(TimerID::COMMA,            "         time in MPI exchanges     ");
     add(TimerID::ALEUPDATE,        "       time in update              ");
     add(TimerID::GETEOSA,          "         time in geteos            ");
     add(TimerID::GETGEOMETRYA,     "         time in getgeometry       ");
+    add(TimerID::COMMA,            "       time in MPI exchanges       ");
     add(TimerID::STEPIO,           "     time in step IO               ");
     add(TimerID::IO,               "     time in output dumps          ");
 }

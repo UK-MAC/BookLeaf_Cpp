@@ -112,7 +112,7 @@ mxGather(
 
 template <typename T>
 void
-mxCornerGather(
+mxComponentCornerGather(
         int nmx,
         ConstView<int, VarDim>      imxel,
         ConstView<int, VarDim>      imxfcp,
@@ -132,6 +132,35 @@ mxCornerGather(
             for (int j = 0; j < NCORN; j++) {
                 mxarray(icp, j) = w[j];
             }
+        }
+    }
+}
+
+
+
+inline void
+mxAverageCornerGather(
+        int nmx,
+        ConstView<int, VarDim>           imxel,
+        ConstView<int, VarDim>           imxfcp,
+        ConstView<int, VarDim>           imxncp,
+        ConstView<double, VarDim, NCORN> elarray,
+        ConstView<double, VarDim>        mxfraction,
+        View<double, VarDim, NCORN>      mxarray)
+{
+    for (int imx = 0; imx < nmx; imx++) {
+        double w1[NCORN];
+        for (int icn = 0; icn < NCORN; icn++) {
+            w1[icn] = elarray(imxel(imx), icn);
+        }
+
+        int icp = imxfcp(imx);
+        for (int ii = 0; ii < imxncp(imx); ii++) {
+            for (int icn = 0; icn < NCORN; icn++) {
+                mxarray(icp, icn) = mxfraction(icp) * w1[icn];
+            }
+
+            icp++;
         }
     }
 }

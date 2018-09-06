@@ -7,11 +7,11 @@
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- * 
+ *
  * BookLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
@@ -96,12 +96,12 @@ shortPrint(hydro::Config const &hydro, Runtime const &runtime,
         auto cpu        = data[CPU].host<double, VarDim, NCORN>();
         auto cpv        = data[CPV].host<double, VarDim, NCORN>();
 
-        utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
-                cnwt, cpwt);
-        utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
-                cnu, cpu);
-        utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
-                cnv, cpv);
+        utils::kernel::mxComponentCornerGather(runtime.sizes->nmx, mxel, mxfcp,
+                mxncp, cnwt, cpwt);
+        utils::kernel::mxComponentCornerGather(runtime.sizes->nmx, mxel, mxfcp,
+                mxncp, cnu, cpu);
+        utils::kernel::mxComponentCornerGather(runtime.sizes->nmx, mxel, mxfcp,
+                mxncp, cnv, cpv);
 
         auto ccpwt = data[CPWT].chost<double, VarDim, NCORN>();
         auto ccpu  = data[CPU].chost<double, VarDim, NCORN>();

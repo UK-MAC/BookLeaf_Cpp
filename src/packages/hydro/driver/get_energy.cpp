@@ -75,11 +75,12 @@ getEnergy(
         auto lag_cpv  = data[DataID::LAG_CPV].host<double, VarDim, NCORN>();
         auto cpmass   = data[DataID::CPMASS].chost<double, VarDim>();
         auto cpenergy = data[DataID::CPENERGY].host<double, VarDim>();
+        auto frvolume = data[DataID::FRVOLUME].chost<double, VarDim>();
 
-        utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
-                lag_cnu, lag_cpu);
-        utils::kernel::mxCornerGather(runtime.sizes->nmx, mxel, mxfcp, mxncp,
-                lag_cnv, lag_cpv);
+        utils::kernel::mxAverageCornerGather(runtime.sizes->nmx, mxel, mxfcp,
+                mxncp, lag_cnu, frvolume, lag_cpu);
+        utils::kernel::mxAverageCornerGather(runtime.sizes->nmx, mxel, mxfcp,
+                mxncp, lag_cnv, frvolume, lag_cpv);
 
         hydro::kernel::getEnergy(
                 dt,

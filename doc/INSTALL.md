@@ -38,6 +38,7 @@ directory):
 ```
 mkdir build
 cd build
+export CXX=<compiler, e.g. g++>
 cmake \
     -DCMAKE_INSTALL_PREFIX=$HOME \
     -DCMAKE_BUILD_TYPE="Release" \

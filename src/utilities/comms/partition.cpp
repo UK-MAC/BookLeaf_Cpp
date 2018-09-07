@@ -53,36 +53,41 @@ metisPartition(
     using constants::NCORN;
     using constants::NDAT;
 
+    // XXX(timrlaw): idx_t and real_t are internal types from ParMETIS,
+    //               configurable at build time.
+
     ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel);
 
     std::unique_ptr<int[]> nelg(new int[nproc]);
 
-    int constexpr NCON = 1;
-    int ncon = NCON;
-    double constexpr UBVEC_VAL = 1.001;
-    int edgecut, nndcomm, numflag, wgtflag;
+    idx_t ncon = (idx_t) 1;
+    real_t const UBVEC_VAL = (real_t) 1.001;
+    idx_t edgecut, nndcomm, numflag, wgtflag;
 
-    std::unique_ptr<float[]> tpgwgts(new float[NCON * nproc]);
-    std::unique_ptr<float[]>   ubvec(new float[NCON]);
+    std::unique_ptr<real_t[]> tpgwgts(new real_t[ncon * nproc]);
+    std::unique_ptr<real_t[]>   ubvec(new real_t[ncon]);
 
-    std::unique_ptr<int[]> elmdist(new int[nproc + 1]);
-    std::unique_ptr<int[]>    eptr(new int[nel + 1]);
-    std::unique_ptr<int[]>    eind(new int[NCORN * nel]);
+    std::unique_ptr<idx_t[]> elmdist(new idx_t[nproc + 1]);
+    std::unique_ptr<idx_t[]>    eptr(new idx_t[nel + 1]);
+    std::unique_ptr<idx_t[]>    eind(new idx_t[NCORN * nel]);
 
-    int *elmwgt;
+    std::unique_ptr<idx_t[]>    part(new idx_t[nel]);
+
+    idx_t *elmwgt;
 
     int constexpr NUMOPTS = 3;
-    int options[NUMOPTS];
+    idx_t options[NUMOPTS];
 
     // Initialise
-    edgecut = 0;
+    edgecut = (idx_t) 0;
     elmwgt  = nullptr;
-    nndcomm = 2;
-    numflag = 0;    // 0 = c style numbering, 1 = fortran style
-    wgtflag = 0;    // no element weights
-    std::fill(options, options + NUMOPTS, 0);
-    std::fill(tpgwgts.get(), tpgwgts.get() + NCON * nproc, 1.0 / nproc);
-    std::fill(ubvec.get(), ubvec.get() + NCON, UBVEC_VAL);
+    nndcomm = (idx_t) 2;
+    numflag = (idx_t) 0;    // 0 = c style numbering, 1 = fortran style
+    wgtflag = (idx_t) 0;    // no element weights
+
+    std::fill(options, options + NUMOPTS, (idx_t) 0);
+    std::fill(tpgwgts.get(), tpgwgts.get() + ncon * nproc, (real_t) (1.0 / nproc));
+    std::fill(ubvec.get(), ubvec.get() + ncon, UBVEC_VAL);
 
     // Gather each ranks nel
     int typh_err = TYPH_Gather(TYPH_DATATYPE_INTEGER, &nel, nullptr, 0,
@@ -92,27 +97,26 @@ metisPartition(
         return;
     }
 
-    elmdist[0] = 0;
-    std::copy(nelg.get(), nelg.get() + nproc, elmdist.get() + 1);
+    elmdist[0] = (idx_t) 0;
     for (int i = 1; i <= nproc; i++) {
-        elmdist[i] += elmdist[i-1];
+        elmdist[i] = (idx_t) nelg[i-1] + elmdist[i-1];
     }
 
     // Convert global mesh into a format understood by Metis
     for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
-            eind[iel*NCORN+icn] = conn_data(iel, 3+icn);
+            eind[iel*NCORN+icn] = (idx_t) conn_data(iel, 3+icn);
         }
     }
 
-    eptr[0] = 0;
+    eptr[0] = (idx_t) 0;
     for (int iel = 0; iel < nel; iel++) {
-        eptr[iel+1] = eptr[iel] + NCORN;;
+        eptr[iel+1] = eptr[iel] + (idx_t) NCORN;
     }
 
     // Perform partitioning
     for (int iel = 0; iel < nel; iel++) {
-        partitioning(iel) = rank;
+        part[iel] = (idx_t) rank;
     }
 
     int metis_err = ParMETIS_V3_PartMeshKway(
@@ -129,7 +133,7 @@ metisPartition(
             ubvec.get(),            // Imbalance tolerance per node weight
             options,                // Parameters to partitioner (unused)
             &edgecut,               // # edges cut (out)
-            partitioning.data(),    // Local vertices
+            part.get(),             // Local vertices
             comm);
 
     if (metis_err != METIS_OK) {
@@ -140,7 +144,7 @@ metisPartition(
     // Sanity check that ParMETIS has not left an empty processor
     std::fill(nelg.get(), nelg.get() + nproc, 0);
     for (int iel = 0; iel < nel; iel++) {
-        nelg[partitioning(iel)]++;
+        nelg[part[iel]]++;
     }
 
     typh_err = TYPH_Reduce(TYPH_DATATYPE_INTEGER, nelg.get(), &nproc, 1,
@@ -157,6 +161,9 @@ metisPartition(
         }
     }
 
+    for (int iel = 0; iel < nel; iel++) {
+        partitioning(iel) = (int) part[iel];
+    }
 }
 #endif
 

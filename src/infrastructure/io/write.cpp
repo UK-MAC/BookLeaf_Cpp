@@ -21,7 +21,6 @@
 #include <ctime>
 #include <iomanip>
 #include <fstream>
-#include <regex>
 #include <cassert>
 
 #ifndef BOOKLEAF_DARWIN_BUILD
@@ -162,7 +161,12 @@ printFileContents(
 
     // Indent by two spaces
     contents.insert(0, "  ");
-    contents = std::regex_replace(contents, std::regex("\\n"), "\n  ");
+    std::string::size_type pos = contents.find("\n", 0);
+    while (pos != std::string::npos) {
+        if (pos + 1 >= contents.length()) break;
+        contents.insert(pos + 1, "  ");
+        pos = contents.find("\n", pos + 1);
+    }
 
     std::cout << contents << "\n";
     std::cout << stripe() << "\n";
@@ -195,13 +199,18 @@ printConfiguration(
 
     if (config.comms->world->zmproc) {
         {
-            auto t = std::time(nullptr);
-            auto tmm = *std::localtime(&t);
-            std::stringstream ss;
-            ss << std::put_time(&tmm, "%d/%m/%Y at %H:%M:%S");
+            std::time_t rawtime = {0};
+            std::tm *timeinfo = nullptr;
+            char buffer[128] = {0};
+
+            std::time(&rawtime);
+            timeinfo = std::localtime(&rawtime);
+
+            std::strftime(buffer, sizeof(buffer), "%d/%m/%Y at %H:%M:%S", timeinfo);
+            std::string str(buffer);
 
             std::cout << inf::io::format_value("Input file", "", filename);
-            std::cout << inf::io::format_value("Time stamp", "", ss.str());
+            std::cout << inf::io::format_value("Time stamp", "", str);
             std::cout << inf::io::stripe() << "\n";
         }
 

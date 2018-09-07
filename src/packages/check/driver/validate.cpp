@@ -18,7 +18,6 @@
 #include "packages/check/driver/validate.h"
 
 #include <iostream>
-#include <regex>
 
 #include "common/config.h"
 #include "common/runtime.h"
@@ -43,8 +42,7 @@ ValidationType
 getValidationType(std::string sfile)
 {
     // Sod
-    std::regex sod_regex("sod", std::regex_constants::icase);
-    if (std::regex_search(sfile, sod_regex)) {
+    if (sfile.find("sod") != std::string::npos) {
         return ValidationType::SOD;
     }
 

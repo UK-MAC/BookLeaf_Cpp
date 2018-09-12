@@ -10,8 +10,7 @@ namespace setup {
 void
 rationalise(setup::Config &setup, Error &err)
 {
-    for (Shape const &shape : setup.shapes)
-    {
+    for (Shape const &shape : setup.shapes) {
         shape.rationalise(err);
         if (err.failed()) return;
     }

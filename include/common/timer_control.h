@@ -38,6 +38,7 @@ enum class TimerID : int {
     GETGEOMETRYI,
     COMMREGISTER,
     MESHGEN,
+    MESHRENUM,
     MESHPARTITION,
     SETUPIC,
     SOLVER,

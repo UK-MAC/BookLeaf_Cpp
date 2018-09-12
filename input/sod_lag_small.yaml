@@ -15,14 +15,13 @@ EOS:
     - { type: ideal gas, params: [1.4] }
 
 MESH:
-    # Regions
-    - type: LIN1
-      dims: [100, 25]
-      sides:
-          - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 100.0, 0.0] }
-          - - { type: LINE, bc: SLIPX, pos: [100.0, 0.0, 100.0, 25.0] }
-          - - { type: LINE, bc: SLIPY, pos: [100.0, 25.0, 0.0, 25.0] }
-          - - { type: LINE, bc: SLIPX, pos: [0.0, 25.0, 0.0, 0.0] }
+    type: LIN1
+    dims: [100, 25]
+    sides:
+        - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 100.0, 0.0] }
+        - - { type: LINE, bc: SLIPX, pos: [100.0, 0.0, 100.0, 25.0] }
+        - - { type: LINE, bc: SLIPY, pos: [100.0, 25.0, 0.0, 25.0] }
+        - - { type: LINE, bc: SLIPX, pos: [0.0, 25.0, 0.0, 0.0] }
 
 INDICATORS:
     regions:

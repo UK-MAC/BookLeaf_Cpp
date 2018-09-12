@@ -16,13 +16,13 @@ EOS:
     - { type: ideal gas, params: [1.6666666667] }
 
 MESH:
-    - type: LIN1
-      dims: [45, 45]
-      sides:
-          - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 1.125, 0.0] }
-          - - { type: LINE, bc: FREE,  pos: [1.125, 0.0, 1.125, 1.125] }
-          - - { type: LINE, bc: FREE,  pos: [1.125, 1.125, 0.0, 1.125] }
-          - - { type: LINE, bc: SLIPX, pos: [0.0, 1.125, 0.0, 0.0] }
+    type: LIN1
+    dims: [45, 45]
+    sides:
+        - - { type: LINE, bc: SLIPY, pos: [0.0, 0.0, 1.125, 0.0] }
+        - - { type: LINE, bc: FREE,  pos: [1.125, 0.0, 1.125, 1.125] }
+        - - { type: LINE, bc: FREE,  pos: [1.125, 1.125, 0.0, 1.125] }
+        - - { type: LINE, bc: SLIPX, pos: [0.0, 1.125, 0.0, 0.0] }
 
 ALE:
     zeul: true

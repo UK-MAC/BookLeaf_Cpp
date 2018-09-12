@@ -51,7 +51,6 @@ readInputDeck(
         std::string filename,
         Config &config,
         Runtime &runtime,
-        TimerControl &timers,
         Error &err)
 {
     InputDeck deck;
@@ -67,56 +66,63 @@ readInputDeck(
     deck.readHydroConfiguration(*config.hydro);
     deck.readALEConfiguration(*config.ale);
 
-    // Read region/material configuration (setup_IC_read)
-    {
-        deck.readShapes(config.setup->shapes);
-        deck.readIndicators(config.setup->regions, config.setup->materials);
-        deck.readInitialConditions(config.setup->thermo, config.setup->kinematics);
+    // Read mesh descriptor
+    config.setup->mesh_descriptor.reset(new setup::MeshDescriptor());
+    deck.readMesh(*config.setup->mesh_descriptor);
 
-        // Number of regions (not counting those of unknown type)
-        auto const &regions = config.setup->regions;
-        runtime.sizes->nreg = std::count_if(regions.begin(), regions.end(),
-                [](setup::Region const &region) -> bool {
-                    return region.type != setup::Region::Type::UNKNOWN;
-                });
+    runtime.sizes->nel =
+        config.setup->mesh_descriptor->dims[0] *
+        config.setup->mesh_descriptor->dims[1];
 
-        // Number of materials (not counting those of unknown type)
-        auto const &materials = config.setup->materials;
-        runtime.sizes->nmat = std::count_if(materials.begin(), materials.end(),
-                [](setup::Material const &material) -> bool {
-                    return material.type != setup::Material::Type::UNKNOWN;
-                });
+    runtime.sizes->nnd =
+        (config.setup->mesh_descriptor->dims[0]+1) *
+        (config.setup->mesh_descriptor->dims[1]+1);
 
-        // Check for mesh specification
-        config.setup->rmesh = std::any_of(regions.begin(), regions.end(),
-                [](setup::Region const &region) -> bool {
-                    return region.type == setup::Region::Type::MESH;
-                });
-
-        config.setup->mmesh = std::any_of(materials.begin(), materials.end(),
-                [](setup::Material const &material) -> bool {
-                    return material.type == setup::Material::Type::MESH;
-                });
-
-        // Set region/material labels
-        {
-            config.io->sregions.clear();
-            for (auto const &region : regions) {
-                config.io->sregions.push_back(region.name);
-            }
-
-            config.io->smaterials.clear();
-            for (auto const &material : materials) {
-                config.io->smaterials.push_back(material.name);
-            }
-        }
+    if (runtime.sizes->nel == 0 || runtime.sizes->nnd == 0) {
+        FAIL_WITH_LINE(err, "ERROR: zero sized mesh");
+        return;
     }
 
-    // Read mesh information and generate mesh
-    deck.readMeshRegions(config.setup->mesh_regions);
-    setup::generateMesh(config.setup->mesh_regions, *config.global,
-            *runtime.sizes, timers, err);
-    if (err.failed()) return;
+    // Read region/material configuration (setup_IC_read)
+    deck.readShapes(config.setup->shapes);
+    deck.readIndicators(config.setup->regions, config.setup->materials);
+    deck.readInitialConditions(config.setup->thermo, config.setup->kinematics);
+
+    // Number of regions (not counting those of unknown type)
+    auto const &regions = config.setup->regions;
+    runtime.sizes->nreg = std::count_if(regions.begin(), regions.end(),
+            [](setup::Region const &region) -> bool {
+                return region.type != setup::Region::Type::UNKNOWN;
+            });
+
+    // Number of materials (not counting those of unknown type)
+    auto const &materials = config.setup->materials;
+    runtime.sizes->nmat = std::count_if(materials.begin(), materials.end(),
+            [](setup::Material const &material) -> bool {
+                return material.type != setup::Material::Type::UNKNOWN;
+            });
+
+    // Check for mesh specification
+    config.setup->rmesh = std::any_of(regions.begin(), regions.end(),
+            [](setup::Region const &region) -> bool {
+                return region.type == setup::Region::Type::MESH;
+            });
+
+    config.setup->mmesh = std::any_of(materials.begin(), materials.end(),
+            [](setup::Material const &material) -> bool {
+                return material.type == setup::Material::Type::MESH;
+            });
+
+    // Set region/material labels
+    config.io->sregions.clear();
+    for (auto const &region : regions) {
+        config.io->sregions.push_back(region.name);
+    }
+
+    config.io->smaterials.clear();
+    for (auto const &material : materials) {
+        config.io->smaterials.push_back(material.name);
+    }
 }
 
 } // namespace io

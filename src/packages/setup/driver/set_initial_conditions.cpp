@@ -87,6 +87,10 @@ setRegionFlags(
 
         case Indicator::Type::CELL:
             {
+                // If we are running with MPI, we need to check the global cell
+                // (element) numbering to set the right flags. If not, we just
+                // use the local numbering. IELMAT is just a dummy here, it is
+                // never used.
                 DataID const ipid = comm.nproc > 1 ?
                                         DataID::IELLOCGLOB : DataID::IELMAT;
                 auto ip = data[ipid].chost<int, VarDim>();

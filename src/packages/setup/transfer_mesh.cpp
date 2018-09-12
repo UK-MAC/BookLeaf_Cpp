@@ -7,11 +7,11 @@
  * terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
- * 
+ *
  * BookLeaf is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
@@ -30,7 +30,8 @@
 namespace bookleaf {
 namespace setup {
 
-#define IXm(i, j) (index2D((i-1), (j-1), no_l))
+#define IXm(i, j) (index2D((i), (j), no_l))
+#define IXme(i, j) (index2D((i), (j), no_l-1))
 
 void
 transferMesh(
@@ -51,105 +52,80 @@ transferMesh(
     auto ndx    = data[DataID::NDX].host<double, VarDim>();
     auto ndy    = data[DataID::NDY].host<double, VarDim>();
 
-    //int *istore = new int[nnd];
-    //std::fill(istore, istore + nnd, 0);
+    // Transfer information from the now generated mesh region object to the
+    // mesh variables in the data controller.
+    auto const &mdesc = *setup_config.mesh_descriptor;
+    auto const &mdata = *setup_config.mesh_data;
 
-    double r1, r2, r3, s1, s2, s3;
+    int const no_l = mdata.dims[0] + 1;
+    int const no_k = mdata.dims[1] + 1;
 
-    // Initialise
-    int nod_count = -1;
+    // Iterate through nodes
+    for (int ik = 0; ik < no_k; ik++) {
+        for (int il = 0; il < no_l; il++) {
 
-    int const nreg = setup_config.mesh_regions.size();
-    for (int ireg = 0; ireg < nreg; ireg++) {
-        MeshRegion const &mr = setup_config.mesh_regions[ireg];
+            // Node ordering calculated in mesh renumbering step
+            int const ind = mdata.no[IXm(il, ik)];
 
-        int const no_l = mr.dims[0] + 1;
-        int const no_k = mr.dims[1] + 1;
+            // Set node positions
+            ndx(ind) = mdata.ss[IXm(il, ik)];
+            ndy(ind) = mdata.rr[IXm(il, ik)];
 
-        int l1 = 1;
-        int l2 = no_l;
-        int k1 = 1;
-        int k2 = no_k;
+            // Set ndtype (either boundary condition or region value)
+            bool const is_bc =
+                (il == 0) || (il == no_l-1) ||
+                (ik == 0) || (ik == no_k-1);
 
-        // Coords + node type
-        for (int kk = k1; kk <= k2; kk++) {
-            for (int ll = l1; ll <= l2; ll++) {
-                if (ll == l1 || ll == l2 || kk == k1 || kk == k2) {
-                    if (!mr.merged[IXm(ll, kk)]) {
-                        nod_count++;
-                        ndx(nod_count) = mr.ss[IXm(ll, kk)];
-                        ndy(nod_count) = mr.rr[IXm(ll, kk)];
-                        int i1 = mr.bc[IXm(ll, kk)];
-                        if (i1 > 0) {
-                            ndtype(nod_count) = -i1;
-                            //istore[nod_count] = ireg;
-                        } else {
-                            err.fail("ERROR: undefined BC at region edge");
-                            return;
-                        }
-                    }
+            if (is_bc) {
+                int const bc = mdata.bc[IXm(il, ik)];
+                if (bc > 0) {
+                    ndtype(ind) = -bc;
 
                 } else {
-                    nod_count++;
-                    ndx(nod_count) = mr.ss[IXm(ll, kk)];
-                    ndy(nod_count) = mr.rr[IXm(ll, kk)];
-                    ndtype(nod_count) = ireg+1;
+                    FAIL_WITH_LINE(err, "ERROR: undefined BC at mesh edge");
+                    return;
                 }
+
+            } else {
+                ndtype(ind) = 1; // first (only) mesh region
             }
         }
-
-        // Connectivity
-        r1 = mr.rr[IXm(2, 1)] - mr.rr[IXm(1, 1)];
-        r2 = mr.rr[IXm(1, 2)] - mr.rr[IXm(1, 1)];
-        r3 = mr.rr[IXm(2, 2)] - mr.rr[IXm(1, 1)];
-        s1 = mr.ss[IXm(2, 1)] - mr.ss[IXm(1, 1)];
-        s2 = mr.ss[IXm(1, 2)] - mr.ss[IXm(1, 1)];
-        s3 = mr.ss[IXm(2, 2)] - mr.ss[IXm(1, 1)];
-
-        int i1, i2;
-        if (((r1*s2-r2*s1) > 0.) || ((r1*s3-r3*s1) > 0.) ||
-                ((r3*s2-r2*s3) > 0.)) {
-            i1 = 3;
-            i2 = 1;
-        } else {
-            i1 = 1;
-            i2 = 3;
-        }
-
-        int ele_count = -1;
-        for (int kk = k1; kk <= k2 - 1; kk++) {
-            for (int ll = l1; ll <= l2 - 1; ll++) {
-                ele_count++;
-                elnd(ele_count, 0)  = (ll-1) + (kk-1)*l2;
-                elnd(ele_count, 2)  = (ll)   + (kk)  *l2;
-                elnd(ele_count, i1) = elnd(ele_count, 0)+1;
-                elnd(ele_count, i2) = elnd(ele_count, 2)-1;
-                elreg(ele_count) = ireg;
-            }
-        }
-
-        // Clean up allocated memory from mesh region (allocated by
-        // setup::generateMesh())
-        delete[] mr.rr;
-        delete[] mr.ss;
-        delete[] mr.merged;
-        delete[] mr.bc;
-
-    } // for ireg < nreg
-
-    // Material no.
-    for (int iele = 0; iele < nel; iele++) {
-        int ireg = elreg(iele);
-        elmat(iele) = setup_config.mesh_regions[ireg].material;
     }
 
-    // No longer need mesh region data
-    setup_config.mesh_regions.clear();
+    // Set element connectivity
+    int const i1 = mdata.getNodeOrdering() == 1 ? 3 : 1;
+    int const i2 = i1 == 3                      ? 1 : 3;
 
-    //delete[] istore;
+    for (int ik = 0; ik < no_k - 1; ik++) {
+        for (int il = 0; il < no_l - 1; il++) {
+
+            // Element ordering calculated in mesh renumbering step
+            int const iel = mdata.eo[IXme(il, ik)];
+
+            // Set element connectivity---use ordered node indices
+            elnd(iel, 0)  = mdata.no[IXm(il  , ik  )];
+            elnd(iel, 2)  = mdata.no[IXm(il+1, ik+1)];
+            elnd(iel, i1) = mdata.no[IXm(il+1, ik  )];
+            elnd(iel, i2) = mdata.no[IXm(il  , ik+1)];
+
+            // Set mesh region flags, these are overwritten later unless we are
+            // specifying regions and materials by mesh
+            elreg(iel) = 0; // first (only) mesh region
+        }
+    }
+
+    // Set mesh material flags, these are overwritten later unless we are
+    // specifying regions and materials by mesh
+    for (int iel = 0; iel < nel; iel++) {
+        elmat(iel) = mdesc.material;
+    }
+
+    // Clean up allocated memory from mesh generation
+    setup_config.mesh_data->deallocate();
 }
 
 #undef IXm
+#undef IXme
 
 } // namespace setup
 } // namespace bookleaf

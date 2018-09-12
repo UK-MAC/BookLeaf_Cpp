@@ -193,8 +193,8 @@ SiloIODriver::writeData(
         return;
     }
 
+    // Write material and thermodynamic data, handling mixed cells
     if (sizes.ncp > 0) {
-
         auto elmat      = data[DataID::IELMAT].chost<int, VarDim>();
         auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
         auto elenergy   = data[DataID::ELENERGY].chost<double, VarDim>();
@@ -271,6 +271,7 @@ SiloIODriver::writeData(
             return;
         }
 
+    // Write pure material and thermodynamic data
     } else {
         auto elmat      = data[DataID::IELMAT].chost<int, VarDim>();
         auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
@@ -287,8 +288,8 @@ SiloIODriver::writeData(
         // Write thermodynamic variables
         writeDataVariable(fdata, data[DataID::ELDENSITY].getName(), eldensity,
                 sizes.nel, true, err);
-        writeDataVariable(fdata, data[DataID::ELENERGY].getName(), elenergy, true,
-                sizes.nel, err);
+        writeDataVariable(fdata, data[DataID::ELENERGY].getName(), elenergy,
+                sizes.nel, true, err);
         writeDataVariable(fdata, data[DataID::ELPRESSURE].getName(), elpressure,
                 sizes.nel, true, err);
         if (err.failed()) {
@@ -302,10 +303,10 @@ SiloIODriver::writeData(
     auto ndu   = data[DataID::NDU].chost<double, VarDim>();
     auto ndv   = data[DataID::NDV].chost<double, VarDim>();
 
-    writeDataVariable(fdata, data[DataID::NDU].getName(), ndu, sizes.nnd, false,
-            err);
-    writeDataVariable(fdata, data[DataID::NDV].getName(), ndv, sizes.nnd, false,
-            err);
+    writeDataVariable(fdata, data[DataID::NDU].getName(), ndu, sizes.nnd,
+            false, err);
+    writeDataVariable(fdata, data[DataID::NDV].getName(), ndv, sizes.nnd,
+            false, err);
     writeDataVariable(fdata, data[DataID::IELREG].getName(), elreg, sizes.nel,
             true, err);
 

@@ -15,27 +15,25 @@
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
-#ifndef BOOKLEAF_PACKAGES_SETUP_GENERATE_MESH_H
-#define BOOKLEAF_PACKAGES_SETUP_GENERATE_MESH_H
-
-#include <vector>
+#ifndef BOOKLEAF_PACKAGES_SETUP_RENUMBER_MESH_H
+#define BOOKLEAF_PACKAGES_SETUP_RENUMBER_MESH_H
 
 
 
 namespace bookleaf {
 
-struct GlobalConfiguration;
-class TimerControl;
+struct Config;
 struct Error;
+class TimerControl;
 
 namespace setup {
 
 struct Config;
 
 void
-generateMesh(
+renumberMesh(
+        bookleaf::Config const &config,
         setup::Config &setup_config,
-        GlobalConfiguration &global,
         TimerControl &timers,
         Error &err);
 
@@ -44,4 +42,4 @@ generateMesh(
 
 
 
-#endif // BOOKLEAF_PACKAGES_SETUP_GENERATE_MESH_H
+#endif // BOOKLEAF_PACKAGES_SETUP_RENUMBER_MESH_H

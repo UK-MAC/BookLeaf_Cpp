@@ -39,7 +39,6 @@ readInputDeck(
         std::string filename,
         Config &config,
         Runtime &runtime,
-        TimerControl &timers,
         Error &err);
 
 } // namespace io

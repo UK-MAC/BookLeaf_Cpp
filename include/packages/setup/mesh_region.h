@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cassert>
 
 
 
@@ -30,30 +31,57 @@ struct Sizes;
 
 namespace setup {
 
-struct MeshRegion
+/**
+ * \author timrlaw
+ *
+ * Wraps the data specifying a mesh, which is subsequently used for generation.
+ */
+class MeshDescriptor
 {
-    struct Side
-    {
-        struct Segment
-        {
-            // Integer values correspond to original Fortran code for
-            // convenience when porting, have no significance other than that
-            enum class Type : int {
-                UNKNOWN=0, LINE=1, ARC_C=2, ARC_A=3, POINT=4, LINK=5 };
-            enum class BoundaryCondition : int {
-                SLIPX=1, SLIPY=2, WALL=3, TRANS=6, OPEN=7, FREE=8 };
-
-            Type type = Type::UNKNOWN;
-            BoundaryCondition bc = BoundaryCondition::FREE;
-            double pos[8] = {0};
-        };
-
-        std::vector<Segment> segments;
+public:
+    // Segment type
+    enum class SegmentType : int {
+        UNKNOWN = 0,
+        LINE    = 1,
+        ARC_C   = 2,
+        ARC_A   = 3,
+        POINT   = 4,
+        LINK    = 5
     };
 
-    enum class Type : int { UNKNOWN=0, LIN1=1, LIN2=2, EQUI=3, USER=4 };
+    // Segment boundary condition
+    enum class SegmentBC : int {
+        SLIPX = 1,
+        SLIPY = 2,
+        WALL  = 3,
+        TRANS = 6,
+        OPEN  = 7,
+        FREE  = 8
+    };
 
-    // Mesh region dimensions
+    // A mesh segment
+    struct Segment
+    {
+        SegmentType type = SegmentType::UNKNOWN;
+        SegmentBC   bc   = SegmentBC::FREE;
+
+        // Data specifying segment (interpreted depending on type)
+        double pos[8] = {0};
+    };
+
+    // A mesh side (collection of segments)
+    typedef std::vector<Segment> Side;
+
+    // Specify the type of mesh
+    enum class Type : int {
+        UNKNOWN = 0,
+        LIN1    = 1,
+        LIN2    = 2,
+        EQUI    = 3,
+        USER    = 4
+    };
+
+    // Mesh region dimensions (elements)
     int dims[2] = {0};
 
     // Mesh region type
@@ -62,40 +90,103 @@ struct MeshRegion
     // Material index if specifying materials via mesh
     int material = -1;
 
-    // Convergence tolerance/scaling factor
+    // Convergence tolerance
     double tol = 1.e-12;
+
+    // Convergence scaling factor
     double om = 1.;
 
-    // Number of iterations in for convergence
-    int no_it = 0;
-
-    // ???
-    double *rr = nullptr;
-    double *ss = nullptr;
-    int *bc = nullptr;
-    unsigned char *merged = nullptr;
-
-    // Weights
-    double r_wgt[8] = {0};
-    double s_wgt[8] = {0};
-    double wgt[16] = {0};
-
+    // Mesh sides
     std::vector<Side> sides;
 };
 
-void printMeshRegions(std::vector<MeshRegion> const &mesh_regions,
+
+
+/**
+ * \author timrlaw
+ *
+ * Wraps the data representing a generated mesh, which is subsequently copied
+ * into the main data arrays.
+ */
+class MeshData
+{
+public:
+    MeshData(int dimx, int dimy);
+    ~MeshData();
+
+    // Mesh region dimensions (elements)
+    int dims[2] = {0};
+
+    // Has the data been allocated?
+    bool allocated = false;
+
+    // Number of iterations to convergence
+    int no_it = 0;
+
+    // Node positions
+    double *ss = nullptr;   // ndx
+    double *rr = nullptr;   // ndy
+
+    // Boundary conditions
+    int *bc = nullptr;
+
+    // Numbering and ordering for elements and nodes
+    int *nn = nullptr;
+    int *en = nullptr;
+    int *no  = nullptr;
+    int *eo  = nullptr;
+
+    double r_wgt[8]  = {0};
+    double s_wgt[8]  = {0};
+    double   wgt[16] = {0};
+
+    // Allocate memory based on dims
+    void allocate();
+
+    // Deallocate memory
+    void deallocate();
+
+    int
+    getNodeOrdering() const
+    {
+        #define IX(i, j) ((j) * (dims[0]+1) + (i))
+
+        double const r1 = rr[IX(1, 0)] - rr[IX(0, 0)];
+        double const r2 = rr[IX(0, 1)] - rr[IX(0, 0)];
+        double const r3 = rr[IX(1, 1)] - rr[IX(0, 0)];
+        double const s1 = ss[IX(1, 0)] - ss[IX(0, 0)];
+        double const s2 = ss[IX(0, 1)] - ss[IX(0, 0)];
+        double const s3 = ss[IX(1, 1)] - ss[IX(0, 0)];
+
+        bool const cond =
+            ((r1*s2-r2*s1) > 0.) ||
+            ((r1*s3-r3*s1) > 0.) ||
+            ((r3*s2-r2*s3) > 0.);
+
+        return cond ? 1 : 0;
+
+        #undef IX
+    }
+};
+
+
+
+void
+rationaliseMeshDescriptor(
+        MeshDescriptor &md,
+        Sizes const &sizes,
+        Error &err);
+
+void
+printMeshDescriptor(
+        MeshDescriptor const &mdesc,
         Sizes const &sizes);
-
-std::ostream &operator<<(std::ostream &os, MeshRegion const &rhs);
-
-void rationaliseMeshRegions(std::vector<MeshRegion> &mesh_regions,
-        Sizes const &sizes, Error &err);
 
 #ifdef BOOKLEAF_DEBUG
 void
-dumpMeshRegionData(
+dumpMeshData(
         std::string filename,
-        MeshRegion const &mesh_region);
+        MeshData const &mdata);
 #endif
 
 } // namespace setup

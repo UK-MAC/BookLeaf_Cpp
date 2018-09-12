@@ -35,7 +35,7 @@ struct GlobalConfiguration;
 namespace setup {
 struct Region;
 struct Material;
-struct MeshRegion;
+struct MeshDescriptor;
 struct Shape;
 struct ThermodynamicsIC;
 struct KinematicsIC;
@@ -56,7 +56,7 @@ public:
     void readHydroConfiguration(hydro::Config &hydro);
     void readALEConfiguration(ale::Config &ale);
     void readGlobalConfiguration(GlobalConfiguration &gc);
-    void readMeshRegions(std::vector<setup::MeshRegion> &mesh_regions);
+    void readMesh(setup::MeshDescriptor &md);
     void readEOS(EOS &eos);
     void readShapes(std::vector<setup::Shape> &shapes);
     void readIndicators(std::vector<setup::Region> &regions,
@@ -67,7 +67,6 @@ public:
 private:
     YAML::Node root;
 
-    static setup::MeshRegion readMeshRegion(YAML::Node node);
     static MaterialEOS readMaterialEOS(YAML::Node node);
     static setup::Region readRegion(YAML::Node node);
     static setup::Material readMaterial(YAML::Node node);

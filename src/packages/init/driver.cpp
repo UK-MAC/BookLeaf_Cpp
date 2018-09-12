@@ -28,12 +28,14 @@
 #include "common/timer_control.h"
 #include "common/data_control.h"
 #include "packages/init/kernel.h"
+#include "packages/setup/generate_mesh.h"
 #include "packages/setup/transfer_mesh.h"
 #include "utilities/data/gather.h"
 #include "utilities/data/sort.h"
 #include "packages/ale/config.h"
 #include "utilities/eos/get_eos.h"
 
+#include "packages/setup/renumber_mesh.h"
 #ifdef BOOKLEAF_MPI_SUPPORT
 #include "packages/setup/partition_mesh.h"
 #endif
@@ -240,6 +242,14 @@ initMesh(
         DataControl &data,
         Error &err)
 {
+    // Generate mesh
+    setup::generateMesh(*config.setup, *config.global, timers, err);
+    if (err.failed()) return;
+
+    // Renumber mesh
+    setup::renumberMesh(config, *config.setup, timers, err);
+    if (err.failed()) return;
+
     // Transfer data from mesh generation
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (config.comms->spatial->nproc > 1) {

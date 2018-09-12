@@ -240,7 +240,7 @@ printConfiguration(
 
         std::cout << stripe() << "\n";
         std::cout << " MESHING OPTIONS\n";
-        printMeshRegions(config.setup->mesh_regions, *runtime.sizes);
+        printMeshDescriptor(*config.setup->mesh_descriptor, *runtime.sizes);
 
         std::cout << stripe() << "\n";
         std::cout << " INITIAL CONDITIONS\n";

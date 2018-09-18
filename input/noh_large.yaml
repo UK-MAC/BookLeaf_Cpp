@@ -5,12 +5,12 @@ TIME:
     dt_max: 1.0e-2
     dt_min: 1.0e-8
     dt_g: 1.02
-    kappaall: 0.01  # Enables hourglass forces
 
 HYDRO:
     cfl_sf: 0.5
     cvisc1: 0.5
     cvisc2: 0.75
+    kappaall: 0.01  # Enables hourglass forces
 
 EOS:
     - { type: ideal gas, params: [1.6666667] }

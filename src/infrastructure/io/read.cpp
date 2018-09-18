@@ -58,13 +58,21 @@ readInputDeck(
     if (err.failed()) return;
 
     // Read utility configuration (setup_utils)
-    deck.readGlobalConfiguration(*config.global);
-    deck.readEOS(*config.eos);
+    deck.readGlobalConfiguration(*config.global, err);
+    if (err.failed()) return;
+
+    deck.readEOS(*config.eos, err);
+    if (err.failed()) return;
 
     // Read general configuration (control_nml, ale_nml)
-    deck.readTimeConfiguration(*config.time);
-    deck.readHydroConfiguration(*config.hydro);
-    deck.readALEConfiguration(*config.ale);
+    deck.readTimeConfiguration(*config.time, err);
+    if (err.failed()) return;
+
+    deck.readHydroConfiguration(*config.hydro, err);
+    if (err.failed()) return;
+
+    deck.readALEConfiguration(*config.ale, err);
+    if (err.failed()) return;
 
     // Read mesh descriptor
     config.setup->mesh_descriptor.reset(new setup::MeshDescriptor());

@@ -52,12 +52,12 @@ class InputDeck
 public:
     void open(std::string input_file, Error &err);
 
-    void readTimeConfiguration(time::Config &time);
-    void readHydroConfiguration(hydro::Config &hydro);
-    void readALEConfiguration(ale::Config &ale);
-    void readGlobalConfiguration(GlobalConfiguration &gc);
+    void readTimeConfiguration(time::Config &time, Error &err);
+    void readHydroConfiguration(hydro::Config &hydro, Error &err);
+    void readALEConfiguration(ale::Config &ale, Error &err);
+    void readGlobalConfiguration(GlobalConfiguration &gc, Error &err);
     void readMesh(setup::MeshDescriptor &md);
-    void readEOS(EOS &eos);
+    void readEOS(EOS &eos, Error &err);
     void readShapes(std::vector<setup::Shape> &shapes);
     void readIndicators(std::vector<setup::Region> &regions,
             std::vector<setup::Material> &materials);
@@ -67,7 +67,7 @@ public:
 private:
     YAML::Node root;
 
-    static MaterialEOS readMaterialEOS(YAML::Node node);
+    static MaterialEOS readMaterialEOS(YAML::Node node, Error &err);
     static setup::Region readRegion(YAML::Node node);
     static setup::Material readMaterial(YAML::Node node);
     static setup::ThermodynamicsIC readThermodynamicsInitialCondition(YAML::Node node);

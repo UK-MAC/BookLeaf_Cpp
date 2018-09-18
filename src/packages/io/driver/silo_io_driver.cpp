@@ -187,7 +187,7 @@ SiloIODriver::writeData(
     };
 
     // Write mesh
-    writeDataMesh(fdata, sizes, data, err);
+    writeDataMesh(fdata, sizes, data, comm, err);
     if (err.failed()) {
         close();
         return;
@@ -464,6 +464,7 @@ SiloIODriver::writeDataMesh(
         DBfile *fdata,
         Sizes const &sizes,
         DataControl const &data,
+        comms::Comm const &comm,
         Error &err)
 {
     using constants::NCORN;
@@ -471,14 +472,41 @@ SiloIODriver::writeDataMesh(
     int constexpr NSHAPE = 1;
     int constexpr NSIZE  = 4;
 
+    // Create option list
+    DBoptlist *opt_list = nullptr;
+    if ((opt_list = DBMakeOptlist(1)) == nullptr) {
+        err.fail("ERROR: failed to create option list");
+        return;
+    }
+
     // Write zone list
     auto node_list = data[DataID::IELND].chost<int, VarDim, NCORN>();
     int *node_list_ptr = const_cast<int *>(node_list.data());
     int len_node_list = node_list.size();
 
+    int *zone_glob_ptr = nullptr;
+#ifdef BOOKLEAF_MPI_SUPPORT
+    if (comm.nproc > 1) {
+        auto zone_glob = data[DataID::IELLOCGLOB].chost<int, VarDim>();
+        zone_glob_ptr = const_cast<int *>(zone_glob.data());
+    } else
+#endif
+    {
+        zone_glob_ptr = new int[sizes.nel];
+        std::iota(zone_glob_ptr, zone_glob_ptr+sizes.nel, 0);
+    }
+
     int shape_type  = DB_ZONETYPE_QUAD;
     int shape_size  = NSIZE;
     int shape_count = sizes.nel;
+
+    int ierr = 0;
+    ierr |= DBAddOption(opt_list, DBOPT_ZONENUM, zone_glob_ptr);
+    if (ierr != 0) {
+        err.fail("ERROR: failed to populate option list");
+        DBFreeOptlist(opt_list);
+        return;
+    }
 
     if (DBPutZonelist2(
                 fdata,              // File handle
@@ -494,11 +522,21 @@ SiloIODriver::writeDataMesh(
                 &shape_size,        // # nodes per zone shape
                 &shape_count,       // # zones having each shape
                 NSHAPE,             // # different zone shapes
-                nullptr             // Option list (not applicable)
+                opt_list            // Option list
             ) != 0) {
 
         err.fail("ERROR: failed to put zonelist");
         return;
+    }
+
+    // Clean up
+    if (DBFreeOptlist(opt_list) != 0) {
+        err.fail("ERROR: failed to free option list");
+    }
+    opt_list = nullptr;
+
+    if (comm.nproc == 1) {
+        delete[] zone_glob_ptr;
     }
 
     // Prepare coordinate pointers
@@ -507,8 +545,7 @@ SiloIODriver::writeDataMesh(
     double const *coords[2] = { ndx.data(), ndy.data() };
 
     // Create option list
-    DBoptlist *opt_list = nullptr;
-    if ((opt_list = DBMakeOptlist(3)) == nullptr) {
+    if ((opt_list = DBMakeOptlist(4)) == nullptr) {
         err.fail("ERROR: failed to create option list");
         return;
     }
@@ -520,10 +557,23 @@ SiloIODriver::writeDataMesh(
 
     int coordsys = DB_CARTESIAN;
 
-    int ierr = 0;
+    int *node_glob_ptr = nullptr;
+#ifdef BOOKLEAF_MPI_SUPPORT
+    if (comm.nproc > 1) {
+        auto node_glob = data[DataID::INDLOCGLOB].chost<int, VarDim>();
+        node_glob_ptr = const_cast<int *>(node_glob.data());
+    } else
+#endif
+    {
+        node_glob_ptr = new int[sizes.nnd];
+        std::iota(node_glob_ptr, node_glob_ptr+sizes.nnd, 0);
+    }
+
+    ierr = 0;
     ierr |= DBAddOption(opt_list, DBOPT_XLABEL, pxlabel);
     ierr |= DBAddOption(opt_list, DBOPT_YLABEL, pylabel);
     ierr |= DBAddOption(opt_list, DBOPT_COORDSYS, &coordsys);
+    ierr |= DBAddOption(opt_list, DBOPT_NODENUM, node_glob_ptr);
     if (ierr != 0) {
         err.fail("ERROR: failed to populate option list");
         DBFreeOptlist(opt_list);
@@ -551,6 +601,10 @@ SiloIODriver::writeDataMesh(
     // Clean up
     if (DBFreeOptlist(opt_list) != 0) {
         err.fail("ERROR: failed to free option list");
+    }
+
+    if (comm.nproc == 1) {
+        delete[] node_glob_ptr;
     }
 }
 

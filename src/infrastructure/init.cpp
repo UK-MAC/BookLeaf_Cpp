@@ -189,6 +189,10 @@ rationalise(
     rationalise(*config.setup, err);
     if (err.failed()) return;
 
+    rationaliseMeshDescriptor(*config.setup->mesh_descriptor, *runtime.sizes,
+            err);
+    if (err.failed()) return;
+
     rationaliseRegions(
             config.setup->regions,
             config.setup->materials,

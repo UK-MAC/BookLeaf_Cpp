@@ -63,82 +63,59 @@ computeConnectivity(
         return;
     }
 
-    std::vector<MeshRegion> const &mesh_regions = setup_config.mesh_regions;
+    auto const &mdesc = *setup_config.mesh_descriptor;
+    auto const &mdata = *setup_config.mesh_data;
 
-    // Assume mesh has only 1 region
-    MeshRegion const &mr = mesh_regions[0];
     int const no_l = dims[0] + 1;
-    #define IX(i, j) (index2D((i), (j), no_l))
+    #define IXmn(i, j) (index2D((i), (j), no_l))
+    #define IXme(i, j) (index2D((i), (j), no_l-1))
 
     // Set conndata
     View<int, VarDim, NDAT> conn_data(_connectivity, nel);
 
-    double r1 = mr.rr[IX(1, 0)] - mr.rr[IX(0, 0)];
-    double r2 = mr.rr[IX(0, 1)] - mr.rr[IX(0, 0)];
-    double r3 = mr.rr[IX(1, 1)] - mr.rr[IX(0, 0)];
-    double s1 = mr.ss[IX(1, 0)] - mr.ss[IX(0, 0)];
-    double s2 = mr.ss[IX(0, 1)] - mr.ss[IX(0, 0)];
-    double s3 = mr.ss[IX(1, 1)] - mr.ss[IX(0, 0)];
+    int const in1 = mdata.getNodeOrdering() == 1 ? 6 : 4;
+    int const in2 = in1 == 6                     ? 4 : 6;
 
-    int in1, in2;
-    if (((r1*s2-r2*s1) > 0.) || ((r1*s3-r3*s1) > 0.) || ((r3*s2-r2*s3) > 0.)) {
-        in1 = 6;
-        in2 = 4;
-    } else {
-        in1 = 4;
-        in2 = 6;
-    }
+    int const k_lo = side == 1 ? slice[0] : 0;
+    int const k_hi = side == 1 ? slice[1] : dims[1];
+    int const l_lo = side == 0 ? slice[0] : 0;
+    int const l_hi = side == 0 ? slice[1] : dims[0];
 
     //
-    // conndata structure:
+    // Connectivity data structure:
     //
-    //  - global element index
-    //  - mesh region
-    //  - material
-    //  - node 0
-    //  - node 1
-    //  - node 2
-    //  - node 3
+    //  [0]: global element index
+    //  [1]: mesh region
+    //  [2]: mesh material
+    //  [3]: global node index 0
+    //  [4]: global node index 1
+    //  [5]: global node index 2
+    //  [6]: global node index 3
     //
     int iel = 0;
-    if (side == 1) {
-        for (int kk = slice[0]; kk < slice[1]; kk++) {
-            for (int ll = 0; ll < dims[0]; ll++) {
-                assert(iel < nel);
+    for (int ik = k_lo; ik < k_hi; ik++) {
+        for (int il = l_lo; il < l_hi; il++) {
+            assert(iel < nel);
 
-                conn_data(iel, 0) = iel + (dims[0] * slice[0]);
-                conn_data(iel, 1) = 0;
-                conn_data(iel, 2) = mr.material;
+            // Global element index
+            conn_data(iel, 0) = mdata.eo[IXme(il, ik)];
 
-                // Global node indices
-                conn_data(iel, 3)   = ll + kk * (dims[0] + 1);
-                conn_data(iel, 5)   = (ll+1) + (kk+1) * (dims[0] + 1);
-                conn_data(iel, in1) = conn_data(iel, 3) + 1;
-                conn_data(iel, in2) = conn_data(iel, 5) - 1;
+            // Mesh region/material
+            conn_data(iel, 1) = 0;
+            conn_data(iel, 2) = mdesc.material;
 
-                iel++;
-            }
-        }
+            // Global node indices
+            conn_data(iel, 3)   = mdata.no[IXmn(il  , ik  )];
+            conn_data(iel, 5)   = mdata.no[IXmn(il+1, ik+1)];
+            conn_data(iel, in1) = mdata.no[IXmn(il+1, ik  )];
+            conn_data(iel, in2) = mdata.no[IXmn(il  , ik+1)];
 
-    } else {
-        for (int kk = 0; kk < dims[1]; kk++) {
-            for (int ll = slice[0]; ll < slice[1]; ll++) {
-                assert(iel < nel);
-
-                conn_data(iel, 0) = iel + kk * dims[0] + slice[0];
-                conn_data(iel, 1) = 0;
-                conn_data(iel, 2) = mr.material;
-
-                // Global node indices
-                conn_data(iel, 3)   = ll + kk * (dims[0] + 1);
-                conn_data(iel, 5)   = (ll+1) + (kk+1) * (dims[0] + 1);
-                conn_data(iel, in1) = conn_data(iel, 3) + 1;
-                conn_data(iel, in2) = conn_data(iel, 5) - 1;
-
-                iel++;
-            }
+            iel++;
         }
     }
+
+    #undef IXmn
+    #undef IXme
 }
 
 
@@ -153,69 +130,83 @@ meshNodalData(
         View<double, VarDim>   ndy,
         Error &err)
 {
-    // Local decomposition, assume nreg=1
-    assert(setup_config.mesh_regions.size() == 1);
-    MeshRegion const &mr = setup_config.mesh_regions[0];
+    auto const &mdata = *setup_config.mesh_data;
 
     // Extents
-    int const l1 = 0;
-    int const l2 = mr.dims[0] + 1;
-    int const k1 = 0;
-    int const k2 = mr.dims[1] + 1;
-    int const ii = std::max(l2, k2);
+    int const no_l = mdata.dims[0] + 1;
+    int const no_k = mdata.dims[1] + 1;
 
-    #define IXm(i, j) (index2D(i, j, mr.dims[0] + 1))
+    #define IXmn(i, j) (index2D(i, j, no_l))
+
+    // Check that ndlocglob is sorted
+    bool const sorted = std::is_sorted(&ndlocglob(0), &ndlocglob(nnd));
+    if (!sorted) {
+        FAIL_WITH_LINE(err, "ERROR: node number array unsorted");
+        return;
+    }
+
+    // Check that ndlocglob doesn't contain duplicates
+    int prev = ndlocglob(0);
+    for (int ind = 1; ind < nnd; ind++) {
+        if (ndlocglob(ind) == prev) {
+            FAIL_WITH_LINE(err, "ERROR: duplicates in node number array");
+            return;
+        }
+
+        prev = ndlocglob(ind);
+    }
 
     // Co-ordinates and BCs
-    int icount = 0;
-    for (int kk = k1; kk < k2; kk++) {
-        for (int ll = l1; ll < l2; ll++) {
-            int const indg = ii == k2 ? ll + kk * l2 : kk + ll * k2;
-            assert(indg >= 0);
+    int num_found = 0;
+    for (int ik = 0; ik < no_k; ik++) {
+        for (int il = 0; il < no_l; il++) {
 
-            bool const found = std::binary_search(&ndlocglob(0), &ndlocglob(nnd), indg);
-            if (found) {
-                bool const edge = (ll == l1) || (ll == l2-1) ||
-                                  (kk == k1) || (kk == k2-1);
-                if (edge) {
-                    if (!mr.merged[IXm(ll, kk)]) {
-                        ndx(icount) = mr.ss[IXm(ll, kk)];
-                        ndy(icount) = mr.rr[IXm(ll, kk)];
-                        if (mr.bc[IXm(ll, kk)] > 0) {
-                            ndtype(icount) = -mr.bc[IXm(ll, kk)];
-                        } else {
-                            FAIL_WITH_LINE(err,
-                                    "ERROR: undefined BC at mesh edge");
-                            return;
-                        }
+            // Get the global node number
+            int const indg = mdata.no[IXmn(il, ik)];
 
-                        icount++;
-                    }
+            // See if this node ended up in this rank's partition, ignore if not
+            auto it = std::lower_bound(&ndlocglob(0), &ndlocglob(nnd), indg);
+            if (it == &ndlocglob(nnd) || *it != indg) continue;
+
+            int const ind = it - &ndlocglob(0);
+            num_found++;
+
+            // Set node positions
+            ndx(ind) = mdata.ss[IXmn(il, ik)];
+            ndy(ind) = mdata.rr[IXmn(il, ik)];
+
+            // Set ndtype (either boundary condition or region value)
+            bool const is_bc =
+                (il == 0) || (il == no_l-1) ||
+                (ik == 0) || (ik == no_k-1);
+
+            if (is_bc) {
+                int const bc = mdata.bc[IXmn(il, ik)];
+                if (bc > 0) {
+                    ndtype(ind) = -bc;
 
                 } else {
-                    ndx(icount) = mr.ss[IXm(ll, kk)];
-                    ndy(icount) = mr.rr[IXm(ll, kk)];
-                    ndtype(icount) = 1;
-                    icount++;
+                    FAIL_WITH_LINE(err, "ERROR: undefined BC at mesh edge");
+                    return;
                 }
-            } // if (*it == indg)
-        } // for (int ll = l1; ll < l2; ll++)
-    } // for (int kk = k1; kk < k2; kk++)
+
+            } else {
+                ndtype(ind) = 1; // first (only) mesh region
+            }
+        }
+    }
 
     // Check all mesh accounted for
-    if (icount != nnd) {
+    if (num_found != nnd) {
+        std::cerr << num_found << "/" << nnd << "\n";
         FAIL_WITH_LINE(err, "ERROR: Missing nodes on process");
         return;
     }
 
-    #undef IXm
+    #undef IXmn
 
-    // Destroy reg
-    delete[] mr.rr;
-    delete[] mr.ss;
-    delete[] mr.merged;
-    delete[] mr.bc;
-    setup_config.mesh_regions.clear();
+    // Deallocate mesh data
+    setup_config.mesh_data->deallocate();
 }
 
 } // namespace
@@ -236,11 +227,10 @@ partitionMesh(
 
     comms::Comm &comm = *config.comms->spatial;
 
+    auto const &mdata = *setup_config.mesh_data;
+
     // Mesh dimensions
-    int const dims[2] = {
-        setup_config.mesh_regions[0].dims[0],
-        setup_config.mesh_regions[0].dims[1]
-    };
+    int const dims[2] = { mdata.dims[0], mdata.dims[1] };
 
     // Initial partitioning
     int side;

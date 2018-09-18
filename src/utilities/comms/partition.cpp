@@ -120,17 +120,17 @@ metisPartition(
     }
 
     int metis_err = ParMETIS_V3_PartMeshKway(
-            elmdist.get(),          // How elements are distributed among procs
-            eptr.get(),             // Specifies local elements
-            eind.get(),             //           "
-            elmwgt,                 // Element weights
-            &wgtflag,               // Are element weights provided?
-            &numflag,               // Indexing scheme (C or Fortran?)
+            elmdist.get(),          // How element #s are distributed wrt procs
+            eptr.get(),             // Specifies local element conn. offsets
+            eind.get(),             // Specifies elnd local connectivity
+            elmwgt,                 // Element weights (nullptr)
+            &wgtflag,               // Are element weights provided (no)
+            &numflag,               // Indexing scheme (C or Fortran?) (C)
             &ncon,                  // # weights per node (# balance constraints)
             &nndcomm,               // Specifies connectivity in dual graph
-            &nproc,                 // Desired number of partitions
-            tpgwgts.get(),          // Fraction of node weight per partition
-            ubvec.get(),            // Imbalance tolerance per node weight
+            &nproc,                 // Desired number of partitions (1 per proc)
+            tpgwgts.get(),          // Fraction of node weight per partition (1/n)
+            ubvec.get(),            // Imbalance tolerance per node weight (low)
             options,                // Parameters to partitioner (unused)
             &edgecut,               // # edges cut (out)
             part.get(),             // Local vertices
@@ -327,16 +327,18 @@ void
 initialPartition(
         int const dims[2],
         Comm const &comm,
-        int &side,
+        int &long_side,
         int slice[2],
         int &nel)
 {
-    side = dims[1] >= dims[0] ? 1 : 0;
+    long_side = dims[1] >= dims[0] ? 1 : 0;
+
+    int const short_side = (long_side == 1 ? 0 : 1);
 
     // Split the mesh along its longest side
-    int const ncol = std::max(dims[0], dims[1]);
+    int const ncol         = dims[long_side];
     int const col_per_proc = ncol / comm.nproc;
-    int const excess = comm.nproc * (col_per_proc + 1) - ncol;
+    int const excess       = comm.nproc * (col_per_proc + 1) - ncol;
 
     if (comm.rank < excess) {
         slice[0] = comm.rank * col_per_proc;
@@ -348,7 +350,7 @@ initialPartition(
     }
 
     // Compute local number of elements
-    nel = dims[(side == 1 ? 0 : 1)] * (slice[1] - slice[0]);
+    nel = dims[short_side] * (slice[1] - slice[0]);
 }
 
 
@@ -382,6 +384,7 @@ improvePartition(
     metisPartition(nel, comm.nproc, comm.rank, &comm.comm, connectivity,
             partitioning, psizes, err);
     if (err.failed()) return;
+
 #else
     // If ParMETIS isn't available, just use RCB. Each processor needs to
     // partition the entire mesh.

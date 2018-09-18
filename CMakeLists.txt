@@ -161,6 +161,7 @@ set(BOOKLEAF_LIB_SRC
     ${PROJECT_SOURCE_DIR}/src/packages/setup/indicators.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/mesh_region.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/generate_mesh.cpp
+    ${PROJECT_SOURCE_DIR}/src/packages/setup/renumber_mesh.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/transfer_mesh.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/types.cpp
     ${PROJECT_SOURCE_DIR}/src/packages/setup/config.cpp

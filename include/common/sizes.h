@@ -58,11 +58,6 @@ rationalise(Sizes const &sizes, Error &err)
         err.fail("ERROR: incorrect value of nmat");
         return;
     }
-
-    if (sizes.nel < 0 || sizes.nnd < 0) {
-        err.fail("ERROR: incorrect mesh extent");
-        return;
-    }
 }
 
 } // namespace bookleaf

@@ -21,14 +21,14 @@ CUTOFF:
     pcut: 1.0e-40
 
 MESH:
-    - type: LIN2
-      dims: [7200, 360]
-      material: 0
-      sides:
-          - - { type: LINE,  bc: SLIPY, pos: [0.005,0.0,1.0,0.0] }
-          - - { type: ARC_A, bc: FREE,  pos: [1.0,0.0,0.0,1.0,0.0,0.0] }
-          - - { type: LINE,  bc: SLIPX, pos: [0.0,1.0,0.0,0.005] }
-          - - { type: ARC_C, bc: WALL,  pos: [0.0,0.005,0.005,0.0,0.0,0.0] }
+    type: LIN2
+    dims: [7200, 360]
+    material: 0
+    sides:
+        - - { type: LINE,  bc: SLIPY, pos: [0.005,0.0,1.0,0.0] }
+        - - { type: ARC_A, bc: FREE,  pos: [1.0,0.0,0.0,1.0,0.0,0.0] }
+        - - { type: LINE,  bc: SLIPX, pos: [0.0,1.0,0.0,0.005] }
+        - - { type: ARC_C, bc: WALL,  pos: [0.0,0.005,0.005,0.0,0.0,0.0] }
 
 INDICATORS:
     regions:

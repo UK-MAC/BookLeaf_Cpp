@@ -134,12 +134,112 @@ InputDeck::readALEConfiguration(ale::Config &ale)
 
 
 void
-InputDeck::readMeshRegions(std::vector<setup::MeshRegion> &mesh_regions)
+InputDeck::readMesh(setup::MeshDescriptor &md)
 {
     if (root["MESH"]) {
         YAML::Node node = root["MESH"];
-        for (auto child : node) {
-            mesh_regions.push_back(readMeshRegion(child));
+
+        using setup::MeshDescriptor;
+
+        auto read_mesh_segment =
+            [](YAML::Node node) -> MeshDescriptor::Segment {
+
+            MeshDescriptor::Segment seg;
+
+            // Read segment type
+            if (node["type"]) {
+                std::string stype = to_upper(node["type"].as<std::string>());
+
+                if (stype == "LINE")
+                    seg.type = MeshDescriptor::SegmentType::LINE;
+                else if (stype == "ARC_C")
+                    seg.type = MeshDescriptor::SegmentType::ARC_C;
+                else if (stype == "ARC_A")
+                    seg.type = MeshDescriptor::SegmentType::ARC_A;
+                else if (stype == "POINT")
+                    seg.type = MeshDescriptor::SegmentType::POINT;
+                else if (stype == "LINK")
+                    seg.type = MeshDescriptor::SegmentType::LINK;
+            }
+
+            // Read segment boundary condition
+            if (node["bc"]) {
+                std::string sbc = to_upper(node["bc"].as<std::string>());
+
+                if (sbc == "SLIPX")
+                    seg.bc = MeshDescriptor::SegmentBC::SLIPX;
+                else if (sbc == "SLIPY")
+                    seg.bc = MeshDescriptor::SegmentBC::SLIPY;
+                else if (sbc == "WALL")
+                    seg.bc = MeshDescriptor::SegmentBC::WALL;
+                else if (sbc == "TRANS")
+                    seg.bc = MeshDescriptor::SegmentBC::TRANS;
+                else if (sbc == "OPEN")
+                    seg.bc = MeshDescriptor::SegmentBC::OPEN;
+                else if (sbc == "FREE")
+                    seg.bc = MeshDescriptor::SegmentBC::FREE;
+            }
+
+            // Read segment positions
+            if (node["pos"]) {
+                std::vector<double> pos = node["pos"].as<std::vector<double>>();
+
+                auto it = pos.begin();
+                if (pos.size() <= 8) {
+                    it = pos.end();
+                } else {
+                    it = pos.begin() + 8;
+                }
+
+                // Prevent buffer overflow
+                int const len = std::min((int) pos.size(), 8);
+                std::copy(pos.begin(), pos.begin() + len, seg.pos);
+            }
+
+            return seg;
+        };
+
+        auto read_mesh_side =
+            [read_mesh_segment](YAML::Node node) -> MeshDescriptor::Side {
+
+            // Each side contains a number of segments
+            MeshDescriptor::Side side;
+            for (auto child : node) {
+                side.push_back(read_mesh_segment(child));
+            }
+
+            return side;
+        };
+
+        // Read mesh type
+        if (node["type"]) {
+            std::string stype = to_upper(node["type"].as<std::string>());
+
+            if      (stype == "LIN1") md.type = MeshDescriptor::Type::LIN1;
+            else if (stype == "LIN2") md.type = MeshDescriptor::Type::LIN2;
+            else if (stype == "EQUI") md.type = MeshDescriptor::Type::EQUI;
+            else if (stype == "USER") md.type = MeshDescriptor::Type::USER;
+        }
+
+        // Read mesh dimensions
+        if (node["dims"]) {
+            std::vector<double> dims = node["dims"].as<std::vector<double>>();
+            std::copy(dims.begin(), dims.begin() + 2, md.dims);
+
+            // Flip the dimensions for some reason
+            std::swap(md.dims[0], md.dims[1]);
+        }
+
+        // Read region tol, om, material index
+        READ_NODE(md, tol);
+        READ_NODE(md, om);
+        READ_NODE(md, material);
+
+        // Read region sides
+        if (node["sides"]) {
+            for (auto child : node["sides"]) {
+                md.sides.push_back(read_mesh_side(child));
+            }
         }
     }
 }
@@ -260,110 +360,6 @@ InputDeck::readInitialConditions(std::vector<setup::ThermodynamicsIC> &thermo,
             }
         }
     }
-}
-
-
-
-setup::MeshRegion
-InputDeck::readMeshRegion(YAML::Node node)
-{
-    using setup::MeshRegion;
-
-    auto read_mesh_region_side_segment =
-        [](YAML::Node node) -> MeshRegion::Side::Segment {
-
-        MeshRegion::Side::Segment mrss;
-
-        // Read segment type
-        if (node["type"]) {
-            std::string stype = to_upper(node["type"].as<std::string>());
-
-            if (stype == "LINE")
-                mrss.type = MeshRegion::Side::Segment::Type::LINE;
-            else if (stype == "ARC_C")
-                mrss.type = MeshRegion::Side::Segment::Type::ARC_C;
-            else if (stype == "ARC_A")
-                mrss.type = MeshRegion::Side::Segment::Type::ARC_A;
-            else if (stype == "POINT")
-                mrss.type = MeshRegion::Side::Segment::Type::POINT;
-            else if (stype == "LINK")
-                mrss.type = MeshRegion::Side::Segment::Type::LINK;
-        }
-
-        // Read segment boundary condition
-        if (node["bc"]) {
-            std::string sbc = to_upper(node["bc"].as<std::string>());
-
-            if (sbc == "SLIPX")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::SLIPX;
-            else if (sbc == "SLIPY")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::SLIPY;
-            else if (sbc == "WALL")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::WALL;
-            else if (sbc == "TRANS")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::TRANS;
-            else if (sbc == "OPEN")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::OPEN;
-            else if (sbc == "FREE")
-                mrss.bc = MeshRegion::Side::Segment::BoundaryCondition::FREE;
-        }
-
-        // Read segment positions
-        if (node["pos"]) {
-            std::vector<double> pos = node["pos"].as<std::vector<double>>();
-            assert(pos.size() <= 8);
-            std::copy(pos.begin(), pos.end(), mrss.pos);
-        }
-
-        return mrss;
-    };
-
-    auto read_mesh_region_side =
-        [read_mesh_region_side_segment](YAML::Node node) -> MeshRegion::Side {
-
-        // Each side contains a number of segments
-        MeshRegion::Side mrs;
-        for (auto child : node) {
-            mrs.segments.push_back(read_mesh_region_side_segment(child));
-        }
-
-        return mrs;
-    };
-
-    MeshRegion mr;
-
-    // Read region type
-    if (node["type"]) {
-        std::string stype = to_upper(node["type"].as<std::string>());
-
-        if      (stype == "LIN1") mr.type = MeshRegion::Type::LIN1;
-        else if (stype == "LIN2") mr.type = MeshRegion::Type::LIN2;
-        else if (stype == "EQUI") mr.type = MeshRegion::Type::EQUI;
-        else if (stype == "USER") mr.type = MeshRegion::Type::USER;
-    }
-
-    // Read region dimensions
-    if (node["dims"]) {
-        std::vector<double> dims = node["dims"].as<std::vector<double>>();
-        std::copy(dims.begin(), dims.begin() + 2, mr.dims);
-
-        // Fortran flips the dimensions for some reason
-        std::swap(mr.dims[0], mr.dims[1]);
-    }
-
-    // Read region tol, om, material index
-    READ_NODE(mr, tol);
-    READ_NODE(mr, om);
-    READ_NODE(mr, material);
-
-    // Read region sides
-    if (node["sides"]) {
-        for (auto child : node["sides"]) {
-            mr.sides.push_back(read_mesh_region_side(child));
-        }
-    }
-
-    return mr;
 }
 
 

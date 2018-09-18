@@ -37,9 +37,15 @@ namespace setup {
 
 struct Config;
 
-void partitionMesh(bookleaf::Config const &config,
-        setup::Config &setup_config, Sizes &sizes, TimerControl &timers,
-        TimerID timer_id, DataControl &data, Error &err);
+void
+partitionMesh(
+        bookleaf::Config const &config,
+        setup::Config &setup_config,
+        Sizes &sizes,
+        TimerControl &timers,
+        TimerID timer_id,
+        DataControl &data,
+        Error &err);
 
 } // namespace setup
 } // namespace bookleaf

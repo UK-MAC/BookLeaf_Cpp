@@ -47,8 +47,14 @@ namespace bookleaf {
  * @param [out]     err
  */
 void
-distributeMesh(int const *conn_data, int const *conn_dims, int const *part,
-        Config const &config, Sizes &sizes, DataControl &data, Error &err)
+distributeMesh(
+        int const *conn_data,
+        int const *conn_dims,
+        int const *part,
+        Config const &config,
+        Sizes &sizes,
+        DataControl &data,
+        Error &err)
 {
     using constants::NCORN;
 

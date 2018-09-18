@@ -118,8 +118,7 @@ main(int argc, char *argv[])
     // -------------------------------------------------------------------------
     // Read input deck, rationalise and print
     // -------------------------------------------------------------------------
-    inf::io::readInputDeck(CMD_ARGS.input_deck_file, config, runtime, timers,
-            err);
+    inf::io::readInputDeck(CMD_ARGS.input_deck_file, config, runtime, err);
     if (err.failed()) {
         halt(config, runtime, timers, data, err);
     }

@@ -19,6 +19,7 @@
 #define BOOKLEAF_PACKAGES_SETUP_CONFIG_H
 
 #include <vector>
+#include <memory>
 
 #include "packages/setup/types.h"
 #include "packages/setup/indicators.h"
@@ -36,7 +37,9 @@ struct Config {
     std::vector<Material>         materials;
     std::vector<ThermodynamicsIC> thermo;
     std::vector<KinematicsIC>     kinematics;
-    std::vector<MeshRegion>       mesh_regions;
+
+    std::unique_ptr<MeshDescriptor> mesh_descriptor;
+    std::unique_ptr<MeshData>       mesh_data;
 
     bool rmesh = false;
     bool mmesh = false;

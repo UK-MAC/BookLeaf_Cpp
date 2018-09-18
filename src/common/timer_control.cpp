@@ -36,6 +36,7 @@ TimerControl::TimerControl()
     add(TimerID::GETGEOMETRYI,     "     time in getgeometry           ");
     add(TimerID::COMMREGISTER,     "     time in register              ");
     add(TimerID::MESHGEN,          "     time in mesh generator        ");
+    add(TimerID::MESHRENUM,        "     time in mesh renumbering      ");
     add(TimerID::MESHPARTITION,    "     time in mesh partition        ");
     add(TimerID::SETUPIC,          "     time in initial conditions    ");
     add(TimerID::SOLVER,           "   time in solver                  ");

@@ -30,6 +30,14 @@ namespace kernel {
 using constants::NCORN;
 
 void
+initAcceleration(
+        View<double, VarDim> ndarea,
+        View<double, VarDim> ndmass,
+        View<double, VarDim> ndudot,
+        View<double, VarDim> ndvdot,
+        int nnd);
+
+void
 scatterAcceleration(
         double zerocut,
         ConstView<int, VarDim>           ndeln,

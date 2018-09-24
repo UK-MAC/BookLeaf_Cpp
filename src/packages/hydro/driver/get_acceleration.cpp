@@ -100,6 +100,9 @@ getAcceleration(
     auto ndu        = data[DataID::NDU].host<double, VarDim>();
     auto ndv        = data[DataID::NDV].host<double, VarDim>();
 
+    kernel::initAcceleration(lag_ndarea, lag_ndmass, lag_ndubar, lag_ndvbar,
+            nnd1);
+
     kernel::scatterAcceleration(hydro.global->zerocut, ndeln, ndelf,
             ndel, elnd, eldensity, cnwt, cnmass, lag_cnfx, lag_cnfy, lag_ndarea,
             lag_ndmass, lag_ndubar, lag_ndvbar, nnd1);

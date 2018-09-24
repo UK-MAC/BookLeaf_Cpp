@@ -31,6 +31,28 @@ namespace hydro {
 namespace kernel {
 
 void
+initAcceleration(
+        View<double, VarDim> ndarea,
+        View<double, VarDim> ndmass,
+        View<double, VarDim> ndudot,
+        View<double, VarDim> ndvdot,
+        int nnd)
+{
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
+    for (int ind = 0; ind < nnd; ind++) {
+        ndmass(ind) = 0.;
+        ndarea(ind) = 0.;
+        ndudot(ind) = 0.;
+        ndvdot(ind) = 0.;
+    }
+}
+
+
+
+void
 scatterAcceleration(
         double zerocut,
         ConstView<int, VarDim>           ndeln,
@@ -51,13 +73,6 @@ scatterAcceleration(
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
-
-    for (int ind = 0; ind < nnd; ind++) {
-        ndmass(ind) = 0.;
-        ndarea(ind) = 0.;
-        ndudot(ind) = 0.;
-        ndvdot(ind) = 0.;
-    }
 
     for (int ind = 0; ind < nnd; ind++) {
         for (int i = 0; i < ndeln(ind); i++) {

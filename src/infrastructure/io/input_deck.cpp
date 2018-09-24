@@ -40,6 +40,26 @@
 namespace bookleaf {
 namespace inf {
 namespace io {
+namespace {
+
+void
+validateKeys(
+        YAML::Node const &node,
+        std::vector<std::string> const &valid_keys,
+        Error &err)
+{
+    for (auto it : node) {
+        std::string key(it.first.as<std::string>());
+        auto rfind = std::find(valid_keys.begin(), valid_keys.end(), key);
+        if (rfind == valid_keys.end()) {
+            FAIL_WITH_LINE(err, "ERROR: Unexpected key '" + key +
+                    "' specified in input deck.");
+            return;
+        }
+    }
+}
+
+} // namespace
 
 // Little helper for reading YAML nodes, expands to:
 //
@@ -69,10 +89,23 @@ InputDeck::open(std::string filename, Error &err)
 
 
 void
-InputDeck::readTimeConfiguration(time::Config &time)
+InputDeck::readTimeConfiguration(time::Config &time, Error &err)
 {
+    std::vector<std::string> valid_keys {
+        "time_start",
+        "time_end",
+        "dt_initial",
+        "dt_max",
+        "dt_min",
+        "dt_g"
+    };
+
     if (root["TIME"]) {
         YAML::Node node = root["TIME"];
+
+        validateKeys(node, valid_keys, err);
+        if (err.failed()) return;
+
         READ_NODE(time, time_start);
         READ_NODE(time, time_end);
         READ_NODE(time, dt_initial);
@@ -85,10 +118,29 @@ InputDeck::readTimeConfiguration(time::Config &time)
 
 
 void
-InputDeck::readHydroConfiguration(hydro::Config &hydro)
+InputDeck::readHydroConfiguration(hydro::Config &hydro, Error &err)
 {
+    std::vector<std::string> valid_keys {
+        "cvisc1",
+        "cvisc2",
+        "cfl_sf",
+        "div_sf",
+        "zhg",
+        "zsp",
+        "kappaall",
+        "pmeritall",
+        "kappareg",
+        "pmeritreg",
+        "zdtnotreg",
+        "zmidlength"
+    };
+
     if (root["HYDRO"]) {
         YAML::Node node = root["HYDRO"];
+
+        validateKeys(node, valid_keys, err);
+        if (err.failed()) return;
+
         READ_NODE(hydro, cvisc1);
         READ_NODE(hydro, cvisc2);
         READ_NODE(hydro, cfl_sf);
@@ -107,10 +159,34 @@ InputDeck::readHydroConfiguration(hydro::Config &hydro)
 
 
 void
-InputDeck::readALEConfiguration(ale::Config &ale)
+InputDeck::readALEConfiguration(ale::Config &ale, Error &err)
 {
+    std::vector<std::string> valid_keys {
+        "npatch",
+        "adv_type",
+        "mintime",
+        "maxtime",
+        "sf",
+        "zexist",
+        "zon",
+        "zeul",
+        "patch_type",
+        "patch_motion",
+        "patch_ntrigger",
+        "patch_ontime",
+        "patch_offtime",
+        "patch_minvel",
+        "patch_maxvel",
+        "patch_om",
+        "patch_trigger"
+    };
+
     if (root["ALE"]) {
         YAML::Node node = root["ALE"];
+
+        validateKeys(node, valid_keys, err);
+        if (err.failed()) return;
+
         READ_NODE(ale, npatch);
         READ_NODE(ale, adv_type);
         READ_NODE(ale, mintime);
@@ -247,10 +323,23 @@ InputDeck::readMesh(setup::MeshDescriptor &md)
 
 
 void
-InputDeck::readGlobalConfiguration(GlobalConfiguration &gc)
+InputDeck::readGlobalConfiguration(GlobalConfiguration &gc, Error &err)
 {
+    std::vector<std::string> valid_keys {
+        "zcut",
+        "zerocut",
+        "dencut",
+        "accut",
+        "pcut",
+        "ccut"
+    };
+
     if (root["CUTOFF"]) {
         YAML::Node node = root["CUTOFF"];
+
+        validateKeys(node, valid_keys, err);
+        if (err.failed()) return;
+
         READ_NODE(gc, zcut);
         READ_NODE(gc, zerocut);
         READ_NODE(gc, dencut);
@@ -261,10 +350,23 @@ InputDeck::readGlobalConfiguration(GlobalConfiguration &gc)
 
 
 void
-InputDeck::readEOS(EOS &eos)
+InputDeck::readEOS(EOS &eos, Error &err)
 {
+    std::vector<std::string> valid_keys {
+        "zcut",
+        "zerocut",
+        "dencut",
+        "accut",
+        "pcut",
+        "ccut"
+    };
+
     if (root["CUTOFF"]) {
         YAML::Node node = root["CUTOFF"];
+
+        validateKeys(node, valid_keys, err);
+        if (err.failed()) return;
+
         READ_NODE(eos, pcut);
         READ_NODE(eos, ccut);
     }
@@ -272,7 +374,8 @@ InputDeck::readEOS(EOS &eos)
     if (root["EOS"]) {
         YAML::Node node = root["EOS"];
         for (auto child : node) {
-            eos.mat_eos.push_back(readMaterialEOS(child));
+            eos.mat_eos.push_back(readMaterialEOS(child, err));
+            if (err.failed()) return;
         }
     }
 }
@@ -365,7 +468,7 @@ InputDeck::readInitialConditions(std::vector<setup::ThermodynamicsIC> &thermo,
 
 
 MaterialEOS
-InputDeck::readMaterialEOS(YAML::Node node)
+InputDeck::readMaterialEOS(YAML::Node node, Error &err)
 {
     MaterialEOS meos;
 
@@ -378,7 +481,8 @@ InputDeck::readMaterialEOS(YAML::Node node)
         else if (stype == "TAIT")      meos.type = MaterialEOS::Type::TAIT;
         else if (stype == "JWL")       meos.type = MaterialEOS::Type::JWL;
         else {
-            assert(false && "unhandled error");
+            FAIL_WITH_LINE(err, "ERROR: Invalid EoS type '" + stype + "'");
+            return meos;
         }
     }
 

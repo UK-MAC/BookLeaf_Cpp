@@ -31,6 +31,29 @@ namespace hydro {
 namespace kernel {
 
 void
+initAcceleration(
+        View<double, VarDim> ndarea,
+        View<double, VarDim> ndmass,
+        View<double, VarDim> ndudot,
+        View<double, VarDim> ndvdot,
+        int nnd)
+{
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
+    #pragma omp parallel for
+    for (int ind = 0; ind < nnd; ind++) {
+        ndmass(ind) = 0.;
+        ndarea(ind) = 0.;
+        ndudot(ind) = 0.;
+        ndvdot(ind) = 0.;
+    }
+}
+
+
+
+void
 scatterAcceleration(
         double zerocut,
         ConstView<int, VarDim>           ndeln,
@@ -52,18 +75,7 @@ scatterAcceleration(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    #pragma omp parallel
-    {
-
-    #pragma omp for
-    for (int ind = 0; ind < nnd; ind++) {
-        ndmass(ind) = 0.;
-        ndarea(ind) = 0.;
-        ndudot(ind) = 0.;
-        ndvdot(ind) = 0.;
-    }
-
-    #pragma omp for
+    #pragma omp parallel for
     for (int ind = 0; ind < nnd; ind++) {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
@@ -89,8 +101,6 @@ scatterAcceleration(
             ndvdot(ind) += cnfy(iel, icn);
         }
     }
-
-    } // #pragma omp parallel
 }
 
 

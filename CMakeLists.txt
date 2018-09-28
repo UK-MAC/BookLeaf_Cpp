@@ -11,9 +11,11 @@ project(
 
 
 # Check platform
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions("-DBOOKLEAF_LINUX_BUILD")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     add_definitions("-DBOOKLEAF_DARWIN_BUILD")
-endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+endif ()
 
 
 

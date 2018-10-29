@@ -27,5 +27,6 @@ documentation is available:
 
 ## Release history
 
+* 29/10/2018, version 2.0.2
 * 23/05/2018, version 2.0.1
 * 02/05/2018, version 2.0

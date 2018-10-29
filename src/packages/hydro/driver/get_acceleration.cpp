@@ -84,21 +84,21 @@ getAcceleration(
     int const nnd1 = runtime.sizes->nnd1;
     int const nnd  = runtime.sizes->nnd;
 
-    auto ndeln      = data[DataID::INDELN].chost<int, VarDim>();
-    auto ndelf      = data[DataID::INDELF].chost<int, VarDim>();
-    auto ndel       = data[DataID::INDEL].chost<int, VarDim>();
-    auto elnd       = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
-    auto cnwt       = data[DataID::CNWT].chost<double, VarDim, NCORN>();
-    auto cnmass     = data[DataID::CNMASS].chost<double, VarDim, NCORN>();
-    auto lag_cnfx   = data[DataID::LAG_CNFX].chost<double, VarDim, NCORN>();
-    auto lag_cnfy   = data[DataID::LAG_CNFY].chost<double, VarDim, NCORN>();
-    auto lag_ndarea = data[DataID::LAG_NDAREA].host<double, VarDim>();
-    auto lag_ndmass = data[DataID::LAG_NDMASS].host<double, VarDim>();
-    auto lag_ndubar = data[DataID::LAG_NDUBAR].host<double, VarDim>();
-    auto lag_ndvbar = data[DataID::LAG_NDVBAR].host<double, VarDim>();
-    auto ndu        = data[DataID::NDU].host<double, VarDim>();
-    auto ndv        = data[DataID::NDV].host<double, VarDim>();
+    auto ndeln      = data[DataID::INDELN].cdevice<int, VarDim>();
+    auto ndelf      = data[DataID::INDELF].cdevice<int, VarDim>();
+    auto ndel       = data[DataID::INDEL].cdevice<int, VarDim>();
+    auto elnd       = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto eldensity  = data[DataID::ELDENSITY].cdevice<double, VarDim>();
+    auto cnwt       = data[DataID::CNWT].cdevice<double, VarDim, NCORN>();
+    auto cnmass     = data[DataID::CNMASS].cdevice<double, VarDim, NCORN>();
+    auto lag_cnfx   = data[DataID::LAG_CNFX].cdevice<double, VarDim, NCORN>();
+    auto lag_cnfy   = data[DataID::LAG_CNFY].cdevice<double, VarDim, NCORN>();
+    auto lag_ndarea = data[DataID::LAG_NDAREA].device<double, VarDim>();
+    auto lag_ndmass = data[DataID::LAG_NDMASS].device<double, VarDim>();
+    auto lag_ndubar = data[DataID::LAG_NDUBAR].device<double, VarDim>();
+    auto lag_ndvbar = data[DataID::LAG_NDVBAR].device<double, VarDim>();
+    auto ndu        = data[DataID::NDU].device<double, VarDim>();
+    auto ndv        = data[DataID::NDV].device<double, VarDim>();
 
     kernel::initAcceleration(lag_ndarea, lag_ndmass, lag_ndubar, lag_ndvbar,
             nnd1);

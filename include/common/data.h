@@ -22,6 +22,11 @@
 #include <numeric>
 #include <vector>
 
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 #include "common/defs.h"
 #include "common/data_id.h"
 #include "common/view.h"
@@ -126,22 +131,22 @@ public:
 
     /** \brief Construct and return a view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    View<T, NumRows, NumCols>
+    DeviceView<T, NumRows, NumCols>
     device();
 
     /** \brief Construct and return a view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    View<T, NumRows, NumCols>
+    DeviceView<T, NumRows, NumCols>
     device(SizeType num_rows);
 
     /** \brief Construct and return a read-only view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    ConstView<T, NumRows, NumCols>
+    ConstDeviceView<T, NumRows, NumCols>
     cdevice() const;
 
     /** \brief Construct and return a read-only view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    ConstView<T, NumRows, NumCols>
+    ConstDeviceView<T, NumRows, NumCols>
     cdevice(SizeType num_rows) const;
 
 
@@ -216,6 +221,7 @@ private:
 
     unsigned char *host_ptr;          //!< Allocated host memory
     unsigned char *device_ptr;        //!< Allocated device memory
+    unsigned char *device_buf;        //!< Space for device sync
     size_type      allocated_T_size;  //!< Sizeof allocated type
     std::string    allocated_type;    //!< Name of allocated type
 
@@ -277,53 +283,53 @@ Data::chost(SizeType num_rows) const
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-View<T, NumRows, NumCols>
+DeviceView<T, NumRows, NumCols>
 Data::device()
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return DeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    return DeviceView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-View<T, NumRows, NumCols>
+DeviceView<T, NumRows, NumCols>
 Data::device(SizeType num_rows)
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return DeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    return DeviceView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-ConstView<T, NumRows, NumCols>
+ConstDeviceView<T, NumRows, NumCols>
 Data::cdevice() const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstDeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    return ConstDeviceView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-ConstView<T, NumRows, NumCols>
+ConstDeviceView<T, NumRows, NumCols>
 Data::cdevice(SizeType num_rows) const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstDeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    return ConstDeviceView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
 }
 
 
@@ -345,6 +351,9 @@ Data::allocate(
     dims[0] = num_rows;
     dims[1] = num_cols;
 
+    allocated_T_size = sizeof(T);
+    allocated_type = getTypeName<T>();
+
     // Allocate memory and fill with initial value
     len = num_rows * num_cols;
 
@@ -353,16 +362,25 @@ Data::allocate(
         assert(false && "unhandled error");
     }
 
-    // ... XXX Device not used in reference version
-    device_ptr = nullptr;
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+    auto cuda_err = cudaMalloc((void **) &device_ptr, len * sizeof(T));
+    if (cuda_err != cudaSuccess) {
+        assert(false && "failed to allocate device memory");
+    }
+
+    device_buf = (unsigned char *) malloc(len * sizeof(T));
+    if (device_buf == nullptr) {
+        assert(false && "unhandled error");
+    }
+#else
+    device_ptr = host_ptr;
+    device_buf = nullptr;
+#endif
 
     T *thost_ptr = (T *) host_ptr;
     std::fill(thost_ptr, thost_ptr + len, initial_value);
 
     syncDevice(false);
-
-    allocated_T_size = sizeof(T);
-    allocated_type = getTypeName<T>();
 }
 
 

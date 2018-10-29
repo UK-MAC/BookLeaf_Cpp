@@ -44,19 +44,19 @@ getDt(
 {
     using constants::NCORN;
 
-    auto elreg    = data[DataID::IELREG].chost<int, VarDim>();
-    auto elcs2    = data[DataID::ELCS2].chost<double, VarDim>();
-    auto cnx      = data[DataID::CNX].chost<double, VarDim, NCORN>();
-    auto cny      = data[DataID::CNY].chost<double, VarDim, NCORN>();
-    auto scratch  = data[DataID::TIME_SCRATCH].host<double, VarDim>();
-    auto ellen    = data[DataID::TIME_ELLENGTH].host<double, VarDim>();
-    auto a1       = data[DataID::A1].chost<double, VarDim>();
-    auto a3       = data[DataID::A3].chost<double, VarDim>();
-    auto b1       = data[DataID::B1].chost<double, VarDim>();
-    auto b3       = data[DataID::B3].chost<double, VarDim>();
-    auto elvolume = data[DataID::ELVOLUME].chost<double, VarDim>();
-    auto cnu      = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
-    auto cnv      = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
+    auto elreg    = data[DataID::IELREG].cdevice<int, VarDim>();
+    auto elcs2    = data[DataID::ELCS2].cdevice<double, VarDim>();
+    auto cnx      = data[DataID::CNX].cdevice<double, VarDim, NCORN>();
+    auto cny      = data[DataID::CNY].cdevice<double, VarDim, NCORN>();
+    auto scratch  = data[DataID::TIME_SCRATCH].device<double, VarDim>();
+    auto ellen    = data[DataID::TIME_ELLENGTH].device<double, VarDim>();
+    auto a1       = data[DataID::A1].cdevice<double, VarDim>();
+    auto a3       = data[DataID::A3].cdevice<double, VarDim>();
+    auto b1       = data[DataID::B1].cdevice<double, VarDim>();
+    auto b3       = data[DataID::B3].cdevice<double, VarDim>();
+    auto elvolume = data[DataID::ELVOLUME].cdevice<double, VarDim>();
+    auto cnu      = data[DataID::TIME_CNU].cdevice<double, VarDim, NCORN>();
+    auto cnv      = data[DataID::TIME_CNV].cdevice<double, VarDim, NCORN>();
 
     utils::driver::cornerGather(sizes, DataID::NDU, DataID::TIME_CNU, data);
     utils::driver::cornerGather(sizes, DataID::NDV, DataID::TIME_CNV, data);
@@ -72,7 +72,7 @@ getDt(
     dt->next = new Dt();
     dt = dt->next;
     hydro::kernel::getDtCfl(sizes.nel, hydro.global->zcut, hydro.cfl_sf,
-            hydro.zdtnotreg.data(), hydro.zmidlength.data(), elreg, elcs2, cnx,
+            hydro.dev_zdtnotreg, hydro.dev_zmidlength, elreg, elcs2, cnx,
             cny, scratch, ellen, dt->rdt, dt->idt, dt->sdt, err);
 
     if (err.failed()) {

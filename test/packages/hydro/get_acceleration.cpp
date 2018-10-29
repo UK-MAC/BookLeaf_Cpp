@@ -9,13 +9,15 @@
 
 
 int
-main(int argc, char const *argv[])
+main(int argc, char *argv[])
 {
     using namespace bookleaf;
     using namespace bookleaf_diff;
 
     using constants::NCORN;
     using constants::NFACE;
+
+    Kokkos::initialize(argc, argv);
 
     if (argc != 3) {
         std::cerr << "incorrect args\n";
@@ -31,17 +33,19 @@ main(int argc, char const *argv[])
     double const zerocut = 1.e-40;
     int const nnd = 2626;
 
-    ConstView<double, VarDim> ndarea(
+    ConstDeviceView<double, VarDim> ndarea(
             (double *) pre_dump[0].data, pre_dump[0].size);
-    View<double, VarDim> ndmass(
+    DeviceView<double, VarDim> ndmass(
             (double *) pre_dump[1].data, pre_dump[1].size);
-    View<double, VarDim> ndudot(
+    DeviceView<double, VarDim> ndudot(
             (double *) pre_dump[2].data, pre_dump[2].size);
-    View<double, VarDim> ndvdot(
+    DeviceView<double, VarDim> ndvdot(
             (double *) pre_dump[3].data, pre_dump[3].size);
 
     hydro::kernel::getAcceleration(dencut, zerocut, ndarea, ndmass, ndudot,
             ndvdot, nnd);
+
+    Kokkos::finalize();
 
     bool const success = pre_dump.diff(post_dump);
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

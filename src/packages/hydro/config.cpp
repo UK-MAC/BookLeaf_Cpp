@@ -19,6 +19,10 @@
 
 #include <algorithm> // std::any_of
 
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+#include <cuda_runtime.h>
+#endif
+
 #include "common/sizes.h"
 #include "common/error.h"
 #include "infrastructure/io/output_formatting.h"
@@ -27,12 +31,6 @@
 
 namespace bookleaf {
 namespace hydro {
-
-Config::Config()
-{
-}
-
-
 
 std::ostream &
 operator<<(std::ostream &os, Config const &rhs)
@@ -139,20 +137,112 @@ rationalise(Config &hydro, int num_regions, Error &err)
 
 void
 initHydroConfig(
-        Sizes const &sizes __attribute__((unused)),
-        hydro::Config &hydro __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        hydro::Config &hydro,
+        Error &err)
 {
-    // XXX Stub for extra variant hydro config init
+    // Copy hydro parameters to device
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+    // Initialise device-side memory
+    cudaMalloc(&hydro._dev_kappareg, sizeof(double) * sizes.nreg);
+    cudaMalloc(&hydro._dev_pmeritreg, sizeof(double) * sizes.nreg);
+    cudaMalloc(&hydro._dev_zdtnotreg, sizeof(unsigned char) * sizes.nreg);
+    cudaMalloc(&hydro._dev_zmidlength, sizeof(unsigned char) * sizes.nreg);
+
+    hydro.dev_kappareg =
+        DeviceView<double, VarDim>(hydro._dev_kappareg, sizes.nreg);
+    hydro.dev_pmeritreg =
+        DeviceView<double, VarDim>(hydro._dev_pmeritreg, sizes.nreg);
+    hydro.dev_zdtnotreg =
+        DeviceView<unsigned char, VarDim>(hydro._dev_zdtnotreg, sizes.nreg);
+    hydro.dev_zmidlength =
+        DeviceView<unsigned char, VarDim>(hydro._dev_zmidlength, sizes.nreg);
+
+    // Fill device-side memory
+    cudaMemcpy(hydro._dev_kappareg, hydro.kappareg.data(),
+            sizeof(double) * sizes.nreg, cudaMemcpyHostToDevice);
+    cudaMemcpy(hydro._dev_pmeritreg, hydro.pmeritreg.data(),
+            sizeof(double) * sizes.nreg, cudaMemcpyHostToDevice);
+    cudaMemcpy(hydro._dev_zdtnotreg, hydro.zdtnotreg.data(),
+            sizeof(unsigned char) * sizes.nreg, cudaMemcpyHostToDevice);
+    cudaMemcpy(hydro._dev_zmidlength, hydro.zmidlength.data(),
+            sizeof(unsigned char) * sizes.nreg, cudaMemcpyHostToDevice);
+#else
+    // Initialise host-side memory
+    hydro._dev_kappareg = new double[sizes.nreg];
+    hydro._dev_pmeritreg = new double[sizes.nreg];
+    hydro._dev_zdtnotreg = new unsigned char[sizes.nreg];
+    hydro._dev_zmidlength = new unsigned char[sizes.nreg];
+
+    hydro.dev_kappareg =
+        DeviceView<double, VarDim>(hydro._dev_kappareg, sizes.nreg);
+    hydro.dev_pmeritreg =
+        DeviceView<double, VarDim>(hydro._dev_pmeritreg, sizes.nreg);
+    hydro.dev_zdtnotreg =
+        DeviceView<unsigned char, VarDim>(hydro._dev_zdtnotreg, sizes.nreg);
+    hydro.dev_zmidlength =
+        DeviceView<unsigned char, VarDim>(hydro._dev_zmidlength, sizes.nreg);
+
+    // Fill host-side memory
+    memcpy(hydro._dev_kappareg, hydro.kappareg.data(),
+            sizeof(double) * sizes.nreg);
+    memcpy(hydro._dev_pmeritreg, hydro.pmeritreg.data(),
+            sizeof(double) * sizes.nreg);
+    memcpy(hydro._dev_zdtnotreg, hydro.zdtnotreg.data(),
+            sizeof(unsigned char) * sizes.nreg);
+    memcpy(hydro._dev_zmidlength, hydro.zmidlength.data(),
+            sizeof(unsigned char) * sizes.nreg);
+#endif
+
 }
 
 
 
 void
 killHydroConfig(
-        hydro::Config &hydro __attribute__((unused)))
+        hydro::Config &hydro)
 {
-    // XXX Stub for extra variant hydro config shutdown
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+    if (hydro._dev_kappareg) {
+        cudaFree(hydro._dev_kappareg);
+        hydro._dev_kappareg = nullptr;
+    }
+
+    if (hydro._dev_pmeritreg) {
+        cudaFree(hydro._dev_pmeritreg);
+        hydro._dev_pmeritreg = nullptr;
+    }
+
+    if (hydro._dev_zdtnotreg) {
+        cudaFree(hydro._dev_zdtnotreg);
+        hydro._dev_zdtnotreg = nullptr;
+    }
+
+    if (hydro._dev_zmidlength) {
+        cudaFree(hydro._dev_zmidlength);
+        hydro._dev_zmidlength = nullptr;
+    }
+#else
+    if (hydro._dev_kappareg) {
+        delete[] hydro._dev_kappareg;
+        hydro._dev_kappareg = nullptr;
+    }
+
+    if (hydro._dev_pmeritreg) {
+        delete[] hydro._dev_pmeritreg;
+        hydro._dev_pmeritreg = nullptr;
+    }
+
+    if (hydro._dev_zdtnotreg) {
+        delete[] hydro._dev_zdtnotreg;
+        hydro._dev_zdtnotreg = nullptr;
+    }
+
+    if (hydro._dev_zmidlength) {
+        delete[] hydro._dev_zmidlength;
+        hydro._dev_zmidlength = nullptr;
+    }
+#endif
 }
 
 } // namespace hydro

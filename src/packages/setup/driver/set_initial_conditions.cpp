@@ -130,6 +130,8 @@ setRegionFlags(
             return;
         }
     }
+
+    data[DataID::IELREG].syncDevice();
 }
 
 
@@ -227,6 +229,8 @@ setMaterialFlags(
             }
         }
     }
+
+    data[DataID::IELMAT].syncDevice();
 }
 
 
@@ -240,9 +244,6 @@ setState(
         DataControl &data,
         Error &err)
 {
-    auto eldensity = data[DataID::ELDENSITY].host<double, VarDim>();
-    auto elenergy  = data[DataID::ELENERGY].host<double, VarDim>();
-
     // Get geometry
     data[DataID::IELND].syncDevice();
     data[DataID::NDX].syncDevice();
@@ -292,6 +293,9 @@ setState(
 
     data[DataID::NDU].syncHost();
     data[DataID::NDV].syncHost();
+
+    auto eldensity = data[DataID::ELDENSITY].chost<double, VarDim>();
+    auto elenergy  = data[DataID::ELENERGY].chost<double, VarDim>();
 
     // Check mesh is fully populated
     for (int iel = 0; iel < sizes.nel; iel++) {

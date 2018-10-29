@@ -31,7 +31,7 @@ struct Config;
 
 namespace driver {
 
-void init(hydro::Config const &hydro, Sizes const &sizes, DataControl &data);
+void init(hydro::Config &hydro, Sizes const &sizes, DataControl &data);
 
 } // namespace driver
 } // namespace hydro

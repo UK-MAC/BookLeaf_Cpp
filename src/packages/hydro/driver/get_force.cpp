@@ -45,33 +45,33 @@ getForce(
     int const nel = runtime.sizes->nel;
     int const ncp = runtime.sizes->ncp;
 
-    auto elreg      = data[DataID::IELREG].chost<int, VarDim>();
-    auto elvolume   = data[DataID::ELVOLUME].chost<double, VarDim>();
-    auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
-    auto elcs2      = data[DataID::ELCS2].chost<double, VarDim>();
-    auto elpressure = data[DataID::ELPRESSURE].chost<double, VarDim>();
-    auto a1         = data[DataID::A1].chost<double, VarDim>();
-    auto a3         = data[DataID::A3].chost<double, VarDim>();
-    auto b1         = data[DataID::B1].chost<double, VarDim>();
-    auto b3         = data[DataID::B3].chost<double, VarDim>();
-    auto edviscx    = data[DataID::CNVISCX].chost<double, VarDim, NCORN>();
-    auto edviscy    = data[DataID::CNVISCY].chost<double, VarDim, NCORN>();
-    auto cnx        = data[DataID::CNX].chost<double, VarDim, NCORN>();
-    auto cny        = data[DataID::CNY].chost<double, VarDim, NCORN>();
-    auto lag_cnu    = data[DataID::LAG_CNU].chost<double, VarDim, NCORN>();
-    auto lag_cnv    = data[DataID::LAG_CNV].chost<double, VarDim, NCORN>();
-    auto lag_cnfx   = data[DataID::LAG_CNFX].host<double, VarDim, NCORN>();
-    auto lag_cnfy   = data[DataID::LAG_CNFY].host<double, VarDim, NCORN>();
+    auto elreg      = data[DataID::IELREG].cdevice<int, VarDim>();
+    auto elvolume   = data[DataID::ELVOLUME].cdevice<double, VarDim>();
+    auto eldensity  = data[DataID::ELDENSITY].cdevice<double, VarDim>();
+    auto elcs2      = data[DataID::ELCS2].cdevice<double, VarDim>();
+    auto elpressure = data[DataID::ELPRESSURE].cdevice<double, VarDim>();
+    auto a1         = data[DataID::A1].cdevice<double, VarDim>();
+    auto a3         = data[DataID::A3].cdevice<double, VarDim>();
+    auto b1         = data[DataID::B1].cdevice<double, VarDim>();
+    auto b3         = data[DataID::B3].cdevice<double, VarDim>();
+    auto edviscx    = data[DataID::CNVISCX].cdevice<double, VarDim, NCORN>();
+    auto edviscy    = data[DataID::CNVISCY].cdevice<double, VarDim, NCORN>();
+    auto cnx        = data[DataID::CNX].cdevice<double, VarDim, NCORN>();
+    auto cny        = data[DataID::CNY].cdevice<double, VarDim, NCORN>();
+    auto lag_cnu    = data[DataID::LAG_CNU].cdevice<double, VarDim, NCORN>();
+    auto lag_cnv    = data[DataID::LAG_CNV].cdevice<double, VarDim, NCORN>();
+    auto lag_cnfx   = data[DataID::LAG_CNFX].device<double, VarDim, NCORN>();
+    auto lag_cnfy   = data[DataID::LAG_CNFY].device<double, VarDim, NCORN>();
 
-    auto cppressure = data[DataID::CPPRESSURE].chost<double, VarDim>();
-    auto cpa1       = data[DataID::CPA1].chost<double, VarDim>();
-    auto cpa3       = data[DataID::CPA3].chost<double, VarDim>();
-    auto cpb1       = data[DataID::CPB1].chost<double, VarDim>();
-    auto cpb3       = data[DataID::CPB3].chost<double, VarDim>();
-    auto cpviscx    = data[DataID::CPVISCX].chost<double, VarDim, NCORN>();
-    auto cpviscy    = data[DataID::CPVISCY].chost<double, VarDim, NCORN>();
-    auto lag_cpfx   = data[DataID::LAG_CPFX].host<double, VarDim, NCORN>();
-    auto lag_cpfy   = data[DataID::LAG_CPFY].host<double, VarDim, NCORN>();
+    auto cppressure = data[DataID::CPPRESSURE].cdevice<double, VarDim>();
+    auto cpa1       = data[DataID::CPA1].cdevice<double, VarDim>();
+    auto cpa3       = data[DataID::CPA3].cdevice<double, VarDim>();
+    auto cpb1       = data[DataID::CPB1].cdevice<double, VarDim>();
+    auto cpb3       = data[DataID::CPB3].cdevice<double, VarDim>();
+    auto cpviscx    = data[DataID::CPVISCX].cdevice<double, VarDim, NCORN>();
+    auto cpviscy    = data[DataID::CPVISCY].cdevice<double, VarDim, NCORN>();
+    auto lag_cpfx   = data[DataID::LAG_CPFX].device<double, VarDim, NCORN>();
+    auto lag_cpfy   = data[DataID::LAG_CPFY].device<double, VarDim, NCORN>();
 
     // Pressure force
     kernel::getForcePressure(elpressure, a1, a3, b1, b3, lag_cnfx, lag_cnfy, nel);
@@ -88,11 +88,11 @@ getForce(
 
     // Subzonal pressure force
     if (hydro.zsp) {
-        auto spmass = data[DataID::SPMASS].chost<double, VarDim, NCORN>();
+        auto spmass = data[DataID::SPMASS].cdevice<double, VarDim, NCORN>();
 
         ScopedTimer st(timers, TimerID::GETSP);
         kernel::getForceSubzonalPressure(
-                hydro.pmeritreg.data(),
+                hydro.dev_pmeritreg,
                 elreg,
                 eldensity,
                 elcs2,
@@ -109,7 +109,7 @@ getForce(
         ScopedTimer st(timers, TimerID::GETHG);
         kernel::getForceHourglass(
                 runtime.timestep->dt,
-                hydro.kappareg.data(),
+                hydro.dev_kappareg,
                 elreg,
                 eldensity,
                 elvolume,

@@ -87,9 +87,9 @@ flatten(
     kernel::flattenList(sizes.nmx, sizes.ncp, scratch, mxfcp, mxel, mxncp,
             cpprev, cpnext);
 
-    kernel::flattenQuant(sizes.ncp, cpscratch1, cpscratch2, cpmat);
+    kernel::flattenQuant<int>(sizes.ncp, cpscratch1, cpscratch2, cpmat);
 
-    kernel::flattenQuant(sizes.ncp, cpscratch1, rcpscratch, frvolume);
+    kernel::flattenQuant<double>(sizes.ncp, cpscratch1, rcpscratch, frvolume);
 }
 
 } // namespace driver

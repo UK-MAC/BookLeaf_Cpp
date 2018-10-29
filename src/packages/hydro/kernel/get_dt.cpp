@@ -27,6 +27,7 @@
 #include "common/constants.h"
 #include "common/error.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -35,7 +36,7 @@ namespace hydro {
 namespace kernel {
 namespace {
 
-inline double
+KOKKOS_INLINE_FUNCTION double
 denom(double x1, double y1, double x2, double y2)
 {
     double w1 = y1 - y2;
@@ -45,7 +46,7 @@ denom(double x1, double y1, double x2, double y2)
 
 
 
-inline double
+KOKKOS_INLINE_FUNCTION double
 distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 {
     double w1 = 0.5 * (x3 + x4) - x1;
@@ -55,7 +56,7 @@ distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 
 
 
-inline double
+KOKKOS_INLINE_FUNCTION double
 distpl(double x3, double y3, double x4, double y4, double x1, double y1,
         double x2, double y2)
 {
@@ -67,11 +68,11 @@ distpl(double x3, double y3, double x4, double y4, double x1, double y1,
 
 
 // These two kernels were originally located in the geometry utility
-inline void
+KOKKOS_INLINE_FUNCTION void
 dlm(
         int iel,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
         double res[NCORN])
 {
     double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
@@ -101,12 +102,12 @@ dlm(
 
 
 
-inline void
+KOKKOS_INLINE_FUNCTION void
 dln(
         double zcut,
         int iel,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
         double res[NCORN])
 {
     double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
@@ -138,14 +139,14 @@ getDtCfl(
         int nel,
         double zcut,
         double cfl_sf,
-        unsigned char const *zdtnotreg,
-        unsigned char const *zmidlength,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        View<double, VarDim>             rscratch11,
-        View<double, VarDim>             rscratch12,
+        ConstDeviceView<unsigned char, VarDim> zdtnotreg,
+        ConstDeviceView<unsigned char, VarDim> zmidlength,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        DeviceView<double, VarDim>             rscratch11,
+        DeviceView<double, VarDim>             rscratch12,
         double &rdt,
         int &idt,
         std::string &sdt,
@@ -156,43 +157,59 @@ getDtCfl(
 #endif
 
     // Calculate CFL condition
-    for (int iel = 0; iel < nel; iel++) {
-        double result[NCORN];
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
+        int const ireg = elreg(iel);
 
-        int ireg = elreg(iel);
-        if (zdtnotreg[ireg]) {
-            rscratch11(iel) = std::numeric_limits<double>::max();
-            rscratch12(iel) = std::numeric_limits<double>::min();
+        double resultm[NCORN];
+        dlm(iel, cnx, cny, resultm);
 
-        } else {
-            if (zmidlength[ireg]) dlm(iel, cnx, cny, result);
-            else                  dln(zcut, iel, cnx, cny, result);
+        double resultn[NCORN];
+        dln(zcut, iel, cnx, cny, resultn);
 
-            // Minimise result
-            double w1 = result[0];
-            for (int i = 1; i < NCORN; i++) {
-                w1 = (result[i] < w1) ? result[i] : w1;
-            }
+        double *result = zmidlength(ireg) ? resultm : resultn;
 
-            rscratch11(iel) = w1/elcs2(iel);
-            rscratch12(iel) = w1;
+        // Minimise result
+        double w1 = result[0];
+        for (int i = 1; i < NCORN; i++) {
+            w1 = (result[i] < w1) ? result[i] : w1;
         }
-    }
+
+        rscratch11(iel) = w1/elcs2(iel);
+        rscratch12(iel) = w1;
+
+        rscratch11(iel) = zdtnotreg(ireg) ?
+                            NPP_MAXABS_64F : rscratch11(iel);
+        rscratch12(iel) = zdtnotreg(ireg) ?
+                            NPP_MINABS_64F : rscratch12(iel);
+    });
 
     // Find minimum CFL condition
-    int min_idx = 0;
-    for (int iel = 1; iel < nel; iel++) {
-        if (rscratch11(iel) < rscratch11(min_idx)) min_idx = iel;
-    }
+    using MinLoc     = Kokkos::Experimental::MinLoc<double, int>;
+    using MinLocType = MinLoc::value_type;
 
-    double w1 = rscratch11(min_idx);
+    MinLocType minloc;
+    Kokkos::parallel_reduce(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel, MinLocType &lminloc)
+    {
+        double const w = rscratch11(iel);
+        lminloc.loc = w < lminloc.val ? iel : lminloc.loc;
+        lminloc.val = w < lminloc.val ? w   : lminloc.val;
+    }, MinLoc::reducer(minloc));
+
+    cudaSync();
+
+    double w1 = minloc.val;
     if (w1 < 0) {
         FAIL_WITH_LINE(err, "ERROR");
         return;
     }
 
     rdt = cfl_sf*sqrt(w1);
-    idt = min_idx;
+    idt = minloc.loc;
     sdt = "     CFL";
 }
 
@@ -202,13 +219,13 @@ void
 getDtDiv(
         int nel,
         double div_sf,
-        ConstView<double, VarDim>        a1,
-        ConstView<double, VarDim>        a3,
-        ConstView<double, VarDim>        b1,
-        ConstView<double, VarDim>        b3,
-        ConstView<double, VarDim>        elvolume,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        a1,
+        ConstDeviceView<double, VarDim>        a3,
+        ConstDeviceView<double, VarDim>        b1,
+        ConstDeviceView<double, VarDim>        b3,
+        ConstDeviceView<double, VarDim>        elvolume,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -217,9 +234,14 @@ getDtDiv(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::min();
-    int min_idx = 0;
-    for (int iel = 0; iel < nel; iel++) {
+    using MaxLoc     = Kokkos::Experimental::MaxLoc<double, int>;
+    using MaxLocType = MaxLoc::value_type;
+
+    MaxLocType maxloc;
+    Kokkos::parallel_reduce(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel, MaxLocType &lmaxloc)
+    {
         double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
                     cnv(iel, 0) * ( a3(iel) - a1(iel)) +
                     cnu(iel, 1) * ( b3(iel) + b1(iel)) +
@@ -230,12 +252,14 @@ getDtDiv(
                     cnv(iel, 3) * ( a3(iel) + a1(iel));
 
         w1 = fabs(w1) / elvolume(iel);
-        min_idx = w1 > w2 ? iel : min_idx;
-        w2 = w1 > w2 ? w1 : w2;
-    }
+        lmaxloc.loc = w1 > lmaxloc.val ? iel : lmaxloc.loc;
+        lmaxloc.val = w1 > lmaxloc.val ? w1 : lmaxloc.val;
+    }, MaxLoc::reducer(maxloc));
 
-    rdt = div_sf/w2;
-    idt = min_idx;
+    cudaSync();
+
+    rdt = div_sf/maxloc.val;
+    idt = maxloc.loc;
     sdt = "     DIV";
 }
 

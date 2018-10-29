@@ -35,11 +35,11 @@ setPredictor(
         Sizes const &sizes,
         DataControl &data)
 {
-    auto elenergy      = data[DataID::ELENERGY].chost<double, VarDim>();
-    auto lag_elenergy0 = data[DataID::LAG_ELENERGY0].host<double, VarDim>();
+    auto elenergy      = data[DataID::ELENERGY].cdevice<double, VarDim>();
+    auto lag_elenergy0 = data[DataID::LAG_ELENERGY0].device<double, VarDim>();
 
     // Store internal energy
-    utils::kernel::copy(lag_elenergy0, elenergy, sizes.nel);
+    utils::kernel::copy<double>(lag_elenergy0, elenergy, sizes.nel);
 }
 
 
@@ -49,11 +49,11 @@ setCorrector(
         Sizes const &sizes,
         DataControl &data)
 {
-    auto lag_elenergy0 = data[DataID::LAG_ELENERGY0].chost<double, VarDim>();
-    auto elenergy      = data[DataID::ELENERGY].host<double, VarDim>();
+    auto lag_elenergy0 = data[DataID::LAG_ELENERGY0].cdevice<double, VarDim>();
+    auto elenergy      = data[DataID::ELENERGY].device<double, VarDim>();
 
     // Restore internal energy
-    utils::kernel::copy(elenergy, lag_elenergy0, sizes.nel);
+    utils::kernel::copy<double>(elenergy, lag_elenergy0, sizes.nel);
 }
 
 } // namespace driver

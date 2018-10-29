@@ -51,14 +51,14 @@ getFluxVolume(
     int const nel = runtime.sizes->nel;
     int const nnd = runtime.sizes->nnd;
 
-    auto elnd   = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    auto store2 = data[DataID::ALE_STORE2].host<double, VarDim>();
-    auto store3 = data[DataID::ALE_STORE3].host<double, VarDim>();
-    auto store4 = data[DataID::ALE_STORE4].host<double, VarDim>();
-    auto store5 = data[DataID::ALE_STORE5].host<double, VarDim>();
-    auto ndx    = data[DataID::NDX].host<double, VarDim>();
-    auto ndy    = data[DataID::NDY].host<double, VarDim>();
-    auto fcdv   = data[DataID::ALE_FCDV].host<double, VarDim, NFACE>();
+    auto elnd   = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto store2 = data[DataID::ALE_STORE2].device<double, VarDim>();
+    auto store3 = data[DataID::ALE_STORE3].device<double, VarDim>();
+    auto store4 = data[DataID::ALE_STORE4].device<double, VarDim>();
+    auto store5 = data[DataID::ALE_STORE5].device<double, VarDim>();
+    auto ndx    = data[DataID::NDX].device<double, VarDim>();
+    auto ndy    = data[DataID::NDY].device<double, VarDim>();
+    auto fcdv   = data[DataID::ALE_FCDV].device<double, VarDim, NFACE>();
 
     // Calculate mesh velocity
     kernel::getMeshVelocity(nnd, ale.zeul, store4, store5);

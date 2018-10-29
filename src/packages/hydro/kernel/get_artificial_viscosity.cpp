@@ -25,6 +25,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -34,24 +35,27 @@ namespace kernel {
 
 void
 initArtificialViscosity(
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim>             elvisc,
-        View<double, VarDim, NFACE>      dx,
-        View<double, VarDim, NFACE>      dy,
-        View<double, VarDim, NFACE>      du,
-        View<double, VarDim, NFACE>      dv,
-        View<double, VarDim, NCORN>      cnviscx,
-        View<double, VarDim, NCORN>      cnviscy,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim>             elvisc,
+        DeviceView<double, VarDim, NFACE>      dx,
+        DeviceView<double, VarDim, NFACE>      dy,
+        DeviceView<double, VarDim, NFACE>      du,
+        DeviceView<double, VarDim, NFACE>      dv,
+        DeviceView<double, VarDim, NCORN>      cnviscx,
+        DeviceView<double, VarDim, NCORN>      cnviscy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         elvisc(iel) = 0.;
 
         cnviscx(iel, 0) = 0.;
@@ -63,10 +67,13 @@ initArtificialViscosity(
         cnviscy(iel, 1) = 0.;
         cnviscy(iel, 2) = 0.;
         cnviscy(iel, 3) = 0.;
-    }
+    });
 
     // initialisation and gradient construction
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         for (int icn = 0; icn < NCORN; icn++) {
             int const icn2 = (icn + 1) % NCORN;
             du(iel, icn) = cnu(iel, icn2) - cnu(iel, icn);
@@ -74,7 +81,9 @@ initArtificialViscosity(
             dx(iel, icn) = cnx(iel, icn2) - cnx(iel, icn);
             dy(iel, icn) = cny(iel, icn2) - cny(iel, icn);
         }
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -85,20 +94,20 @@ limitArtificialViscosity(
         double zerocut,
         double cvisc1,
         double cvisc2,
-        ConstView<int, VarDim>           ndtype,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NFACE> du,
-        ConstView<double, VarDim, NFACE> dv,
-        ConstView<double, VarDim, NFACE> dx,
-        ConstView<double, VarDim, NFACE> dy,
-        View<double, VarDim, NCORN>      scratch,
-        View<double, VarDim, NFACE>      edviscx,
-        View<double, VarDim, NFACE>      edviscy,
-        View<double, VarDim>             elvisc)
+        ConstDeviceView<int, VarDim>           ndtype,
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NFACE> du,
+        ConstDeviceView<double, VarDim, NFACE> dv,
+        ConstDeviceView<double, VarDim, NFACE> dx,
+        ConstDeviceView<double, VarDim, NFACE> dy,
+        DeviceView<double, VarDim, NCORN>      scratch,
+        DeviceView<double, VarDim, NFACE>      edviscx,
+        DeviceView<double, VarDim, NFACE>      edviscy,
+        DeviceView<double, VarDim>             elvisc)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
@@ -108,8 +117,10 @@ limitArtificialViscosity(
         int const is1 = (iside + 3) % NFACE;
         int const is2 = iside + 1;
 
-        for (int iel = 0; iel < nel; iel++) {
-
+        Kokkos::parallel_for(
+                RangePolicy(0, nel),
+                KOKKOS_LAMBDA (int const iel)
+        {
             // XXX(timrlaw): Manually fused these three loops
             {
                 double tmp;
@@ -124,40 +135,40 @@ limitArtificialViscosity(
                 double fw3 = dx(iel, is1);
                 double fw4 = dy(iel, is1);
 
-                double den = std::sqrt(fw1*fw1 + fw2*fw2);
+                double den = BL_SQRT(fw1*fw1 + fw2*fw2);
                 tmp = den > zerocut ? den : zerocut;
                 den = 1.0 / tmp;
                 double uhat = fw1 * den;
                 double vhat = fw2 * den;
 
-                den = std::sqrt(fw3*fw3 + fw4*fw4);
+                den = BL_SQRT(fw3*fw3 + fw4*fw4);
                 tmp = den > zerocut ? den : zerocut;
                 den = 1.0 / tmp;
                 double xhat = fw3 * den;
                 double yhat = fw4 * den;
 
                 den = fw3*xhat + fw4*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw1 = (fw1*uhat + fw2*vhat) / std::copysign(tmp, den);
-                tmp = std::fabs(fw1);
+                fw1 = (fw1*uhat + fw2*vhat) / BL_SIGN(tmp, den);
+                tmp = BL_FABS(fw1);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw1 = 1.0 / std::copysign(tmp, fw1);
+                fw1 = 1.0 / BL_SIGN(tmp, fw1);
 
                 int ins = elfc(iel, iside);
                 ins = (ins + 1) % NFACE;
                 den = dx(in1, ins)*xhat + dy(in1, ins)*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / std::copysign(tmp, den);
+                fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / BL_SIGN(tmp, den);
                 scratch(iel, 0) = fw2*fw1;
 
                 ins = elfc(iel, iside+2);
                 ins = (ins + 3) % NFACE;
                 den = dx(in2, ins)*xhat + dy(in2, ins)*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / std::copysign(tmp, den);
+                fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / BL_SIGN(tmp, den);
                 scratch(iel, 1) = fw3*fw1;
 
                 // Edge 2
@@ -166,40 +177,40 @@ limitArtificialViscosity(
                 fw3 = dx(iel, is2);
                 fw4 = dy(iel, is2);
 
-                den = std::sqrt(fw1*fw1 + fw2*fw2);
+                den = BL_SQRT(fw1*fw1 + fw2*fw2);
                 tmp = den > zerocut ? den : zerocut;
                 den = 1.0 / tmp;
                 uhat = fw1 * den;
                 vhat = fw2 * den;
 
-                den = std::sqrt(fw3*fw3 + fw4*fw4);
+                den = BL_SQRT(fw3*fw3 + fw4*fw4);
                 tmp = den > zerocut ? den : zerocut;
                 den = 1.0 / tmp;
                 xhat = fw3 * den;
                 yhat = fw4 * den;
 
                 den = fw3*xhat + fw4*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw1 = (fw1*uhat + fw2*vhat) / std::copysign(tmp, den);
-                tmp = std::fabs(fw1);
+                fw1 = (fw1*uhat + fw2*vhat) / BL_SIGN(tmp, den);
+                tmp = BL_FABS(fw1);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw1 = 1.0 / std::copysign(tmp, fw1);
+                fw1 = 1.0 / BL_SIGN(tmp, fw1);
 
                 ins = elfc(iel, iside);
                 ins = (ins + 3) % NFACE;
                 den = dx(in1, ins)*xhat + dy(in1, ins)*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / std::copysign(tmp, den);
+                fw2 = (du(in1, ins)*uhat + dv(in1, ins)*vhat) / BL_SIGN(tmp, den);
                 scratch(iel, 2) = fw2*fw1;
 
                 ins = elfc(iel, iside+2);
                 ins = (ins + 1) % NFACE;
                 den = dx(in2, ins)*xhat + dy(in2, ins)*yhat;
-                tmp = std::fabs(den);
+                tmp = BL_FABS(den);
                 tmp = tmp > zerocut ? tmp : zerocut;
-                fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / std::copysign(tmp, den);
+                fw3 = (du(in2, ins)*uhat + dv(in2, ins)*vhat) / BL_SIGN(tmp, den);
                 scratch(iel, 3) = fw3*fw1;
             }
 
@@ -231,7 +242,7 @@ limitArtificialViscosity(
 
                 double tmp;
 
-                double w1 = cvisc1 * std::sqrt(0.5 * (elcs2(iel) + elcs2(limins)));
+                double w1 = cvisc1 * BL_SQRT(0.5 * (elcs2(iel) + elcs2(limins)));
                 double w2 = scratch(iel, 0);
                 double w3 = scratch(iel, 1);
 
@@ -245,7 +256,7 @@ limitArtificialViscosity(
                 w2 = 0.0 > w2 ? 0.0 : w2;
                 w3 = du(iel, is1);
                 double w4 = dv(iel, is1);
-                w4 = std::sqrt(w3*w3 + w4*w4);
+                w4 = BL_SQRT(w3*w3 + w4*w4);
                 w3 = 0.5 * (1.0 - w2) * (eldensity(iel) + eldensity(limins)) *
                     (w1 + cvisc2 * w4);
 
@@ -259,7 +270,7 @@ limitArtificialViscosity(
                 elvisc(iel) = elvisc(iel) > tmp ? elvisc(iel) : tmp;
 
                 limins = elel(iel, is2);
-                w1 = cvisc1 * std::sqrt(0.5 * (elcs2(iel) + elcs2(limins)));
+                w1 = cvisc1 * BL_SQRT(0.5 * (elcs2(iel) + elcs2(limins)));
                 w2 = scratch(iel, 2);
                 w3 = scratch(iel, 3);
 
@@ -273,7 +284,7 @@ limitArtificialViscosity(
                 w2 = 0.0 > w2 ? 0.0 : w2;
                 w3 = du(iel, is2);
                 w4 = dv(iel, is2);
-                w4 = std::sqrt(w3*w3 + w4*w4);
+                w4 = BL_SQRT(w3*w3 + w4*w4);
                 w3 = 0.5 * (1.0 - w2) * (eldensity(iel) + eldensity(limins)) *
                     (w1 + cvisc2 * w4);
 
@@ -286,8 +297,10 @@ limitArtificialViscosity(
                 tmp = w3 * w4;
                 elvisc(iel) = elvisc(iel) > tmp ? elvisc(iel) : tmp;
             }
-        }
+        });
     }
+
+    cudaSync();
 }
 
 
@@ -295,20 +308,22 @@ limitArtificialViscosity(
 void
 getArtificialViscosity(
         double zerocut,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim, NFACE>      cnviscx,
-        View<double, VarDim, NFACE>      cnviscy,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim, NFACE>      cnviscx,
+        DeviceView<double, VarDim, NFACE>      cnviscy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
-
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         double edviscx[NFACE];
         double edviscy[NFACE];
 
@@ -330,8 +345,8 @@ getArtificialViscosity(
             w4 = w5 - w4;
             w5 = cy;
 
-            double w7 = std::sqrt((w2-w3)*(w2-w3) + (w5-w6)*(w5-w6));
-            double w8 = std::sqrt(w1*w1 + w4*w4);
+            double w7 = BL_SQRT((w2-w3)*(w2-w3) + (w5-w6)*(w5-w6));
+            double w8 = BL_SQRT(w1*w1 + w4*w4);
 
             double den = 1.0 / w7;
             double xhat = (w5-w6) * den;
@@ -342,13 +357,13 @@ getArtificialViscosity(
             w2 = w4 * den;
             w3 = xhat * w1 + yhat * w2;
 
-            den = -std::copysign(1.0, w3) * w7;
+            den = -BL_SIGN(1.0, w3) * w7;
             xhat = xhat * den;
             yhat = yhat * den;
             double uhat = cnu(iel, ins) - cnu(iel, iside);
             double vhat = cnv(iel, ins) - cnv(iel, iside);
 
-            w5 = std::sqrt((uhat*uhat) + (vhat*vhat));
+            w5 = sqrt((uhat*uhat) + (vhat*vhat));
             w6 = uhat*xhat + vhat*yhat;
 
             den = w6 / (w5 > zerocut ? w5 : zerocut);
@@ -375,7 +390,9 @@ getArtificialViscosity(
         cnviscy(iel, 1) = edviscy[1] - edviscy[0];
         cnviscy(iel, 2) = edviscy[2] - edviscy[1];
         cnviscy(iel, 3) = edviscy[3] - edviscy[2];
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

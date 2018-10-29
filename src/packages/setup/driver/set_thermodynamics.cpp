@@ -59,18 +59,18 @@ setThermodynamics(
     for (auto const &tic : thermo) {
         switch (tic.type) {
         case ThermodynamicsIC::Type::REGION:
-            kernel::setThermodynamics(elreg.rows(), tic, elreg, elvolume,
+            kernel::setThermodynamics(sizes.nel, tic, elreg, elvolume,
                     eldensity, elenergy);
             break;
 
         case ThermodynamicsIC::Type::MATERIAL:
-            kernel::setThermodynamics(elmat.rows(), tic, elmat, elvolume,
+            kernel::setThermodynamics(sizes.nel, tic, elmat, elvolume,
                     eldensity, elenergy);
 
             if (sizes.ncp > 0) {
                 auto cpvolume  = data[DataID::CPVOLUME].chost<double, VarDim>();
 
-                kernel::setThermodynamics(cpmat.rows(), tic, cpmat, cpvolume,
+                kernel::setThermodynamics(sizes.nel, tic, cpmat, cpvolume,
                         cpdensity, cpenergy);
             }
             break;

@@ -37,6 +37,8 @@ void
 parallel(
         comms::Comms &comms __attribute__((unused)))
 {
+    Kokkos::finalize();
+
     Error err;
     comms::killComms(err);
     if (err.failed()) {

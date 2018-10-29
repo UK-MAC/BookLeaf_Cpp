@@ -17,6 +17,11 @@
  * @HEADER@ */
 #include "utilities/eos/config.h"
 
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 #include "common/sizes.h"
 #include "common/error.h"
 #include "infrastructure/io/output_formatting.h"
@@ -121,20 +126,103 @@ rationalise(
 
 void
 initEOSConfig(
-        Sizes const &sizes __attribute__((unused)),
-        EOS &eos __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        EOS &eos,
+        Error &err)
 {
-    // XXX Stub for extra variant EOS config init
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+    // Initialise device-side memory
+    auto cuda_err = cudaMalloc(&eos._eos_types,
+            sizeof(MaterialEOS::Type) * sizes.nmat);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cuda malloc failed");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&eos._eos_params,
+            sizeof(double) * sizes.nmat * MaterialEOS::NUM_PARAMS);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cuda malloc failed");
+        return;
+    }
+
+    eos.eos_types =
+        DeviceView<MaterialEOS::Type, VarDim>(eos._eos_types, sizes.nmat);
+    eos.eos_params =
+        DeviceView<double, VarDim, MaterialEOS::NUM_PARAMS>(eos._eos_params, sizes.nmat);
+
+    // Initialise host-side memory
+    MaterialEOS::Type *_host_eos_types = new MaterialEOS::Type[sizes.nmat];
+    double *_host_eos_params = new double[sizes.nmat * MaterialEOS::NUM_PARAMS];
+
+    {
+        decltype(eos.eos_types)::HostMirror host_eos_types(
+                _host_eos_types, sizes.nmat);
+        decltype(eos.eos_params)::HostMirror host_eos_params(
+                _host_eos_params, sizes.nmat);
+
+        // Fill host-side memory
+        for (int imat = 0; imat < sizes.nmat; imat++) {
+            host_eos_types(imat) = eos.mat_eos[imat].type;
+            for (int iparam = 0; iparam < MaterialEOS::NUM_PARAMS; iparam++) {
+                host_eos_params(imat, iparam) = eos.mat_eos[imat].params[iparam];
+            }
+        }
+
+        // Copy to device
+        Kokkos::deep_copy(eos.eos_types, host_eos_types);
+        Kokkos::deep_copy(eos.eos_params, host_eos_params);
+    }
+
+    delete[] _host_eos_types;
+    delete[] _host_eos_params;
+#else
+    // Initialise host-side memory
+    eos._eos_types = new MaterialEOS::Type[sizes.nmat];
+    eos._eos_params = new double[sizes.nmat * MaterialEOS::NUM_PARAMS];
+
+    eos.eos_types =
+        DeviceView<MaterialEOS::Type, VarDim>(eos._eos_types, sizes.nmat);
+    eos.eos_params =
+        DeviceView<double, VarDim, MaterialEOS::NUM_PARAMS>(eos._eos_params, sizes.nmat);
+
+    // Fill host-side memory
+    for (int imat = 0; imat < sizes.nmat; imat++) {
+        eos.eos_types(imat) = eos.mat_eos[imat].type;
+        for (int iparam = 0; iparam < MaterialEOS::NUM_PARAMS; iparam++) {
+            eos.eos_params(imat, iparam) = eos.mat_eos[imat].params[iparam];
+        }
+    }
+#endif
 }
 
 
 
 void
 killEOSConfig(
-        EOS &eos __attribute__((unused)))
+        EOS &eos)
 {
-    // XXX Stub for extra variant EOS config shutdown
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+    if (eos._eos_types != nullptr) {
+        cudaFree(eos._eos_types);
+        eos._eos_types = nullptr;
+    }
+
+    if (eos._eos_params != nullptr) {
+        cudaFree(eos._eos_params);
+        eos._eos_params = nullptr;
+    }
+#else
+    if (eos._eos_types != nullptr) {
+        delete[] eos._eos_types;
+        eos._eos_types = nullptr;
+    }
+
+    if (eos._eos_params != nullptr) {
+        delete[] eos._eos_params;
+        eos._eos_params = nullptr;
+    }
+#endif
 }
 
 } // namespace bookleaf

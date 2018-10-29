@@ -23,6 +23,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -34,16 +35,16 @@ void
 updateBasisEl(
         double zerocut,
         double dencut,
-        ConstView<double, VarDim> totv,
-        ConstView<double, VarDim> totm,
-        View<double, VarDim>      cutv,
-        View<double, VarDim>      cutm,
-        View<double, VarDim>      elvpr,
-        View<double, VarDim>      elmpr,
-        View<double, VarDim>      eldpr,
-        View<double, VarDim>      elvolume,
-        View<double, VarDim>      elmass,
-        View<double, VarDim>      eldensity,
+        ConstDeviceView<double, VarDim> totv,
+        ConstDeviceView<double, VarDim> totm,
+        DeviceView<double, VarDim>      cutv,
+        DeviceView<double, VarDim>      cutm,
+        DeviceView<double, VarDim>      elvpr,
+        DeviceView<double, VarDim>      elmpr,
+        DeviceView<double, VarDim>      eldpr,
+        DeviceView<double, VarDim>      elvolume,
+        DeviceView<double, VarDim>      elmass,
+        DeviceView<double, VarDim>      eldensity,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -51,8 +52,10 @@ updateBasisEl(
 #endif
 
     // update element basis
-    for (int iel = 0; iel < nel; iel++) {
-
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         // store basis variables
         elvpr(iel) = elvolume(iel);
         elmpr(iel) = elmass(iel);
@@ -70,16 +73,18 @@ updateBasisEl(
 
         // density
         eldensity(iel) = elmass(iel) / elvolume(iel);
-    }
+    });
+
+    cudaSync();
 }
 
 
 
 void
 initBasisNd(
-        View<double, VarDim> ndv0,
-        View<double, VarDim> ndv1,
-        View<double, VarDim> ndm0,
+        DeviceView<double, VarDim> ndv0,
+        DeviceView<double, VarDim> ndv1,
+        DeviceView<double, VarDim> ndm0,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -87,34 +92,42 @@ initBasisNd(
 #endif
 
     // initialise basis
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         ndv0(ind) = 0.;
         ndv1(ind) = 0.;
         ndm0(ind) = 0.;
-    }
+    });
+
+    cudaSync();
 }
 
 
 
 void
 calcBasisNd(
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<double, VarDim>        elv0,
-        ConstView<double, VarDim>        elv1,
-        ConstView<double, VarDim, NCORN> cnm1,
-        View<double, VarDim>             ndv0,
-        View<double, VarDim>             ndv1,
-        View<double, VarDim>             ndm0,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<double, VarDim>        elv0,
+        ConstDeviceView<double, VarDim>        elv1,
+        ConstDeviceView<double, VarDim, NCORN> cnm1,
+        DeviceView<double, VarDim>             ndv0,
+        DeviceView<double, VarDim>             ndv1,
+        DeviceView<double, VarDim>             ndm0,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -136,7 +149,9 @@ calcBasisNd(
             ndv1(ind) += w2;
             ndm0(ind) += w3;
         }
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -145,14 +160,14 @@ void
 fluxBasisNd(
         int id1,
         int id2,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<int, VarDim>           elsort __attribute__((unused)),
-        ConstView<double, VarDim, NFACE> fcdv,
-        ConstView<double, VarDim, NFACE> fcdm,
-        View<double, VarDim, NCORN>      cndv,
-        View<double, VarDim, NCORN>      cndm,
-        View<double, VarDim, NCORN>      cnflux,
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<int, VarDim>           elsort __attribute__((unused)),
+        ConstDeviceView<double, VarDim, NFACE> fcdv,
+        ConstDeviceView<double, VarDim, NFACE> fcdm,
+        DeviceView<double, VarDim, NCORN>      cndv,
+        DeviceView<double, VarDim, NCORN>      cndm,
+        DeviceView<double, VarDim, NCORN>      cnflux,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -163,12 +178,15 @@ fluxBasisNd(
     id2--;
 
     // Initialise flux
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         cnflux(iel, 0) = 0.;
         cnflux(iel, 1) = 0.;
         cnflux(iel, 2) = 0.;
         cnflux(iel, 3) = 0.;
-    }
+    });
 
     // Construct volume and mass flux
     for (int i1 = id1; i1 <= id2; i1++) {
@@ -182,8 +200,10 @@ fluxBasisNd(
         //               either.
         //for (int ii = 0; ii < nel; ii++) {
             //int const iel = elsort(ii);
-        for (int iel = 0; iel < nel; iel++) {
-
+        Kokkos::parallel_for(
+                RangePolicy(0, nel),
+                KOKKOS_LAMBDA (int const iel)
+        {
             int const ie1 = elel(iel, i1);
             int const ie2 = elel(iel, i2);
             int const is1 = elfc(iel, i1);
@@ -216,21 +236,23 @@ fluxBasisNd(
             cnflux(iel, 1) += w3;
             cnflux(iel, 2) += w3;
             cnflux(iel, 3) += w3;
-        }
+        });
     }
+
+    cudaSync();
 }
 
 
 
 void
 massBasisNd(
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<double, VarDim, NCORN> cnflux,
-        View<double, VarDim, NCORN>      cnm1,
-        View<double, VarDim>             ndm1,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<double, VarDim, NCORN> cnflux,
+        DeviceView<double, VarDim, NCORN>      cnm1,
+        DeviceView<double, VarDim>             ndm1,
         int nnd,
         int nel)
 {
@@ -239,7 +261,10 @@ massBasisNd(
 #endif
 
     // Construct post nodal mass
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -255,14 +280,19 @@ massBasisNd(
 
             ndm1(ind) += cnflux(iel, icn);
         }
-    }
+    });
 
     // Construct post corner mass
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         for (int icn = 0; icn < NCORN; icn++) {
             cnm1(iel, icn) += cnflux(iel, icn);
         }
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -271,9 +301,9 @@ void
 cutBasisNd(
         double cut,
         double dencut,
-        ConstView<double, VarDim> ndv0,
-        View<double, VarDim>      cutv,
-        View<double, VarDim>      cutm,
+        ConstDeviceView<double, VarDim> ndv0,
+        DeviceView<double, VarDim>      cutv,
+        DeviceView<double, VarDim>      cutm,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -281,10 +311,15 @@ cutBasisNd(
 #endif
 
     // Construct cut-offs
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         cutv(ind) = cut;
         cutm(ind) = dencut * ndv0(ind);
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -292,9 +327,9 @@ cutBasisNd(
 void
 activeNd(
         int ibc,
-        ConstView<int, VarDim>      ndstatus,
-        ConstView<int, VarDim>      ndtype,
-        View<unsigned char, VarDim> active,
+        ConstDeviceView<int, VarDim>      ndstatus,
+        ConstDeviceView<int, VarDim>      ndtype,
+        DeviceView<unsigned char, VarDim> active,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -302,13 +337,18 @@ activeNd(
 #endif
 
     // Set active flag
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         bool const is_active = (ndstatus(ind) > 0) &&
                                (ndtype(ind) != ibc) &&
                                (ndtype(ind) != -3);
 
         active(ind) = is_active ? 1 : 0;
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

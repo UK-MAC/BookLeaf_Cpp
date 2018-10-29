@@ -31,47 +31,47 @@ using constants::NCORN;
 
 void
 getForcePressure(
-        ConstView<double, VarDim>   elpressure,
-        ConstView<double, VarDim>   a1,
-        ConstView<double, VarDim>   a3,
-        ConstView<double, VarDim>   b1,
-        ConstView<double, VarDim>   b3,
-        View<double, VarDim, NCORN> cnfx,
-        View<double, VarDim, NCORN> cnfy,
+        ConstDeviceView<double, VarDim>   elpressure,
+        ConstDeviceView<double, VarDim>   a1,
+        ConstDeviceView<double, VarDim>   a3,
+        ConstDeviceView<double, VarDim>   b1,
+        ConstDeviceView<double, VarDim>   b3,
+        DeviceView<double, VarDim, NCORN> cnfx,
+        DeviceView<double, VarDim, NCORN> cnfy,
         int nel);
 
 void
 getForceViscosity(
-        ConstView<double, VarDim, NCORN> edviscx,
-        ConstView<double, VarDim, NCORN> edviscy,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim, NCORN> edviscx,
+        ConstDeviceView<double, VarDim, NCORN> edviscy,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel);
 
 void
 getForceSubzonalPressure(
-        double const *pmeritreg,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> spmass,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim>        pmeritreg,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> spmass,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel);
 
 void
 getForceHourglass(
         double dt,
-        double const *kappareg,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elarea,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim>        kappareg,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elarea,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel);
 
 } // namespace kernel

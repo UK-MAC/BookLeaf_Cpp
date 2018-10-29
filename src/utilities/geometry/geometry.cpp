@@ -31,6 +31,7 @@
 #include "utilities/data/gather.h"
 #include "common/data_control.h"
 #include "common/timer_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -52,16 +53,16 @@ getGeometry(
 
     int const nel = sizes.nel;
 
-    auto cnx    = data[DataID::CNX].chost<double, VarDim, NCORN>();
-    auto cny    = data[DataID::CNY].chost<double, VarDim, NCORN>();
-    auto cnwt   = data[DataID::CNWT].host<double, VarDim, NCORN>();
-    auto a1     = data[DataID::A1].host<double, VarDim>();
-    auto a2     = data[DataID::A2].host<double, VarDim>();
-    auto a3     = data[DataID::A3].host<double, VarDim>();
-    auto b1     = data[DataID::B1].host<double, VarDim>();
-    auto b2     = data[DataID::B2].host<double, VarDim>();
-    auto b3     = data[DataID::B3].host<double, VarDim>();
-    auto volume = data[DataID::ELVOLUME].host<double, VarDim>();
+    auto cnx    = data[DataID::CNX].cdevice<double, VarDim, NCORN>();
+    auto cny    = data[DataID::CNY].cdevice<double, VarDim, NCORN>();
+    auto cnwt   = data[DataID::CNWT].device<double, VarDim, NCORN>();
+    auto a1     = data[DataID::A1].device<double, VarDim>();
+    auto a2     = data[DataID::A2].device<double, VarDim>();
+    auto a3     = data[DataID::A3].device<double, VarDim>();
+    auto b1     = data[DataID::B1].device<double, VarDim>();
+    auto b2     = data[DataID::B2].device<double, VarDim>();
+    auto b3     = data[DataID::B3].device<double, VarDim>();
+    auto volume = data[DataID::ELVOLUME].device<double, VarDim>();
 
     // Gather position to element
     utils::driver::cornerGather(sizes, DataID::NDX, DataID::CNX, data);
@@ -74,15 +75,15 @@ getGeometry(
     kernel::getVolume(a1, a3, b1, b3, volume, nel);
 
     if (sizes.ncp > 0) {
-        auto mxel     = data[DataID::IMXEL].chost<int, VarDim>();
-        auto mxfcp    = data[DataID::IMXFCP].chost<int, VarDim>();
-        auto mxncp    = data[DataID::IMXNCP].chost<int, VarDim>();
-        auto cpa1     = data[DataID::CPA1].host<double, VarDim>();
-        auto cpa3     = data[DataID::CPA3].host<double, VarDim>();
-        auto cpb1     = data[DataID::CPB1].host<double, VarDim>();
-        auto cpb3     = data[DataID::CPB3].host<double, VarDim>();
-        auto cpvolume = data[DataID::CPVOLUME].host<double, VarDim>();
-        auto frvolume = data[DataID::FRVOLUME].chost<double, VarDim>();
+        auto mxel     = data[DataID::IMXEL].cdevice<int, VarDim>();
+        auto mxfcp    = data[DataID::IMXFCP].cdevice<int, VarDim>();
+        auto mxncp    = data[DataID::IMXNCP].cdevice<int, VarDim>();
+        auto cpa1     = data[DataID::CPA1].device<double, VarDim>();
+        auto cpa3     = data[DataID::CPA3].device<double, VarDim>();
+        auto cpb1     = data[DataID::CPB1].device<double, VarDim>();
+        auto cpb3     = data[DataID::CPB3].device<double, VarDim>();
+        auto cpvolume = data[DataID::CPVOLUME].device<double, VarDim>();
+        auto frvolume = data[DataID::FRVOLUME].cdevice<double, VarDim>();
 
         // Gather iso-parametric terms to component
         utils::kernel::mxGather<double>(sizes.nmx, mxel, mxfcp, mxncp, a1, a3,
@@ -91,9 +92,12 @@ getGeometry(
         // Calculate component volume
         kernel::getVolume(cpa1, cpa3, cpb1, cpb3, cpvolume, sizes.ncp);
 
-        for (int icp = 0; icp < sizes.ncp; icp++) {
+        Kokkos::parallel_for(
+                RangePolicy(0, sizes.ncp),
+                KOKKOS_LAMBDA (int const icp)
+        {
             cpvolume(icp) *= frvolume(icp);
-        }
+        });
     }
 
     int const vol_err = kernel::checkVolume(0.0, volume, nel);
@@ -114,10 +118,10 @@ getVertex(
     double const dt = 0.5 * runtime.timestep->dt;
     int const   nnd = runtime.sizes->nnd;
 
-    auto ndu = data[DataID::NDU].chost<double, VarDim>();
-    auto ndv = data[DataID::NDV].chost<double, VarDim>();
-    auto ndx = data[DataID::NDX].host<double, VarDim>();
-    auto ndy = data[DataID::NDY].host<double, VarDim>();
+    auto ndu = data[DataID::NDU].cdevice<double, VarDim>();
+    auto ndv = data[DataID::NDV].cdevice<double, VarDim>();
+    auto ndx = data[DataID::NDX].device<double, VarDim>();
+    auto ndy = data[DataID::NDY].device<double, VarDim>();
 
     // Update vextex positions
     kernel::getVertex(dt, ndu, ndv, ndx, ndy, nnd);
@@ -129,15 +133,15 @@ namespace kernel {
 
 void
 getIso(
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        View<double, VarDim>             a1,
-        View<double, VarDim>             a2,
-        View<double, VarDim>             a3,
-        View<double, VarDim>             b1,
-        View<double, VarDim>             b2,
-        View<double, VarDim>             b3,
-        View<double, VarDim, NCORN>      cnwt,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        DeviceView<double, VarDim>             a1,
+        DeviceView<double, VarDim>             a2,
+        DeviceView<double, VarDim>             a3,
+        DeviceView<double, VarDim>             b1,
+        DeviceView<double, VarDim>             b2,
+        DeviceView<double, VarDim>             b3,
+        DeviceView<double, VarDim, NCORN>      cnwt,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -146,7 +150,10 @@ getIso(
 
     double constexpr ONE_BY_NINE = 1.0/9.0;
 
-    for (int i = 0; i < nel; i++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const i)
+    {
         a1(i) = 0.25 * (-cnx(i, 0) + cnx(i, 1) + cnx(i, 2) - cnx(i, 3));
         a2(i) = 0.25 * ( cnx(i, 0) - cnx(i, 1) + cnx(i, 2) - cnx(i, 3));
         a3(i) = 0.25 * (-cnx(i, 0) - cnx(i, 1) + cnx(i, 2) + cnx(i, 3));
@@ -170,27 +177,34 @@ getIso(
         cnwt(i, 3) = ONE_BY_NINE *
             ((3.0*b3(i) - b2(i)) * (3.0*a1(i) + a2(i))
             -(3.0*a3(i) - a2(i)) * (3.0*b1(i) + b2(i)));
-    }
+    });
+
+    cudaSync();
 }
 
 
 
 void
 getVolume(
-        ConstView<double, VarDim> a1,
-        ConstView<double, VarDim> a3,
-        ConstView<double, VarDim> b1,
-        ConstView<double, VarDim> b3,
-        View<double, VarDim>      volume,
+        ConstDeviceView<double, VarDim> a1,
+        ConstDeviceView<double, VarDim> a3,
+        ConstDeviceView<double, VarDim> b1,
+        ConstDeviceView<double, VarDim> b3,
+        DeviceView<double, VarDim>      volume,
         int len)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int i = 0; i < len; i++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, len),
+            KOKKOS_LAMBDA (int const i)
+    {
         volume(i) = 4.0 * ((a1(i) * b3(i)) - (a3(i) * b1(i)));
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -198,18 +212,32 @@ getVolume(
 int
 checkVolume(
         double val,
-        ConstView<double, VarDim> volume,
+        ConstDeviceView<double, VarDim> volume,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int i = 0; i < nel; i++) {
-        if (volume(i) < val) return i;
-    }
+    using namespace Kokkos::Experimental;
 
-    return -1;
+    typedef Min<int>::value_type min_type;
+    min_type min = nel;
+
+    // Get the first entry in volume that is less than val, and its associated
+    // index
+    Kokkos::parallel_reduce(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel, min_type &lmin)
+    {
+        lmin = (volume(iel) < val) && (iel < lmin) ?
+            iel : (lmin < nel ? lmin : nel);
+
+    }, Min<int>::reducer(min));
+
+    cudaSync();
+
+    return min < nel ? min : -1;
 }
 
 
@@ -217,12 +245,12 @@ checkVolume(
 void
 getFluxVolume(
         double cut,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<double, VarDim>        ndx0,
-        ConstView<double, VarDim>        ndy0,
-        ConstView<double, VarDim>        ndx1,
-        ConstView<double, VarDim>        ndy1,
-        View<double, VarDim, NFACE>      fcdv,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<double, VarDim>        ndx0,
+        ConstDeviceView<double, VarDim>        ndy0,
+        ConstDeviceView<double, VarDim>        ndx1,
+        ConstDeviceView<double, VarDim>        ndy1,
+        DeviceView<double, VarDim, NFACE>      fcdv,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -230,15 +258,21 @@ getFluxVolume(
 #endif
 
     // Initialise
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         fcdv(iel, 0) = 0.;
         fcdv(iel, 1) = 0.;
         fcdv(iel, 2) = 0.;
         fcdv(iel, 3) = 0.;
-    }
+    });
 
     // Construct volumes
-    for (int iel = 0; iel < nel; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const iel)
+    {
         for (int ifc = 0; ifc < NFACE; ifc++) {
 
             int const jp = (ifc + 1) % NCORN;
@@ -262,7 +296,9 @@ getFluxVolume(
             fcdv(iel, ifc) = 0.25 * (a1*b3 - a3*b1);
             fcdv(iel, ifc) = fcdv(iel, ifc) < cut ? 0. : fcdv(iel, ifc);
         }
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -270,20 +306,25 @@ getFluxVolume(
 void
 getVertex(
         double dt,
-        ConstView<double, VarDim> ndu,
-        ConstView<double, VarDim> ndv,
-        View<double, VarDim>      ndx,
-        View<double, VarDim>      ndy,
+        ConstDeviceView<double, VarDim> ndu,
+        ConstDeviceView<double, VarDim> ndv,
+        DeviceView<double, VarDim>      ndx,
+        DeviceView<double, VarDim>      ndy,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         ndx(ind) += dt * ndu(ind);
         ndy(ind) += dt * ndv(ind);
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

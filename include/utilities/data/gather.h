@@ -27,6 +27,7 @@
 #include "common/data_id.h"
 #include "common/data_control.h"
 #include "common/view.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -38,7 +39,7 @@ using constants::NCORN;
 
 template <typename T>
 void
-cornerGather(
+hostCornerGather(
         int nel,
         ConstView<int, VarDim, NCORN> elnd,
         ConstView<T, VarDim>          nd,
@@ -48,18 +49,43 @@ cornerGather(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int i = 0; i < nel; i++) {
+    Kokkos::parallel_for(
+            HostRangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const i)
+    {
         for (int j = 0; j < NCORN; j++) {
             el(i, j) = nd(elnd(i, j));
         }
-    }
+    });
 }
 
 
 
 template <typename T>
 void
-mxGather(
+cornerGather(
+        int nel,
+        ConstDeviceView<int, VarDim, NCORN> elnd,
+        ConstDeviceView<T, VarDim>          nd,
+        DeviceView<T, VarDim, NCORN>        el)
+{
+    Kokkos::parallel_for(
+            RangePolicy(0, nel),
+            KOKKOS_LAMBDA (int const i)
+    {
+        for (int j = 0; j < NCORN; j++) {
+            el(i, j) = nd(elnd(i, j));
+        }
+    });
+
+    cudaSync();
+}
+
+
+
+template <typename T>
+void
+hostMxGather(
         int nmx,
         ConstView<int, VarDim> imxel,
         ConstView<int, VarDim> imxfcp,
@@ -67,19 +93,42 @@ mxGather(
         ConstView<T, VarDim>   elarray,
         View<T, VarDim>        mxarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    Kokkos::parallel_for(
+            HostRangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
         T const w = elarray(imxel(imx));
         for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
             mxarray(icp) = w;
         }
-    }
+    });
 }
-
-
 
 template <typename T>
 void
 mxGather(
+        int nmx,
+        ConstDeviceView<int, VarDim> imxel,
+        ConstDeviceView<int, VarDim> imxfcp,
+        ConstDeviceView<int, VarDim> imxncp,
+        ConstDeviceView<T, VarDim>   elarray,
+        DeviceView<T, VarDim>        mxarray)
+{
+    Kokkos::parallel_for(
+            RangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
+        T const w = elarray(imxel(imx));
+        for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
+            mxarray(icp) = w;
+        }
+    });
+}
+
+
+template <typename T>
+void
+hostMxGather(
         int nmx,
         ConstView<int, VarDim> imxel,
         ConstView<int, VarDim> imxfcp,
@@ -93,7 +142,10 @@ mxGather(
         View<T, VarDim>        mxarray3,
         View<T, VarDim>        mxarray4)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    Kokkos::parallel_for(
+            HostRangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
         int const iel = imxel(imx);
         T const w1 = elarray1(iel);
         T const w2 = elarray2(iel);
@@ -105,9 +157,42 @@ mxGather(
             mxarray3(icp) = w3;
             mxarray4(icp) = w4;
         }
-    }
+    });
 }
 
+template <typename T>
+void
+mxGather(
+        int nmx,
+        ConstDeviceView<int, VarDim> imxel,
+        ConstDeviceView<int, VarDim> imxfcp,
+        ConstDeviceView<int, VarDim> imxncp,
+        ConstDeviceView<T, VarDim>   elarray1,
+        ConstDeviceView<T, VarDim>   elarray2,
+        ConstDeviceView<T, VarDim>   elarray3,
+        ConstDeviceView<T, VarDim>   elarray4,
+        DeviceView<T, VarDim>        mxarray1,
+        DeviceView<T, VarDim>        mxarray2,
+        DeviceView<T, VarDim>        mxarray3,
+        DeviceView<T, VarDim>        mxarray4)
+{
+    Kokkos::parallel_for(
+            RangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
+        int const iel = imxel(imx);
+        T const w1 = elarray1(iel);
+        T const w2 = elarray2(iel);
+        T const w3 = elarray3(iel);
+        T const w4 = elarray4(iel);
+        for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
+            mxarray1(icp) = w1;
+            mxarray2(icp) = w2;
+            mxarray3(icp) = w3;
+            mxarray4(icp) = w4;
+        }
+    });
+}
 
 
 template <typename T>
@@ -120,7 +205,10 @@ mxComponentCornerGather(
         ConstView<T, VarDim, NCORN> elarray,
         View<T, VarDim, NCORN>      mxarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    Kokkos::parallel_for(
+            HostRangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
         T w[NCORN];
 
         int const iel = imxel(imx);
@@ -133,7 +221,37 @@ mxComponentCornerGather(
                 mxarray(icp, j) = w[j];
             }
         }
-    }
+    });
+}
+
+template <typename T>
+void
+mxCornerGather(
+        int nmx,
+        ConstDeviceView<int, VarDim>      imxel,
+        ConstDeviceView<int, VarDim>      imxfcp,
+        ConstDeviceView<int, VarDim>      imxncp,
+        ConstDeviceView<T, VarDim, NCORN> elarray,
+        DeviceView<T, VarDim, NCORN>      mxarray)
+{
+    Kokkos::parallel_for(
+            RangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
+        T _w[NCORN];
+        DeviceView<T, NCORN> w(_w);
+
+        int const iel = imxel(imx);
+        for (int j = 0; j < NCORN; j++) {
+            w(j) = elarray(iel, j);
+        }
+
+        for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
+            for (int j = 0; j < NCORN; j++) {
+                mxarray(icp, j) = w(j);
+            }
+        }
+    });
 }
 
 
@@ -171,7 +289,7 @@ namespace driver {
 
 template <typename T = double>
 void
-cornerGather(
+hostCornerGather(
         Sizes const &sizes,
         DataID ndid,
         DataID elid,
@@ -182,6 +300,29 @@ cornerGather(
     auto elnd = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto nd   = data[ndid].chost<T, VarDim>();
     auto el   = data[elid].host<T, VarDim, NCORN>();
+
+    kernel::hostCornerGather<T>(
+            sizes.nel,
+            elnd,
+            nd,
+            el);
+}
+
+
+
+template <typename T = double>
+void
+cornerGather(
+        Sizes const &sizes,
+        DataID ndid,
+        DataID elid,
+        DataControl &data)
+{
+    using constants::NCORN;
+
+    auto elnd = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto nd   = data[ndid].cdevice<T, VarDim>();
+    auto el   = data[elid].device<T, VarDim, NCORN>();
 
     kernel::cornerGather<T>(
             sizes.nel,

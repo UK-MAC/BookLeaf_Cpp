@@ -22,6 +22,8 @@
 #include <iostream>
 #include <memory>
 
+#include "common/view.h"
+
 
 
 namespace bookleaf {
@@ -52,12 +54,21 @@ struct Config
     std::vector<unsigned char> zdtnotreg;
     std::vector<unsigned char> zmidlength;
 
+    // Store hydro parameters on device
+    double *_dev_kappareg = nullptr;
+    double *_dev_pmeritreg = nullptr;
+    unsigned char *_dev_zdtnotreg = nullptr;
+    unsigned char *_dev_zmidlength = nullptr;
+
+    DeviceView<double, VarDim> dev_kappareg;
+    DeviceView<double, VarDim> dev_pmeritreg;
+    DeviceView<unsigned char, VarDim> dev_zdtnotreg;
+    DeviceView<unsigned char, VarDim> dev_zmidlength;
+
     std::shared_ptr<comms::Comm>         comm;
     std::shared_ptr<GlobalConfiguration> global;
     std::shared_ptr<io_utils::Labels>    io;
     std::shared_ptr<EOS>                 eos;
-
-    Config();
 };
 
 

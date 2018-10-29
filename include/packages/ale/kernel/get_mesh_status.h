@@ -30,7 +30,7 @@ void
 getMeshStatus(
         int nnd,
         bool zeul,
-        View<int, VarDim> ndstatus);
+        DeviceView<int, VarDim> ndstatus);
 
 } // namespace kernel
 } // namespace ale

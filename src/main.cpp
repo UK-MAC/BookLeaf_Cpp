@@ -67,11 +67,6 @@ main(int argc, char *argv[])
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    // Read command line arguments
-    if (!INIT_CMD_ARGS(argc, argv)) {
-        return EXIT_FAILURE;
-    }
-
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_MARK_BEGIN("initialisation");
 #endif
@@ -84,7 +79,12 @@ main(int argc, char *argv[])
     // -------------------------------------------------------------------------
     // Initialise parallelism
     // -------------------------------------------------------------------------
-    inf::init::initParallelism(*config.comms);
+    inf::init::initParallelism(argc, argv, *config.comms);
+
+    // Read command line arguments
+    if (!INIT_CMD_ARGS(argc, argv)) {
+        return EXIT_FAILURE;
+    }
 
     // -------------------------------------------------------------------------
     // Initialse timers and start relevant ones

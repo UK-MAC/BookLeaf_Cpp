@@ -8,10 +8,12 @@
 
 
 int
-main(int argc, char const *argv[])
+main(int argc, char *argv[])
 {
     using namespace bookleaf;
     using namespace bookleaf_diff;
+
+    Kokkos::initialize(argc, argv);
 
     if (argc != 3) {
         std::cerr << "incorrect args\n";
@@ -28,30 +30,32 @@ main(int argc, char const *argv[])
 
     int const nel = 2500;
 
-    ConstView<double, VarDim> totv(
+    ConstDeviceView<double, VarDim> totv(
             (double *) pre_dump[0].data, pre_dump[0].size);
-    ConstView<double, VarDim> totm(
+    ConstDeviceView<double, VarDim> totm(
             (double *) pre_dump[1].data, pre_dump[1].size);
 
-    View<double, VarDim> cutv(
+    DeviceView<double, VarDim> cutv(
             (double *) pre_dump[2].data, pre_dump[2].size);
-    View<double, VarDim> cutm(
+    DeviceView<double, VarDim> cutm(
             (double *) pre_dump[3].data, pre_dump[3].size);
-    View<double, VarDim> elvpr(
+    DeviceView<double, VarDim> elvpr(
             (double *) pre_dump[4].data, pre_dump[4].size);
-    View<double, VarDim> elmpr(
+    DeviceView<double, VarDim> elmpr(
             (double *) pre_dump[5].data, pre_dump[5].size);
-    View<double, VarDim> eldpr(
+    DeviceView<double, VarDim> eldpr(
             (double *) pre_dump[6].data, pre_dump[6].size);
-    View<double, VarDim> elvolume(
+    DeviceView<double, VarDim> elvolume(
             (double *) pre_dump[7].data, pre_dump[7].size);
-    View<double, VarDim> elmass(
+    DeviceView<double, VarDim> elmass(
             (double *) pre_dump[8].data, pre_dump[8].size);
-    View<double, VarDim> eldensity(
+    DeviceView<double, VarDim> eldensity(
             (double *) pre_dump[9].data, pre_dump[9].size);
 
     ale::kernel::updateBasisEl(zerocut, dencut, totv, totm, cutv, cutm, elvpr,
             elmpr, eldpr, elvolume, elmass, eldensity, nel);
+
+    Kokkos::finalize();
 
     bool const success = pre_dump.diff(post_dump);
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

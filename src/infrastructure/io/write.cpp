@@ -97,6 +97,10 @@ printPreprocessingOptions(
     std::cout << "  MPI parallelism not included\n";
 #endif
 
+    std::cout << "  Kokkos variant\n";
+    std::cout << "  Running up to "
+              << Kokkos::DefaultExecutionSpace::concurrency() << " threads\n";
+
 #ifdef BOOKLEAF_SILO_SUPPORT
     std::cout << "  Silo visualisation dumps available\n";
 #else

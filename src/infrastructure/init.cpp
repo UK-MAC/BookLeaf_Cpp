@@ -53,6 +53,8 @@ namespace init {
 
 void
 initParallelism(
+        int &argc,
+        char *argv[],
         comms::Comms &comms)
 {
     Error err;
@@ -61,6 +63,9 @@ initParallelism(
         assert(false && "unhandled error");
         return;
     }
+
+    // Initialise Kokkos
+    Kokkos::initialize(argc, argv);
 }
 
 

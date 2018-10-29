@@ -92,6 +92,7 @@ enum class DataID : int {
     RSCRATCH15,     //         "
     RSCRATCH16,     //         "
     RSCRATCH17,     //         "
+    RSCRATCH18,     //         "
     RSCRATCH21,     // 2D real-valued scratch
     RSCRATCH22,     //         "
     RSCRATCH23,     //         "
@@ -152,6 +153,8 @@ enum class DataID : int {
     ALE_STORE4 = RSCRATCH14,
     ALE_STORE5 = RSCRATCH15,
     ALE_STORE6 = RSCRATCH16,
+    ALE_STORE7 = RSCRATCH17,
+    ALE_STORE8 = RSCRATCH18,
     ALE_FCDV = RSCRATCH21,
     ALE_FCDM = RSCRATCH22,
     ALE_FLUX = RSCRATCH23,

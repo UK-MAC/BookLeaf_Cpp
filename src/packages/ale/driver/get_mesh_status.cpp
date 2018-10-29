@@ -35,7 +35,7 @@ getMeshStatus(ale::Config const &ale, Sizes const &sizes, TimerControl &timers,
 {
     ScopedTimer st(timers, timerid);
 
-    auto ndstatus = data[DataID::ALE_INDSTATUS].host<int, VarDim>();
+    auto ndstatus = data[DataID::ALE_INDSTATUS].device<int, VarDim>();
 
     // Select mesh to be moved
     kernel::getMeshStatus(sizes.nnd, ale.zeul, ndstatus);

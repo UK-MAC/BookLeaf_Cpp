@@ -32,17 +32,17 @@ using constants::NFACE;
 
 void
 initArtificialViscosity(
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim>             elvisc,
-        View<double, VarDim, NFACE>      dx,
-        View<double, VarDim, NFACE>      dy,
-        View<double, VarDim, NFACE>      du,
-        View<double, VarDim, NFACE>      dv,
-        View<double, VarDim, NCORN>      cnviscx,
-        View<double, VarDim, NCORN>      cnviscy,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim>             elvisc,
+        DeviceView<double, VarDim, NFACE>      dx,
+        DeviceView<double, VarDim, NFACE>      dy,
+        DeviceView<double, VarDim, NFACE>      du,
+        DeviceView<double, VarDim, NFACE>      dv,
+        DeviceView<double, VarDim, NCORN>      cnviscx,
+        DeviceView<double, VarDim, NCORN>      cnviscy,
         int nel);
 
 void
@@ -51,30 +51,30 @@ limitArtificialViscosity(
         double zerocut,
         double cvisc1,
         double cvisc2,
-        ConstView<int, VarDim>           ndtype,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NFACE> du,
-        ConstView<double, VarDim, NFACE> dv,
-        ConstView<double, VarDim, NFACE> dx,
-        ConstView<double, VarDim, NFACE> dy,
-        View<double, VarDim, NCORN>      scratch,
-        View<double, VarDim, NFACE>      cnviscx,
-        View<double, VarDim, NFACE>      cnviscy,
-        View<double, VarDim>             elvisc);
+        ConstDeviceView<int, VarDim>           ndtype,
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NFACE> du,
+        ConstDeviceView<double, VarDim, NFACE> dv,
+        ConstDeviceView<double, VarDim, NFACE> dx,
+        ConstDeviceView<double, VarDim, NFACE> dy,
+        DeviceView<double, VarDim, NCORN>      scratch,
+        DeviceView<double, VarDim, NFACE>      cnviscx,
+        DeviceView<double, VarDim, NFACE>      cnviscy,
+        DeviceView<double, VarDim>             elvisc);
 
 void
 getArtificialViscosity(
         double zerocut,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim, NFACE>      cnviscx,
-        View<double, VarDim, NFACE>      cnviscy,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim, NFACE>      cnviscx,
+        DeviceView<double, VarDim, NFACE>      cnviscy,
         int nel);
 
 } // namespace kernel

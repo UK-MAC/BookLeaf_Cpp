@@ -88,13 +88,16 @@ DataControl::dump(std::string filename) const
                 size_type const size = d.size();
 
                 if (d.getAllocatedType() == "integer") {
-                    writeZLibDump(zlc, name, d.chost<int, VarDim>(size));
+                    writeZLibDump<int const, VarDim>(
+                            zlc, name, d.chost<int, VarDim>(size));
 
                 } else if (d.getAllocatedType() == "double") {
-                    writeZLibDump(zlc, name, d.chost<double, VarDim>(size));
+                    writeZLibDump<double const, VarDim>(
+                            zlc, name, d.chost<double, VarDim>(size));
 
                 } else if (d.getAllocatedType() == "boolean") {
-                    writeZLibDump(zlc, name, d.chost<unsigned char, VarDim>(size));
+                    writeZLibDump<unsigned char const, VarDim>(
+                            zlc, name, d.chost<unsigned char, VarDim>(size));
                 }
             }
 
@@ -207,6 +210,7 @@ DataControl::setQuant(Config const &config, Sizes const &sizes)
     entry<double>(DataID::RSCRATCH15, "rscratch15", zmpi, nsz);
     entry<double>(DataID::RSCRATCH16, "rscratch16", zmpi, nsz);
     entry<double>(DataID::RSCRATCH17, "rscratch17", zmpi, nsz);
+    entry<double>(DataID::RSCRATCH18, "rscratch18", zmpi, nsz);
 
     entry<int>(DataID::IELSORT1, "ielsort1", nel);
     entry<int>(DataID::IELEL, "ielel", nel, NFACE);

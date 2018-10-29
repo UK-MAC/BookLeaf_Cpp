@@ -21,6 +21,8 @@
 #include <string>
 #include <type_traits>
 
+#include <Kokkos_Core.hpp>
+
 
 
 namespace bookleaf {
@@ -33,6 +35,28 @@ typedef std::size_t SizeType;
 
 /** \brief Mark the number of rows in a view as varying at runtime. */
 SizeType constexpr VarDim = (SizeType) (-1);
+
+/** \brief Kokkos host data layout. Typhon needs LayoutRight. */
+using HostLayout = Kokkos::LayoutRight;
+
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+using DeviceLayout = Kokkos::LayoutLeft;
+#else
+using DeviceLayout = HostLayout;
+#endif
+
+/** \brief Kokkos host space. Just use the default. */
+using HostSpace = Kokkos::HostSpace::execution_space;
+
+#ifdef BOOKLEAF_KOKKOS_CUDA_SUPPORT
+using DeviceSpace = Kokkos::Cuda;
+#else
+using DeviceSpace = HostSpace;
+#endif
+
+/** \brief Basic range policy to use. */
+using HostRangePolicy = Kokkos::RangePolicy<HostSpace::execution_space>;
+using RangePolicy = Kokkos::RangePolicy<DeviceSpace::execution_space>;
 
 
 

@@ -8,10 +8,12 @@
 
 
 int
-main(int argc, char const *argv[])
+main(int argc, char *argv[])
 {
     using namespace bookleaf;
     using namespace bookleaf_diff;
+
+    Kokkos::initialize(argc, argv);
 
     if (argc != 3) {
         std::cerr << "incorrect args\n";
@@ -28,15 +30,17 @@ main(int argc, char const *argv[])
 
     int const nnd = 2626;
 
-    ConstView<double, VarDim> ndv0(
+    ConstDeviceView<double, VarDim> ndv0(
             (double *) pre_dump[0].data, pre_dump[0].size);
 
-    View<double, VarDim> cutv(
+    DeviceView<double, VarDim> cutv(
             (double *) pre_dump[1].data, pre_dump[1].size);
-    View<double, VarDim> cutm(
+    DeviceView<double, VarDim> cutm(
             (double *) pre_dump[2].data, pre_dump[2].size);
 
     ale::kernel::cutBasisNd(cut, dencut, ndv0, cutv, cutm, nnd);
+
+    Kokkos::finalize();
 
     bool const success = pre_dump.diff(post_dump);
     return success ? EXIT_SUCCESS : EXIT_FAILURE;

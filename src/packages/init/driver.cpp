@@ -55,11 +55,11 @@ initElementMasses(
 {
     using constants::NCORN;
 
-    auto elmass    = data[DataID::ELMASS].host<double, VarDim>();
-    auto cnmass    = data[DataID::CNMASS].host<double, VarDim, NCORN>();
     auto eldensity = data[DataID::ELDENSITY].chost<double, VarDim>();
     auto elvolume  = data[DataID::ELVOLUME].chost<double, VarDim>();
     auto cnwt      = data[DataID::CNWT].chost<double, VarDim, NCORN>();
+    auto elmass    = data[DataID::ELMASS].host<double, VarDim>();
+    auto cnmass    = data[DataID::CNMASS].host<double, VarDim, NCORN>();
 
     // Initialise clean cells
     kernel::elMass(sizes.nel, eldensity, elvolume, cnwt, elmass, cnmass);
@@ -77,8 +77,8 @@ initElementMasses(
 
         kernel::mxMass(sizes.ncp, cpdensity, cpvolume, cpmass);
 
-        utils::kernel::mxGather<double>(sizes.nmx, mxel, mxfcp, mxncp, elmass,
-                rcpscratch);
+        utils::kernel::hostMxGather<double>(sizes.nmx, mxel, mxfcp, mxncp,
+                elmass, rcpscratch);
 
         for (int icp = 0; icp < sizes.ncp; icp++) {
             frmass(icp) = cpmass(icp) / rcpscratch(icp);
@@ -218,6 +218,12 @@ initElementState(
 {
     // Initialise mass
     initElementMasses(sizes, data);
+
+    data[DataID::IELMAT].syncDevice();
+    data[DataID::ELDENSITY].syncDevice();
+    data[DataID::ELENERGY].syncDevice();
+    data[DataID::ELPRESSURE].syncDevice();
+    data[DataID::ELCS2].syncDevice();
 
     // Initialise pressure and sound speed
     data[DataID::IELMAT].syncDevice();

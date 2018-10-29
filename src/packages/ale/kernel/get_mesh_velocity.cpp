@@ -21,6 +21,8 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
+
 
 
 namespace bookleaf {
@@ -31,22 +33,27 @@ void
 getMeshVelocity(
         int nnd,
         bool zeul,
-        View<double, VarDim> ndu,
-        View<double, VarDim> ndv)
+        DeviceView<double, VarDim> ndu,
+        DeviceView<double, VarDim> ndv)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
     if (zeul) {
-        for (int ind = 0; ind < nnd; ind++) {
+        Kokkos::parallel_for(
+                RangePolicy(0, nnd),
+                KOKKOS_LAMBDA (int const ind)
+        {
             ndu(ind) = -ndu(ind);
             ndv(ind) = -ndv(ind);
-        }
+        });
 
     } else {
         // XXX Missing code that can't (or hasn't) been merged.
     }
+
+    cudaSync();
 }
 
 } // namespace kernel

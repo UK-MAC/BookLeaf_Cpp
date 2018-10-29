@@ -21,6 +21,8 @@
 #include <vector>
 #include <iostream>
 
+#include "common/view.h"
+
 
 
 namespace bookleaf {
@@ -47,6 +49,13 @@ struct EOS
     double pcut = 1.e-8;    // Pressure cutoff
 
     std::vector<MaterialEOS> mat_eos;
+
+    // Store EOS parameters on device
+    MaterialEOS::Type *_eos_types = nullptr;
+    double            *_eos_params = nullptr;
+
+    DeviceView<MaterialEOS::Type, VarDim>               eos_types;
+    DeviceView<double, VarDim, MaterialEOS::NUM_PARAMS> eos_params;
 };
 
 

@@ -26,6 +26,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -39,9 +40,9 @@ getDt(
         double zerocut,
         double ale_sf,
         bool zeul,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        ConstView<double, VarDim>        ellength,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        ellength,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -50,31 +51,37 @@ getDt(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::max();
-    int ii = 0;
+    using MinLoc     = Kokkos::Experimental::MinLoc<double, int>;
+    using MinLocType = MinLoc::value_type;
+
+    MinLocType minloc;
 
     if (zeul) {
-        for (int iel = 0; iel < nel; iel++) {
-
+        Kokkos::parallel_reduce(
+                RangePolicy(0, nel),
+                KOKKOS_LAMBDA (int const iel, MinLocType &lminloc)
+        {
             // Minimise node velocity squared
-            double w1 = -std::numeric_limits<double>::max();
+            double w1 = -NPP_MAXABS_64F;
             for (int icn = 0; icn < NCORN; icn++) {
                 double w2 = cnu(iel, icn) * cnu(iel, icn) +
                             cnv(iel, icn) * cnv(iel, icn);
-                w1 = std::max(w1, w2);
+                w1 = BL_MAX(w1, w2);
             }
 
-            w1 = ellength(iel) / std::max(w1, zerocut);
-            ii = w1 < w2 ? iel : ii;
-            w2 = w1 < w2 ? w1 : w2;
-        }
+            w1 = ellength(iel) / BL_MAX(w1, zerocut);
+            lminloc.loc = w1 < lminloc.val ? iel : lminloc.loc;
+            lminloc.val = w1 < lminloc.val ? w1 : lminloc.val;
+        }, MinLoc::reducer(minloc));
 
     } else {
         // XXX Missing code that can't (or hasn't) been merged
     }
 
-    rdt = ale_sf*sqrt(w2);
-    idt = ii;
+    cudaSync();
+
+    rdt = ale_sf*sqrt(minloc.val);
+    idt = minloc.loc;
     sdt = "     ALE";
 }
 

@@ -23,6 +23,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -32,22 +33,25 @@ namespace kernel {
 
 void
 initAcceleration(
-        View<double, VarDim> ndarea,
-        View<double, VarDim> ndmass,
-        View<double, VarDim> ndudot,
-        View<double, VarDim> ndvdot,
+        DeviceView<double, VarDim> ndarea,
+        DeviceView<double, VarDim> ndmass,
+        DeviceView<double, VarDim> ndudot,
+        DeviceView<double, VarDim> ndvdot,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         ndmass(ind) = 0.;
         ndarea(ind) = 0.;
         ndudot(ind) = 0.;
         ndvdot(ind) = 0.;
-    }
+    });
 }
 
 
@@ -55,26 +59,29 @@ initAcceleration(
 void
 scatterAcceleration(
         double zerocut,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim, NCORN> cnwt,
-        ConstView<double, VarDim, NCORN> cnmass,
-        ConstView<double, VarDim, NCORN> cnfx,
-        ConstView<double, VarDim, NCORN> cnfy,
-        View<double, VarDim>             ndarea,
-        View<double, VarDim>             ndmass,
-        View<double, VarDim>             ndudot,
-        View<double, VarDim>             ndvdot,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim, NCORN> cnwt,
+        ConstDeviceView<double, VarDim, NCORN> cnmass,
+        ConstDeviceView<double, VarDim, NCORN> cnfx,
+        ConstDeviceView<double, VarDim, NCORN> cnfy,
+        DeviceView<double, VarDim>             ndarea,
+        DeviceView<double, VarDim>             ndmass,
+        DeviceView<double, VarDim>             ndudot,
+        DeviceView<double, VarDim>             ndvdot,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -91,14 +98,16 @@ scatterAcceleration(
             double const density = eldensity(iel);
             double w = cnmass(iel, icn);
             w = w > zerocut ? w : cnmass(iel, (icn + (NCORN-1)) % NCORN);
-            w = w > zerocut ? w : density * cnwt(iel, icn);
-            ndmass(ind) += w;
+            w = w > zerocut ? w : eldensity(iel) * cnwt(iel, icn);
 
+            ndmass(ind) += w;
             ndarea(ind) += cnwt(iel, icn);
             ndudot(ind) += cnfx(iel, icn);
             ndvdot(ind) += cnfy(iel, icn);
         }
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -107,27 +116,32 @@ void
 getAcceleration(
         double dencut,
         double zerocut,
-        ConstView<double, VarDim> ndarea,
-        View<double, VarDim>      ndmass,
-        View<double, VarDim>      ndudot,
-        View<double, VarDim>      ndvdot,
+        ConstDeviceView<double, VarDim> ndarea,
+        DeviceView<double, VarDim>      ndmass,
+        DeviceView<double, VarDim>      ndudot,
+        DeviceView<double, VarDim>      ndvdot,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         double const w1 = dencut * ndarea(ind);
 
         double udot = ndmass(ind) > w1 ? ndudot(ind) / ndmass(ind) : 0.;
         double vdot = ndmass(ind) > w1 ? ndvdot(ind) / ndmass(ind) : 0.;
-        double mass = ndmass(ind) > w1 ? ndmass(ind) : std::max(zerocut, w1);
+        double mass = ndmass(ind) > w1 ? ndmass(ind) : BL_MAX(zerocut, w1);
 
         ndudot(ind) = udot;
         ndvdot(ind) = vdot;
         ndmass(ind) = mass;
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -135,10 +149,10 @@ getAcceleration(
 void
 applyAcceleration(
         double dt,
-        View<double, VarDim> ndubar,
-        View<double, VarDim> ndvbar,
-        View<double, VarDim> ndu,
-        View<double, VarDim> ndv,
+        DeviceView<double, VarDim> ndubar,
+        DeviceView<double, VarDim> ndvbar,
+        DeviceView<double, VarDim> ndu,
+        DeviceView<double, VarDim> ndv,
         int nnd)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -147,7 +161,10 @@ applyAcceleration(
 
     double const dt05 = 0.5 * dt;
 
-    for (int ind = 0; ind < nnd; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nnd),
+            KOKKOS_LAMBDA (int const ind)
+    {
         double const w1 = ndu(ind);
         double const w2 = ndv(ind);
 
@@ -155,7 +172,9 @@ applyAcceleration(
         ndv(ind) = w2 + dt*ndvbar(ind);
         ndubar(ind) = w1 + dt05*ndubar(ind);
         ndvbar(ind) = w2 + dt05*ndvbar(ind);
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

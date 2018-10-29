@@ -85,6 +85,17 @@ endif (NOT DEFINED ENABLE_ZLIB)
 
 
 
+# Kokkos defaults
+if (NOT DEFINED KOKKOS_ENABLE_OPENMP)
+    set(KOKKOS_ENABLE_OPENMP ON)
+endif (NOT DEFINED KOKKOS_ENABLE_OPENMP)
+
+if (NOT DEFINED KOKKOS_ENABLE_CUDA)
+    set(KOKKOS_ENABLE_CUDA OFF)
+endif (NOT DEFINED KOKKOS_ENABLE_CUDA)
+
+
+
 # ------------------------------------------------------------------------------
 # Get VCS information
 # ------------------------------------------------------------------------------
@@ -217,7 +228,6 @@ set(BOOKLEAF_LIB_SRC
 # executable and any unit tests.
 add_library(libbookleaf STATIC ${BOOKLEAF_LIB_SRC})
 set_target_properties(libbookleaf PROPERTIES OUTPUT_NAME bookleaf)
-target_compile_features(libbookleaf PUBLIC cxx_std_11)
 target_include_directories(libbookleaf PUBLIC include)
 
 # The main bookleaf executable.
@@ -229,6 +239,17 @@ target_link_libraries(bookleaf PRIVATE libbookleaf)
 # ------------------------------------------------------------------------------
 # Compilation settings
 # ------------------------------------------------------------------------------
+target_compile_options(libbookleaf PUBLIC --std=c++11)
+
+# CUDA options
+if (KOKKOS_ENABLE_CUDA)
+    target_compile_options(libbookleaf PUBLIC --expt-extended-lambda)
+    add_definitions("-DBOOKLEAF_KOKKOS_CUDA_SUPPORT")
+    set(KOKKOS_ENABLE_CUDA_LAMBDA ON)
+    #target_compile_options(libbookleaf PUBLIC -Wno-unused-variable)
+    #target_compile_options(libbookleaf PUBLIC -Wno-sign-compare)
+endif (KOKKOS_ENABLE_CUDA)
+
 # Generate mesh (this can't be disabled at the moment).
 add_definitions("-DBOOKLEAF_MESH_GENERATION")
 
@@ -288,6 +309,25 @@ endif ()
 find_package(YamlCpp REQUIRED)
 target_include_directories(libbookleaf PUBLIC ${YamlCpp_INCLUDES})
 target_link_libraries(libbookleaf PRIVATE ${YamlCpp_LIBRARIES})
+
+# Check OpenMP support
+find_package(OpenMP COMPONENTS CXX REQUIRED)
+target_compile_options(libbookleaf PUBLIC ${OpenMP_CXX_FLAGS})
+target_link_libraries(libbookleaf PUBLIC OpenMP::OpenMP_CXX)
+
+# Kokkos is included as a submodule, as it functioning correctly is dependent on
+# it being built in exactly the same manner as the application that uses it
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(KOKKOS_ENABLE_DEBUG ON)
+endif (CMAKE_BUILD_TYPE MATCHES "Debug")
+
+add_subdirectory(
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/kokkos
+    ${CMAKE_CURRENT_BINARY_DIR}/kokkos)
+
+#target_compile_options(libbookleaf PUBLIC -Wno-unused-parameter)
+target_include_directories(libbookleaf PUBLIC ${Kokkos_INCLUDE_DIRS_RET})
+target_link_libraries(libbookleaf PUBLIC kokkos)
 
 # Locate zlib
 if (ENABLE_ZLIB)
@@ -381,7 +421,9 @@ endif (ENABLE_CALIPER)
 # ------------------------------------------------------------------------------
 # Tools
 # ------------------------------------------------------------------------------
-add_subdirectory(tools)
+if (NOT KOKKOS_ENABLE_CUDA)
+    add_subdirectory(tools)
+endif (NOT KOKKOS_ENABLE_CUDA)
 
 
 
@@ -402,9 +444,11 @@ install(
 # ------------------------------------------------------------------------------
 # Testing (requires zlib for decompressing dumps)
 # ------------------------------------------------------------------------------
-if (BUILD_TESTS AND ENABLE_ZLIB)
-    enable_testing()
-    add_subdirectory(test)
-elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
-    message(WARNING "Not building tests as ZLib was disabled")
-endif ()
+if (NOT KOKKOS_ENABLE_CUDA)
+    if (BUILD_TESTS AND ENABLE_ZLIB)
+        enable_testing()
+        add_subdirectory(test)
+    elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
+        message(WARNING "Not building tests as ZLib was disabled")
+    endif ()
+endif (NOT KOKKOS_ENABLE_CUDA)

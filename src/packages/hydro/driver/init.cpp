@@ -31,7 +31,7 @@ namespace hydro {
 namespace driver {
 
 void
-init(hydro::Config const &hydro, Sizes const &sizes, DataControl &data)
+init(hydro::Config &hydro, Sizes const &sizes, DataControl &data)
 {
     using constants::NCORN;
 

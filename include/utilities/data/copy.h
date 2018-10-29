@@ -24,6 +24,7 @@
 
 #include "common/constants.h"
 #include "common/view.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -36,17 +37,22 @@ using constants::NCORN;
 template <typename T>
 void
 copy(
-        View<T, VarDim>      dst,
-        ConstView<T, VarDim> src,
+        DeviceView<T, VarDim>      dst,
+        ConstDeviceView<T, VarDim> src,
         int len)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int i = 0; i < len; i++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, len),
+            KOKKOS_LAMBDA (int const i)
+    {
         dst(i) = src(i);
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -54,15 +60,24 @@ copy(
 template <typename T>
 void
 copy(
-        View<T, VarDim, NCORN>      dst,
-        ConstView<T, VarDim, NCORN> src,
+        DeviceView<T, VarDim, NCORN>      dst,
+        ConstDeviceView<T, VarDim, NCORN> src,
         int len)
 {
-    for (int i = 0; i < len; i++) {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
+    Kokkos::parallel_for(
+            RangePolicy(0, len),
+            KOKKOS_LAMBDA (int const i)
+    {
         for (int icn = 0; icn < NCORN; icn++) {
             dst(i, icn) = src(i, icn);
         }
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

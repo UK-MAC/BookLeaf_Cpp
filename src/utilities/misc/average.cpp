@@ -34,15 +34,18 @@ using constants::NCORN;
 void
 average(
         int nmx,
-        ConstView<int, VarDim>    imxel,
-        ConstView<int, VarDim>    imxfcp,
-        ConstView<int, VarDim>    imxncp,
-        ConstView<double, VarDim> mxfraction,
-        ConstView<double, VarDim> mxarray1,
-        ConstView<double, VarDim> mxarray2,
-        View<double, VarDim>      elarray)
+        ConstDeviceView<int, VarDim>    imxel,
+        ConstDeviceView<int, VarDim>    imxfcp,
+        ConstDeviceView<int, VarDim>    imxncp,
+        ConstDeviceView<double, VarDim> mxfraction,
+        ConstDeviceView<double, VarDim> mxarray1,
+        ConstDeviceView<double, VarDim> mxarray2,
+        DeviceView<double, VarDim>      elarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
         double w1 = 0.;
         int icp = imxfcp(imx);
         for (int ii = 0; ii < imxncp(imx); ii++) {
@@ -51,7 +54,7 @@ average(
         }
 
         elarray(imxel(imx)) = w1;
-    }
+    });
 }
 
 
@@ -59,16 +62,19 @@ average(
 void
 average(
         int nmx,
-        ConstView<int, VarDim>           imxel,
-        ConstView<int, VarDim>           imxfcp,
-        ConstView<int, VarDim>           imxncp,
-        ConstView<double, VarDim>        mxfraction,
-        ConstView<double, VarDim, NCORN> mxarray1,
-        ConstView<double, VarDim, NCORN> mxarray2,
-        View<double, VarDim, NCORN>      elarray1,
-        View<double, VarDim, NCORN>      elarray2)
+        ConstDeviceView<int, VarDim>           imxel,
+        ConstDeviceView<int, VarDim>           imxfcp,
+        ConstDeviceView<int, VarDim>           imxncp,
+        ConstDeviceView<double, VarDim>        mxfraction,
+        ConstDeviceView<double, VarDim, NCORN> mxarray1,
+        ConstDeviceView<double, VarDim, NCORN> mxarray2,
+        DeviceView<double, VarDim, NCORN>      elarray1,
+        DeviceView<double, VarDim, NCORN>      elarray2)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, nmx),
+            KOKKOS_LAMBDA (int const imx)
+    {
         double w1[NCORN] = {0};
         double w2[NCORN] = {0};
 
@@ -86,7 +92,7 @@ average(
             elarray1(iel, icn) = w1[icn];
             elarray2(iel, icn) = w2[icn];
         }
-    }
+    });
 }
 
 } // namespace
@@ -103,13 +109,13 @@ average(
         DataID elid,
         DataControl &data)
 {
-    auto imxel  = data[DataID::IMXEL].chost<int, VarDim>();
-    auto imxfcp = data[DataID::IMXFCP].chost<int, VarDim>();
-    auto imxncp = data[DataID::IMXNCP].chost<int, VarDim>();
-    auto fr     = data[frid].chost<double, VarDim>();
-    auto mx1    = data[mx1id].chost<double, VarDim>();
-    auto mx2    = data[mx2id].chost<double, VarDim>();
-    auto el     = data[elid].host<double, VarDim>();
+    auto imxel  = data[DataID::IMXEL].cdevice<int, VarDim>();
+    auto imxfcp = data[DataID::IMXFCP].cdevice<int, VarDim>();
+    auto imxncp = data[DataID::IMXNCP].cdevice<int, VarDim>();
+    auto fr     = data[frid].cdevice<double, VarDim>();
+    auto mx1    = data[mx1id].cdevice<double, VarDim>();
+    auto mx2    = data[mx2id].cdevice<double, VarDim>();
+    auto el     = data[elid].device<double, VarDim>();
 
     kernel::average(sizes.nmx, imxel, imxfcp, imxncp, fr, mx1, mx2, el);
 }
@@ -128,14 +134,14 @@ average(
 {
     using constants::NCORN;
 
-    auto imxel  = data[DataID::IMXEL].chost<int, VarDim>();
-    auto imxfcp = data[DataID::IMXFCP].chost<int, VarDim>();
-    auto imxncp = data[DataID::IMXNCP].chost<int, VarDim>();
-    auto fr     = data[frid].chost<double, VarDim>();
-    auto mx1    = data[mx1id].chost<double, VarDim, NCORN>();
-    auto mx2    = data[mx2id].chost<double, VarDim, NCORN>();
-    auto el1    = data[el1id].host<double, VarDim, NCORN>();
-    auto el2    = data[el2id].host<double, VarDim, NCORN>();
+    auto imxel  = data[DataID::IMXEL].cdevice<int, VarDim>();
+    auto imxfcp = data[DataID::IMXFCP].cdevice<int, VarDim>();
+    auto imxncp = data[DataID::IMXNCP].cdevice<int, VarDim>();
+    auto fr     = data[frid].cdevice<double, VarDim>();
+    auto mx1    = data[mx1id].cdevice<double, VarDim, NCORN>();
+    auto mx2    = data[mx2id].cdevice<double, VarDim, NCORN>();
+    auto el1    = data[el1id].device<double, VarDim, NCORN>();
+    auto el2    = data[el2id].device<double, VarDim, NCORN>();
 
     kernel::average(sizes.nmx, imxel, imxfcp, imxncp, fr,
             mx1, mx2, el1, el2);

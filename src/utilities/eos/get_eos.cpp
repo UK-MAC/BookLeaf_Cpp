@@ -27,6 +27,7 @@
 #include "common/sizes.h"
 #include "common/data_control.h"
 #include "common/timer_control.h"
+#include "common/cuda_utils.h"
 #include "utilities/eos/config.h"
 
 
@@ -36,19 +37,18 @@ namespace eos {
 namespace kernel {
 namespace {
 
-inline double
-getPressure(int mat, double density, double energy, EOS const &eos)
+KOKKOS_INLINE_FUNCTION double
+getPressure(
+        int imat,
+        MaterialEOS::Type type,
+        ConstDeviceView<double, VarDim, MaterialEOS::NUM_PARAMS> eos_params,
+        double pcut,
+        double density,
+        double energy)
 {
     double pressure = 0.;
-    MaterialEOS::Type type = MaterialEOS::Type::VOID;
+    auto params = Kokkos::subview(eos_params, imat, Kokkos::ALL);
 
-    int const imat = std::max(mat, 0);
-    assert(imat < (int) eos.mat_eos.size());
-    if (mat >= 0) {
-        type = eos.mat_eos[imat].type;
-    }
-
-    double const *params = eos.mat_eos[imat].params;
     switch (type) {
     case MaterialEOS::Type::VOID:
         pressure = 0.;
@@ -63,20 +63,20 @@ getPressure(int mat, double density, double energy, EOS const &eos)
     // Tait equation (Murnaghan)
     case MaterialEOS::Type::TAIT:
         {
-            double t1 = density / params[2];
-            pressure = params[0] * (::pow(t1, params[1]) - 1.);
-            pressure = std::max(pressure, params[3]);
+            double t1 = density / params(2);
+            pressure = params(0) * (BL_POW(t1, params(1)) - 1.);
+            pressure = BL_MAX(pressure, params(3));
         }
         break;
 
     // Jones–Wilkins–Lee
     case MaterialEOS::Type::JWL:
         {
-            double t1 = params[3] * params[5] / density;
-            double t2 = params[4] * params[5] / density;
-            double t3 = params[0] * density * energy;
-            double t4 = (1. - params[0] / t1) * params[1] * std::exp(-t1);
-            double t5 = (1. - params[0] / t2) * params[2] * std::exp(-t2);
+            double t1 = params(3) * params(5) / density;
+            double t2 = params(4) * params(5) / density;
+            double t3 = params(0) * density * energy;
+            double t4 = (1. - params(0) / t1) * params(1) * BL_EXP(-t1);
+            double t5 = (1. - params(0) / t2) * params(2) * BL_EXP(-t2);
             pressure = t3 + t4 + t5;
         }
         break;
@@ -85,28 +85,28 @@ getPressure(int mat, double density, double energy, EOS const &eos)
         pressure = -1.;
     }
 
-    if (std::fabs(pressure) < eos.pcut) pressure = 0.;
+    if (BL_FABS(pressure) < pcut) pressure = 0.;
     return pressure;
 }
 
 
 
-inline double
-getCS2(int mat, double density, double energy, EOS const &eos)
+KOKKOS_INLINE_FUNCTION double
+getCS2(
+        int imat,
+        MaterialEOS::Type type,
+        ConstDeviceView<double, VarDim, MaterialEOS::NUM_PARAMS> eos_params,
+        double pcut,
+        double ccut,
+        double density,
+        double energy)
 {
     double cs2 = 0.;
-    MaterialEOS::Type type = MaterialEOS::Type::VOID;
+    auto params = Kokkos::subview(eos_params, imat, Kokkos::ALL);
 
-    int const imat = mat;
-    assert(imat < (int) eos.mat_eos.size());
-    if (mat >= 0) {
-        type = eos.mat_eos[imat].type;
-    }
-
-    double const *params = eos.mat_eos[imat].params;
     switch (type) {
     case MaterialEOS::Type::VOID:
-        cs2 = eos.ccut;
+        cs2 = ccut;
         break;
 
     // Ideal gas law
@@ -118,36 +118,36 @@ getCS2(int mat, double density, double energy, EOS const &eos)
     // Tait equation
     case MaterialEOS::Type::TAIT:
         {
-            double t1 = density / params[2];
-            double t2 = params[1] - 1.;
-            cs2 = (params[0] * params[1]) / params[3];
-            cs2 = cs2 * ::pow(t1, t2);
+            double t1 = density / params(2);
+            double t2 = params(1) - 1.;
+            cs2 = (params(0) * params(1)) / params(3);
+            cs2 = cs2 * BL_POW(t1, t2);
         }
         break;
 
     // Jones–Wilkins–Lee
     case MaterialEOS::Type::JWL:
         {
-            double t1 = params[5] / density;
-            double t2 = getPressure(imat, density, energy, eos);
-            double t3 = params[3] * t1;
+            double t1 = params(5) / density;
+            double t2 = getPressure(imat, type, eos_params, pcut, density, energy);
+            double t3 = params(3) * t1;
 
-            double t4 = params[0] / params[3] + params[0]*t1 - t3*t1;
-            t4 *= params[1] * std::exp(-t3);
+            double t4 = params(0) / params(3) + params(0)*t1 - t3*t1;
+            t4 *= params(1) * BL_EXP(-t3);
 
-            t3 = params[4] * t1;
-            double t5 = params[0] / params[4] + params[0]*t1 - t3*t1;
-            t5 *= params[2] * std::exp(-t3);
+            t3 = params(4) * t1;
+            double t5 = params(0) / params(4) + params(0)*t1 - t3*t1;
+            t5 *= params(2) * BL_EXP(-t3);
 
-            cs2 = params[0] *  t2 / density + params[0] * energy - t4 - t5;
+            cs2 = params(0) *  t2 / density + params(0) * energy - t4 - t5;
         }
         break;
 
     default:
-        cs2 = eos.ccut;
+        cs2 = ccut;
     }
 
-    cs2 = std::max(cs2, eos.ccut);
+    cs2 = BL_MAX(cs2, ccut);
     return cs2;
 }
 
@@ -155,12 +155,15 @@ getCS2(int mat, double density, double energy, EOS const &eos)
 
 void
 getEOS(
-        EOS const &eos,
-        ConstView<int, VarDim>    mat,
-        ConstView<double, VarDim> density,
-        ConstView<double, VarDim> energy,
-        View<double, VarDim>      pressure,
-        View<double, VarDim>      cs2,
+        double pcut,
+        double ccut,
+        ConstDeviceView<MaterialEOS::Type, VarDim>               eos_types,
+        ConstDeviceView<double, VarDim, MaterialEOS::NUM_PARAMS> eos_params,
+        ConstDeviceView<int, VarDim>                             mat,
+        ConstDeviceView<double, VarDim>                          density,
+        ConstDeviceView<double, VarDim>                          energy,
+        DeviceView<double, VarDim>                               pressure,
+        DeviceView<double, VarDim>                               cs2,
         int len)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -168,19 +171,31 @@ getEOS(
 #endif
 
     // Update pressure and sound speed
-    for (int i = 0; i < len; i++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, len),
+            KOKKOS_LAMBDA (int const i)
+    {
+        int const imat = mat(i);
+
         pressure(i) = getPressure(
-                mat(i),
+                imat,
+                eos_types(imat),
+                eos_params,
+                pcut,
                 density(i),
-                energy(i),
-                eos);
+                energy(i));
 
         cs2(i) = getCS2(
-                mat(i),
+                imat,
+                eos_types(imat),
+                eos_params,
+                pcut,
+                ccut,
                 density(i),
-                energy(i),
-                eos);
-    }
+                energy(i));
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel
@@ -201,15 +216,18 @@ getEOS(
 
     // XXX Missing code here that can't be merged
 
-    auto elmat      = data[DataID::IELMAT].chost<int, VarDim>();
-    auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
-    auto elenergy   = data[DataID::ELENERGY].chost<double, VarDim>();
-    auto elpressure = data[DataID::ELPRESSURE].host<double, VarDim>();
-    auto elcs2      = data[DataID::ELCS2].host<double, VarDim>();
+    auto elmat      = data[DataID::IELMAT].cdevice<int, VarDim>();
+    auto eldensity  = data[DataID::ELDENSITY].cdevice<double, VarDim>();
+    auto elenergy   = data[DataID::ELENERGY].cdevice<double, VarDim>();
+    auto elpressure = data[DataID::ELPRESSURE].device<double, VarDim>();
+    auto elcs2      = data[DataID::ELCS2].device<double, VarDim>();
 
     // Update pressure and sound speed
     kernel::getEOS(
-            eos,
+            eos.pcut,
+            eos.ccut,
+            eos.eos_types,
+            eos.eos_params,
             elmat,
             eldensity,
             elenergy,
@@ -218,14 +236,17 @@ getEOS(
             nel);
 
     if (sizes.ncp > 0) {
-        auto cpmat      = data[DataID::ICPMAT].chost<int, VarDim>();
-        auto cpdensity  = data[DataID::CPDENSITY].chost<double, VarDim>();
-        auto cpenergy   = data[DataID::CPENERGY].chost<double, VarDim>();
-        auto cppressure = data[DataID::CPPRESSURE].host<double, VarDim>();
-        auto cpcs2      = data[DataID::CPCS2].host<double, VarDim>();
+        auto cpmat      = data[DataID::ICPMAT].cdevice<int, VarDim>();
+        auto cpdensity  = data[DataID::CPDENSITY].cdevice<double, VarDim>();
+        auto cpenergy   = data[DataID::CPENERGY].cdevice<double, VarDim>();
+        auto cppressure = data[DataID::CPPRESSURE].device<double, VarDim>();
+        auto cpcs2      = data[DataID::CPCS2].device<double, VarDim>();
 
         kernel::getEOS(
-                eos,
+                eos.pcut,
+                eos.ccut,
+                eos.eos_types,
+                eos.eos_params,
                 cpmat,
                 cpdensity,
                 cpenergy,

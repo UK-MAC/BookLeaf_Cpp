@@ -26,6 +26,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -39,12 +40,12 @@ fluxElVl(
         int id2,
         int ilsize, // nel1
         int iasize, // nel2
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NCORN> cnbasis,
-        ConstView<double, VarDim, NFACE> fcdbasis,
-        ConstView<double, VarDim>        elvar,
-        View<double, VarDim, NFACE>      fcflux)
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NCORN> cnbasis,
+        ConstDeviceView<double, VarDim, NFACE> fcdbasis,
+        ConstDeviceView<double, VarDim>        elvar,
+        DeviceView<double, VarDim, NFACE>      fcflux)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
@@ -54,17 +55,23 @@ fluxElVl(
     id2--;
 
     // Initialise
-    for (int iel = 0; iel < iasize; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, iasize),
+            KOKKOS_LAMBDA (int const iel)
+    {
         fcflux(iel, 0) = 0.;
         fcflux(iel, 1) = 0.;
         fcflux(iel, 2) = 0.;
         fcflux(iel, 3) = 0.;
-    }
+    });
 
     // Construct flux
     for (int i1 = id1; i1 <= id2; i1++) {
         int const i2 = i1 + 2;
-        for (int iel = 0; iel < ilsize; iel++) {
+        Kokkos::parallel_for(
+                RangePolicy(0, ilsize),
+                KOKKOS_LAMBDA (int const iel)
+        {
             int const iel2 = elel(iel, i2);
             int j2 = elfc(iel, i2);
 
@@ -87,14 +94,14 @@ fluxElVl(
 
             double const w1 = rv - elvar(iel2);
             double const w2 = elvar(iel1) - rv;
-            double const w3 = std::fabs(w1);
-            double const w4 = std::fabs(w2);
-            double const w7 = std::copysign(1.0, w2);
+            double const w3 = BL_FABS(w1);
+            double const w4 = BL_FABS(w2);
+            double const w7 = BL_SIGN(1.0, w2);
             double const w8 = (w1*w6*w6+w2*w5*w5)/(w5*w6*(w5+w6));
 
-            double tmp = std::fabs(w8);
-                   tmp = std::min(tmp, w3/w5);
-                   tmp = std::min(tmp, w4/w6);
+            double tmp = BL_FABS(w8);
+                   tmp = BL_MIN(tmp, w3/w5);
+                   tmp = BL_MIN(tmp, w4/w6);
 
             double grad = w7 * tmp;
             if (w1 * w2 <= 0.) grad = 0.;
@@ -103,8 +110,10 @@ fluxElVl(
             r2 *= rv - grad*(r4 - 0.5 * r2);
             fcflux(iel, i1) = r1;
             fcflux(iel, i2) = r2;
-        }
+        });
     }
+
+    cudaSync();
 }
 
 
@@ -113,12 +122,12 @@ void
 fluxNdVl(
         int ilsize,
         int iasize,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NCORN> cnbasis,
-        ConstView<double, VarDim, NCORN> cndbasis,
-        ConstView<double, VarDim, NCORN> cnvar,
-        View<double, VarDim, NCORN>      cnflux)
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NCORN> cnbasis,
+        ConstDeviceView<double, VarDim, NCORN> cndbasis,
+        ConstDeviceView<double, VarDim, NCORN> cnvar,
+        DeviceView<double, VarDim, NCORN>      cnflux)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
@@ -127,12 +136,15 @@ fluxNdVl(
     #define IX(i) ((i)-1)
 
     // Initialise
-    for (int iel = 0; iel < iasize; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, iasize),
+            KOKKOS_LAMBDA (int const iel)
+    {
         cnflux(iel, 0) = 0.;
         cnflux(iel, 1) = 0.;
         cnflux(iel, 2) = 0.;
         cnflux(iel, 3) = 0.;
-    }
+    });
 
     // Construct flux
     // XXX(timrlaw): kept it 1-indexed because it was too confusing to switch
@@ -142,7 +154,12 @@ fluxNdVl(
         for (int icn = 1; icn <= 2; icn++) {
             int const ilndl = ilfcl + icn - 1;
             int const ilndr = (ilfcr - icn + 1) % NCORN + 1;
-            for (int iel = 1; iel <= ilsize; iel++) {
+            Kokkos::parallel_for(
+                    RangePolicy(0, ilsize),
+                    KOKKOS_LAMBDA (int const _iel)
+            {
+                int const iel = _iel + 1;
+
                 double rd = 0.;
 
                 int const iell = elel(IX(iel), IX(ilfcl)) + 1;
@@ -153,9 +170,7 @@ fluxNdVl(
 
                 if (cndbasis(IX(iel), IX(ii)) > 0.) {
                     int const ilnndl = (ifcl + icn) % NCORN + 1;
-                    assert(ilnndl >= 1);
                     int const ilnndr = (ifcl - icn + 1) % NCORN + 1;
-                    assert(ilnndr >= 1);
                     double const rv = cnvar(IX(iel), IX(ilndl));
                     rd = cnbasis(IX(iel), IX(ilndl)) - 0.5 * cndbasis(IX(iel), IX(ii));
 
@@ -164,14 +179,14 @@ fluxNdVl(
                     double const w1 = rv - cnvar(IX(iell), IX(ilnndl));
                     double const w2 = cnvar(IX(iel), IX(ilndr)) - rv;
 
-                    double const w3 = std::fabs(w1);
-                    double const w4 = std::fabs(w2);
-                    double const w7 = std::copysign(1.0, w2);
+                    double const w3 = BL_FABS(w1);
+                    double const w4 = BL_FABS(w2);
+                    double const w7 = BL_SIGN(1.0, w2);
                     double const w8 = (w2*w6*w6+w1*w5*w5)/(w5*w6*(w5+w6));
 
-                    double tmp = std::fabs(w8);
-                           tmp = std::min(tmp, w3/w6);
-                           tmp = std::min(tmp, w4/w5);
+                    double tmp = BL_FABS(w8);
+                           tmp = BL_MIN(tmp, w3/w6);
+                           tmp = BL_MIN(tmp, w4/w5);
 
                     double grad = w7 * tmp;
                     if (w1 * w2 <= 0.) grad = 0.;
@@ -179,12 +194,10 @@ fluxNdVl(
 
                 } else if (cndbasis(IX(iel), IX(ii)) < 0.) {
                     int const ilnndl = (ifcr + icn - 2) % NCORN + 1;
-                    assert(ilnndl >= 1);
 
                     int ilnndr = (ifcr - icn - 1) % NCORN;
                     if (ilnndr < 0) ilnndr = NCORN + ilnndr;
                     ilnndr++;
-                    assert(ilnndr >= 1);
 
                     double const rv = cnvar(IX(iel), IX(ilndr));
                     rd = cnbasis(IX(iel), IX(ilndr)) + 0.5 * cndbasis(IX(iel), IX(ii));
@@ -194,14 +207,14 @@ fluxNdVl(
                     double const w1 = rv - cnvar(IX(iel), IX(ilndl));
                     double const w2 = cnvar(IX(ielr), IX(ilnndr)) - rv;
 
-                    double const w3 = std::fabs(w1);
-                    double const w4 = std::fabs(w2);
-                    double const w7 = std::copysign(1.0, w2);
+                    double const w3 = BL_FABS(w1);
+                    double const w4 = BL_FABS(w2);
+                    double const w7 = BL_SIGN(1.0, w2);
                     double const w8 = (w1*w6*w6+w2*w5*w5)/(w5*w6*(w5+w6));
 
-                    double tmp = std::fabs(w8);
-                           tmp = std::min(tmp, w3/w5);
-                           tmp = std::min(tmp, w4/w6);
+                    double tmp = BL_FABS(w8);
+                           tmp = BL_MIN(tmp, w3/w5);
+                           tmp = BL_MIN(tmp, w4/w6);
 
                     double grad = -w7 * tmp;
                     if (w1 * w2 <= 0.) grad = 0.;
@@ -210,9 +223,11 @@ fluxNdVl(
 
                 cnflux(IX(iel), IX(ilndl)) -= rd;
                 cnflux(IX(iel), IX(ilndr)) += rd;
-            }
+            });
         }
     }
+
+    cudaSync();
 
     #undef IX
 }
@@ -225,14 +240,14 @@ updateEl(
         int id2,
         int ilsize, // nel
         int iasize, // nel1
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim>        elbase0,
-        ConstView<double, VarDim>        elbase1,
-        ConstView<double, VarDim>        cut,
-        ConstView<double, VarDim, NFACE> fcflux,
-        View<double, VarDim>             elflux,
-        View<double, VarDim>             elvar)
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim>        elbase0,
+        ConstDeviceView<double, VarDim>        elbase1,
+        ConstDeviceView<double, VarDim>        cut,
+        ConstDeviceView<double, VarDim, NFACE> fcflux,
+        DeviceView<double, VarDim>             elflux,
+        DeviceView<double, VarDim>             elvar)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
@@ -242,12 +257,17 @@ updateEl(
     kernel::sumFlux(id1, id2, ilsize, iasize, elel, elfc, fcflux, elflux);
 
     // Update variable
-    for (int iel = 0; iel < ilsize; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, ilsize),
+            KOKKOS_LAMBDA (int const iel)
+    {
         bool const cond = elbase1(iel) > cut(iel);
         elvar(iel) = cond ?
             (elvar(iel) * elbase0(iel) + elflux(iel)) / elbase1(iel) :
             elvar(iel);
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -257,28 +277,34 @@ updateNd(
         int iusize, // nnd
         int icsize __attribute__((unused)), // nel1
         int insize, // nnd1
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<double, VarDim>        ndbase0,
-        ConstView<double, VarDim>        ndbase1,
-        ConstView<double, VarDim>        cut,
-        ConstView<unsigned char, VarDim> active,
-        ConstView<double, VarDim, NCORN> cnflux,
-        View<double, VarDim>             ndflux,
-        View<double, VarDim>             ndvar)
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<double, VarDim>        ndbase0,
+        ConstDeviceView<double, VarDim>        ndbase1,
+        ConstDeviceView<double, VarDim>        cut,
+        ConstDeviceView<unsigned char, VarDim> active,
+        ConstDeviceView<double, VarDim, NCORN> cnflux,
+        DeviceView<double, VarDim>             ndflux,
+        DeviceView<double, VarDim>             ndvar)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
     // Construct total flux
-    for (int ind = 0; ind < insize; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, insize),
+            KOKKOS_LAMBDA (int const ind)
+    {
         ndflux(ind) = 0.;
-    }
+    });
 
-    for (int ind = 0; ind < insize; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, insize),
+            KOKKOS_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -294,15 +320,20 @@ updateNd(
 
             ndflux(ind) += cnflux(iel, icn);
         }
-    }
+    });
 
     // Update variable
-    for (int ind = 0; ind < iusize; ind++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, iusize),
+            KOKKOS_LAMBDA (int const ind)
+    {
         bool const cond = active(ind) && (ndbase1(ind) > cut(ind));
         ndvar(ind) = cond ?
             (ndvar(ind) * ndbase0(ind) + ndflux(ind)) / ndbase1(ind) :
             ndvar(ind);
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -313,10 +344,10 @@ sumFlux(
         int id2,
         int ilsize, // nel
         int iasize, // nel1
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NFACE> fcflux,
-        View<double, VarDim>             elflux)
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NFACE> fcflux,
+        DeviceView<double, VarDim>             elflux)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
@@ -325,20 +356,23 @@ sumFlux(
     id1--;
     id2--;
 
-    for (int iel = 0; iel < iasize; iel++) {
+    Kokkos::parallel_for(
+            RangePolicy(0, iasize),
+            KOKKOS_LAMBDA (int const iel)
+    {
         elflux(iel) = 0.;
-    }
+    });
 
     for (int i1 = id1; i1 <= id2; i1++) {
         int const i2 = i1 + 2;
-        for (int iel = 0; iel < ilsize; iel++) {
+        Kokkos::parallel_for(
+                RangePolicy(0, ilsize),
+                KOKKOS_LAMBDA (int const iel)
+        {
             int const iel1 = elel(iel, i1);
             int const iel2 = elel(iel, i2);
             int const j1   = elfc(iel, i1);
             int const j2   = elfc(iel, i2);
-
-            assert(iel1 < iasize);
-            assert(iel2 < iasize);
 
             double w1 = fcflux(iel1, j1);
             double w2 = fcflux(iel2, j2);
@@ -347,8 +381,10 @@ sumFlux(
             w2 = iel2 == iel ? 0. : w2;
 
             elflux(iel) = elflux(iel) - fcflux(iel, i1) - fcflux(iel, i2) + w1 + w2;
-        }
+        });
     }
+
+    cudaSync();
 }
 
 } // namespace kernel

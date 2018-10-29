@@ -37,9 +37,9 @@ getDt(
         double zerocut,
         double ale_sf,
         bool zeul,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        ConstView<double, VarDim>        ellength,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        ellength,
         double &rdt,
         int &idt,
         std::string &sdt);

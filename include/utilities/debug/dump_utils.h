@@ -36,7 +36,7 @@ namespace bookleaf {
 template <
     typename T,
     SizeType NumRows,
-    SizeType NumCols>
+    SizeType NumCols = 1>
 void
 writeZLibDump(
         ZLibCompressor &zlc,

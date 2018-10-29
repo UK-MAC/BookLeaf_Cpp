@@ -29,6 +29,7 @@
 
 namespace bookleaf {
 
+struct Config;
 struct Sizes;
 struct Runtime;
 struct Error;
@@ -38,10 +39,14 @@ enum class TimerID : int;
 class DataControl;
 
 namespace geometry {
+
+struct Config;
+
 namespace driver {
 
 void
 getGeometry(
+        Config const &config,
         Sizes const &sizes,
         TimerControl &timers,
         TimerID timerid,
@@ -111,50 +116,52 @@ getCentroid(
 
 void
 getIso(
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        View<double, VarDim>             a1,
-        View<double, VarDim>             a2,
-        View<double, VarDim>             a3,
-        View<double, VarDim>             b1,
-        View<double, VarDim>             b2,
-        View<double, VarDim>             b3,
-        View<double, VarDim, NCORN>      cnwt,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        DeviceView<double, VarDim>             a1,
+        DeviceView<double, VarDim>             a2,
+        DeviceView<double, VarDim>             a3,
+        DeviceView<double, VarDim>             b1,
+        DeviceView<double, VarDim>             b2,
+        DeviceView<double, VarDim>             b3,
+        DeviceView<double, VarDim, NCORN>      cnwt,
         int nel);
 
 void
 getVolume(
-        ConstView<double, VarDim> a1,
-        ConstView<double, VarDim> a3,
-        ConstView<double, VarDim> b1,
-        ConstView<double, VarDim> b3,
-        View<double, VarDim>      volume,
+        ConstDeviceView<double, VarDim> a1,
+        ConstDeviceView<double, VarDim> a3,
+        ConstDeviceView<double, VarDim> b1,
+        ConstDeviceView<double, VarDim> b3,
+        DeviceView<double, VarDim>      volume,
         int len);
 
 int
 checkVolume(
+        geometry::Config const &geom,
         double val,
-        ConstView<double, VarDim> volume,
+        ConstDeviceView<double, VarDim> volume,
+        DeviceView<int, VarDim>         scratch,
         int nel);
 
 void
 getFluxVolume(
         double cut,
-        ConstView<int, VarDim, NCORN> elnd,
-        ConstView<double, VarDim>     ndx0,
-        ConstView<double, VarDim>     ndy0,
-        ConstView<double, VarDim>     ndx1,
-        ConstView<double, VarDim>     ndy1,
-        View<double, VarDim, NFACE>   fcdv,
+        ConstDeviceView<int, VarDim, NCORN> elnd,
+        ConstDeviceView<double, VarDim>     ndx0,
+        ConstDeviceView<double, VarDim>     ndy0,
+        ConstDeviceView<double, VarDim>     ndx1,
+        ConstDeviceView<double, VarDim>     ndy1,
+        DeviceView<double, VarDim, NFACE>   fcdv,
         int nel);
 
 void
 getVertex(
         double dt,
-        ConstView<double, VarDim> ndu,
-        ConstView<double, VarDim> ndv,
-        View<double, VarDim>      ndx,
-        View<double, VarDim>      ndy,
+        ConstDeviceView<double, VarDim> ndu,
+        ConstDeviceView<double, VarDim> ndv,
+        DeviceView<double, VarDim>      ndx,
+        DeviceView<double, VarDim>      ndy,
         int nnd);
 
 } // namespace kernel

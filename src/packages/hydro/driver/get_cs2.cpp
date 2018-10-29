@@ -23,6 +23,7 @@
 
 #include "common/sizes.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 #include "utilities/misc/average.h"
 
 
@@ -33,8 +34,8 @@ namespace kernel {
 
 void
 getCs2(
-        ConstView<double, VarDim> elvisc,
-        View<double, VarDim>      elcs2,
+        ConstDeviceView<double, VarDim> elvisc,
+        DeviceView<double, VarDim>      elcs2,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -42,9 +43,14 @@ getCs2(
 #endif
 
     // Apply Q correction to soundspeed^2 (cs^2 = cs_eos^2 + 2Q/rho)
-    for (int iel = 0; iel < nel; iel++) {
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         elcs2(iel) += elvisc(iel);
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel
@@ -56,8 +62,8 @@ getCs2(
         Sizes const &sizes,
         DataControl &data)
 {
-    auto elcs2  = data[DataID::ELCS2].host<double, VarDim>();
-    auto elvisc = data[DataID::ELVISC].chost<double, VarDim>();
+    auto elcs2  = data[DataID::ELCS2].device<double, VarDim>();
+    auto elvisc = data[DataID::ELVISC].cdevice<double, VarDim>();
 
     kernel::getCs2(elvisc, elcs2, sizes.nel);
 

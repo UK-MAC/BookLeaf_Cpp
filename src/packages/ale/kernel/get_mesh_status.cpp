@@ -21,6 +21,8 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
+
 
 
 namespace bookleaf {
@@ -31,20 +33,25 @@ void
 getMeshStatus(
         int nnd,
         bool zeul,
-        View<int, VarDim> ndstatus)
+        DeviceView<int, VarDim> ndstatus)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
     if (zeul) {
-        for (int ind = 0; ind < nnd; ind++) {
+        dispatchCuda(
+                nnd,
+                [=] __device__ (int const ind)
+        {
             ndstatus(ind) = 2;
-        }
+        });
 
     } else {
         // XXX Missing code that can't be (or hasn't been) merged.
     }
+
+    cudaSync();
 }
 
 } // namespace kernel

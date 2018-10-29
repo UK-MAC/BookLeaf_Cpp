@@ -135,21 +135,20 @@ distributeMesh(
     {
         ConstView<int, VarDim>        tmp_elreg(el_region, total_nel);
         ConstView<int, VarDim>        tmp_elmat(el_material, total_nel);
-        ConstView<int, VarDim, NCORN> tmp_elnd(el_nd, total_nel);
+        //ConstView<int, VarDim, NCORN> tmp_elnd(el_nd, total_nel);
 
         for (int iel = 0; iel < total_nel; iel++) {
             elreg(iel) = tmp_elreg(iel);
             elmat(iel) = tmp_elmat(iel);
 
             for (int icn = 0; icn < NCORN; icn++) {
-                elnd(iel, icn) = tmp_elnd(iel, icn);
+                elnd(iel, icn) = el_nd[iel*NCORN+icn];
             }
         }
     }
 
     delete[] el_region;
     delete[] el_material;
-    delete[] el_nd;
 
     switch (nlay) {
     case 1:
@@ -180,12 +179,13 @@ distributeMesh(
     int partition_id;
     typh_err = TYPH_Set_Partition_Info(&partition_id, TYPH_SHAPE_QUAD, nlay,
             nel_total, nnd_total, el_owner, nd_owner, ellocglob.data(),
-            ndlocglob.data(), elnd.data(), "");
+            ndlocglob.data(), el_nd, "");
     if (typh_err != TYPH_SUCCESS) {
         FAIL_WITH_LINE(err, "ERROR: TYPH_Set_Partition_Info failed");
         return;
     }
 
+    delete[] el_nd;
     delete[] nel_total;
     delete[] nnd_total;
     delete[] el_owner;

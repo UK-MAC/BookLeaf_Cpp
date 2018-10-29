@@ -233,6 +233,7 @@ setMaterialFlags(
 
 void
 setState(
+        geometry::Config const &geom,
         setup::Config &setup_config,
         GlobalConfiguration &global,
         Sizes &sizes,
@@ -248,8 +249,8 @@ setState(
     data[DataID::NDX].syncDevice();
     data[DataID::NDY].syncDevice();
 
-    geometry::driver::getGeometry(sizes, timers, TimerID::GETGEOMETRYI, data,
-            err);
+    geometry::driver::getGeometry(geom, sizes, timers, TimerID::GETGEOMETRYI,
+            data, err);
     if (err.failed()) return;
 
     data[DataID::CNX].syncHost();
@@ -339,6 +340,7 @@ setState(
 
 void
 setInitialConditions(
+        geometry::Config const &geom,
         setup::Config &setup_config,
         GlobalConfiguration &global,
         comms::Comm &comm,
@@ -359,7 +361,7 @@ setInitialConditions(
 
     // Set initial conditions (density, energy, velocity etc.) based on region
     // and materials per element.
-    setState(setup_config, global, sizes, timers, data, err);
+    setState(geom, setup_config, global, sizes, timers, data, err);
     if (err.failed()) return;
 }
 

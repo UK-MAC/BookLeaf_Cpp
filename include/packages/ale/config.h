@@ -23,10 +23,15 @@
 #include <iostream>
 #include <memory>
 
+#include <cub/cub.cuh>
+
+#include "common/defs.h"
+
 
 
 namespace bookleaf {
 
+struct Sizes;
 struct Error;
 struct GlobalConfiguration;
 namespace comms { struct Comm; }
@@ -61,12 +66,26 @@ struct Config
     std::shared_ptr<GlobalConfiguration> global;
     std::shared_ptr<EOS>                 eos;
 
+    unsigned char *cub_storage = nullptr;
+    SizeType cub_storage_len = 0;
+    cub::KeyValuePair<int, double> *cub_out = nullptr;
+
     Config();
 };
 
 std::ostream &operator<<(std::ostream &os, ale::Config const &rhs);
 
 void rationalise(ale::Config &ale, time::Config const &time, Error &err);
+
+void
+initALEConfig(
+        Sizes const &sizes,
+        ale::Config &ale,
+        Error &err);
+
+void
+killALEConfig(
+        ale::Config &ale);
 
 } // namespace ale
 } // namespace bookleaf

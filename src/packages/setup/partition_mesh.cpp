@@ -52,7 +52,6 @@ computeConnectivity(
         int const dims[2],
         int const side,
         int const slice[2],
-        int const nel,
         int *_connectivity,
         Error &err)
 {
@@ -71,7 +70,8 @@ computeConnectivity(
     #define IXme(i, j) (index2D((i), (j), no_l-1))
 
     // Set conndata
-    View<int, VarDim, NDAT> conn_data(_connectivity, nel);
+    int *conn_data = _connectivity;
+    #define IXconn(i, j) (index2D((j), (i), NDAT))
 
     int const in1 = mdata.getNodeOrdering() == 1 ? 6 : 4;
     int const in2 = in1 == 6                     ? 4 : 6;
@@ -95,20 +95,19 @@ computeConnectivity(
     int iel = 0;
     for (int ik = k_lo; ik < k_hi; ik++) {
         for (int il = l_lo; il < l_hi; il++) {
-            assert(iel < nel);
 
             // Global element index
-            conn_data(iel, 0) = mdata.eo[IXme(il, ik)];
+            conn_data[IXconn(iel, 0)] = mdata.eo[IXme(il, ik)];
 
             // Mesh region/material
-            conn_data(iel, 1) = 0;
-            conn_data(iel, 2) = mdesc.material;
+            conn_data[IXconn(iel, 1)] = 0;
+            conn_data[IXconn(iel, 2)] = mdesc.material;
 
             // Global node indices
-            conn_data(iel, 3)   = mdata.no[IXmn(il  , ik  )];
-            conn_data(iel, 5)   = mdata.no[IXmn(il+1, ik+1)];
-            conn_data(iel, in1) = mdata.no[IXmn(il+1, ik  )];
-            conn_data(iel, in2) = mdata.no[IXmn(il  , ik+1)];
+            conn_data[IXconn(iel, 3)]   = mdata.no[IXmn(il  , ik  )];
+            conn_data[IXconn(iel, 5)]   = mdata.no[IXmn(il+1, ik+1)];
+            conn_data[IXconn(iel, in1)] = mdata.no[IXmn(il+1, ik  )];
+            conn_data[IXconn(iel, in2)] = mdata.no[IXmn(il  , ik+1)];
 
             iel++;
         }
@@ -116,6 +115,7 @@ computeConnectivity(
 
     #undef IXmn
     #undef IXme
+    #undef IXconn
 }
 
 
@@ -241,7 +241,7 @@ partitionMesh(
     // Compute connectivity
     int *connectivity = new int[NDAT * nel];
     int conn_dims[2] = { NDAT, nel };
-    computeConnectivity(setup_config, dims, side, slice, nel, connectivity, err);
+    computeConnectivity(setup_config, dims, side, slice, connectivity, err);
     if (err.failed()) return;
 
     // Improve partitioning

@@ -36,7 +36,8 @@ namespace init {
 /** \brief Initialise parallelism (MPI + any variants). */
 void
 initParallelism(
-        comms::Comms &comms);
+        comms::Comms &comms,
+        Error &err);
 
 #ifdef BOOKLEAF_MPI_SUPPORT
 /** \brief Initialise communication phases. */

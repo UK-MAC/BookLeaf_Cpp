@@ -31,20 +31,25 @@ namespace ale {
 namespace driver {
 
 void
-getDt(ale::Config const &ale, Sizes const &sizes, DataControl &data, Dt *&dt)
+getDt(
+        ale::Config const &ale,
+        Sizes const &sizes,
+        DataControl &data,
+        Dt *&dt)
 {
     using constants::NCORN;
 
-    auto cnu   = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
-    auto cnv   = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
-    auto ellen = data[DataID::TIME_ELLENGTH].chost<double, VarDim>();
+    auto cnu     = data[DataID::TIME_CNU].cdevice<double, VarDim, NCORN>();
+    auto cnv     = data[DataID::TIME_CNV].cdevice<double, VarDim, NCORN>();
+    auto ellen   = data[DataID::TIME_ELLENGTH].cdevice<double, VarDim>();
+    auto scratch = data[DataID::TIME_SCRATCH].device<double, VarDim>();
 
     dt->next = new Dt();
     dt = dt->next;
 
     // Calculate ALE timestep control
-    kernel::getDt(sizes.nel, ale.global->zerocut, ale.sf, ale.zeul, cnu, cnv,
-            ellen, dt->rdt, dt->idt, dt->sdt);
+    kernel::getDt(ale, sizes.nel, ale.global->zerocut, ale.sf, ale.zeul, cnu,
+            cnv, ellen, scratch, dt->rdt, dt->idt, dt->sdt);
 }
 
 } // namespace driver

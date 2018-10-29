@@ -54,18 +54,21 @@ public:
     // -------------------------------------------------------------------------
     /** \brief Fixed size constructor */
     template <SizeType _NumRows = NumRows>
+    __host__ __device__
     explicit View(
             typename std::enable_if<_NumRows != VarDim, T>::type *_ptr)
         : ptr(_ptr), num_rows(0) {}
 
     /** \brief Variable size constructor */
     template <SizeType _NumRows = NumRows>
+    __host__ __device__
     View(
             typename std::enable_if<_NumRows == VarDim, T>::type *_ptr,
             size_type _num_rows)
         : ptr(_ptr), num_rows(_num_rows) {}
 
     /** \brief Copy-constructor */
+    __host__ __device__
     View(View const &rhs) : ptr(rhs.ptr), num_rows(rhs.num_rows) {}
 
     /**
@@ -76,6 +79,7 @@ public:
      * the compiler will complain.
      */
     template <bool IsConst = std::is_const<value_type>::value>
+    __host__ __device__
     View(View<
             typename std::enable_if<IsConst, nonconst_value_type>::type,
             NumRows,
@@ -90,17 +94,17 @@ public:
     // Size accessors
     // -------------------------------------------------------------------------
     /** \brief Get the number of rows */
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
     size_type
     rows() const { return NumRows == VarDim ? num_rows : NumRows; }
 
     /** \brief Get the number of columns */
-    BOOKLEAF_INLINE static
+    BOOKLEAF_INLINE __host__ __device__ static
     size_type constexpr
     cols() { return NumCols; }
 
     /** \brief Get the total size */
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
     size_type
     size() const { return (NumRows == VarDim ? num_rows : NumRows) * NumCols; }
 
@@ -109,7 +113,7 @@ public:
     // Data accessors
     // -------------------------------------------------------------------------
     /** \brief Return a raw data pointer */
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
     value_type *
     data()
     {
@@ -118,7 +122,7 @@ public:
 
     /** \brief Read/write 1D element accessor */
     template <SizeType _NumCols = NumCols>
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
     typename std::enable_if<_NumCols == 1, value_type &>::type
     operator()(size_type i) const
     {
@@ -129,7 +133,7 @@ public:
 
     /** \brief Read/write 2D element accessor */
     template <SizeType _NumCols = NumCols>
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
     typename std::enable_if<_NumCols != 1, value_type &>::type
     operator()(size_type i, size_type j) const
     {
@@ -140,7 +144,135 @@ public:
     }
 
     /** \brief Read/write flat accessor */
-    BOOKLEAF_INLINE
+    BOOKLEAF_INLINE __host__ __device__
+    value_type &
+    operator[](size_type idx) const
+    {
+        assert(idx < size() && "invalid index");
+
+        return ptr[idx];
+    }
+
+
+private:
+    T       * ptr;          //!< Data pointer
+    size_type num_rows;     //!< Number of rows if NumRows == VarDim
+};
+
+
+
+template <
+    typename T,
+    SizeType NumRows,
+    SizeType NumCols = 1>
+class DeviceView
+{
+public:
+    typedef          SizeType                   size_type;
+    typedef          T                          value_type;
+    typedef          T const                    const_value_type;
+    typedef typename std::remove_const<T>::type nonconst_value_type;
+
+    static_assert(NumCols != VarDim, "number of columns cannot be variable");
+
+public:
+    // -------------------------------------------------------------------------
+    // Constructors
+    // -------------------------------------------------------------------------
+    /** \brief Fixed size constructor */
+    template <SizeType _NumRows = NumRows>
+    __host__ __device__
+    explicit DeviceView(
+            typename std::enable_if<_NumRows != VarDim, T>::type *_ptr)
+        : ptr(_ptr), num_rows(0) {}
+
+    /** \brief Variable size constructor */
+    template <SizeType _NumRows = NumRows>
+    __host__ __device__
+    DeviceView(
+            typename std::enable_if<_NumRows == VarDim, T>::type *_ptr,
+            size_type _num_rows)
+        : ptr(_ptr), num_rows(_num_rows) {}
+
+    /** \brief Copy-constructor */
+    __host__ __device__
+    DeviceView(DeviceView const &rhs) : ptr(rhs.ptr), num_rows(rhs.num_rows) {}
+
+    /**
+     * \brief Copy-constructor---non-const to const view
+     *
+     * Use SFINAE to only enable this copy-constructor when the current view is
+     * const, otherwise it is a duplicate of the first copy-constructor and
+     * the compiler will complain.
+     */
+    template <bool IsConst = std::is_const<value_type>::value>
+    __host__ __device__
+    DeviceView(DeviceView<
+            typename std::enable_if<IsConst, nonconst_value_type>::type,
+            NumRows,
+            NumCols
+         > const &rhs)
+        : ptr(rhs.ptr), num_rows(rhs.num_rows) {}
+
+    friend DeviceView<const_value_type, NumRows, NumCols>;
+
+
+    // -------------------------------------------------------------------------
+    // Size accessors
+    // -------------------------------------------------------------------------
+    /** \brief Get the number of rows */
+    BOOKLEAF_INLINE __host__ __device__
+    size_type
+    rows() const { return NumRows == VarDim ? num_rows : NumRows; }
+
+    /** \brief Get the number of columns */
+    BOOKLEAF_INLINE __host__ __device__ static
+    size_type constexpr
+    cols() { return NumCols; }
+
+    /** \brief Get the total size */
+    BOOKLEAF_INLINE __host__ __device__
+    size_type
+    size() const { return (NumRows == VarDim ? num_rows : NumRows) * NumCols; }
+
+
+    // -------------------------------------------------------------------------
+    // Data accessors
+    // -------------------------------------------------------------------------
+    /** \brief Return a raw data pointer */
+    BOOKLEAF_INLINE __host__ __device__
+    value_type *
+    data()
+    {
+        return ptr;
+    }
+
+    /** \brief Read/write 1D element accessor */
+    template <SizeType _NumCols = NumCols>
+    BOOKLEAF_INLINE __host__ __device__
+    typename std::enable_if<_NumCols == 1, value_type &>::type
+    operator()(size_type i) const
+    {
+        assert(i < rows() && "invalid row index");
+
+        return ptr[i];
+    }
+
+    /** \brief Read/write 2D element accessor */
+    template <SizeType _NumCols = NumCols>
+    BOOKLEAF_INLINE __host__ __device__
+    typename std::enable_if<_NumCols != 1, value_type &>::type
+    operator()(size_type i, size_type j) const
+    {
+        assert(i < rows() && "invalid row index");
+        assert(j < cols() && "invalid column index");
+
+        //return ptr[i * NumCols + j];
+        return ptr[j * rows() + i]; // column-major improves GPU performance
+    }
+
+    /** \brief Read/write flat accessor */
+    BOOKLEAF_INLINE __host__ __device__
     value_type &
     operator[](size_type idx) const
     {
@@ -163,6 +295,12 @@ template <
     SizeType NumRows,
     SizeType NumCols = 1>
 using ConstView = View<T const, NumRows, NumCols>;
+
+template <
+    typename T,
+    SizeType NumRows,
+    SizeType NumCols = 1>
+using ConstDeviceView = DeviceView<T const, NumRows, NumCols>;
 
 } // namespace bookleaf
 

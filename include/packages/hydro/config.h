@@ -22,6 +22,10 @@
 #include <iostream>
 #include <memory>
 
+#include <cub/cub.cuh>
+
+#include "common/defs.h"
+
 
 
 namespace bookleaf {
@@ -57,7 +61,14 @@ struct Config
     std::shared_ptr<io_utils::Labels>    io;
     std::shared_ptr<EOS>                 eos;
 
-    Config();
+    double *device_kappareg = nullptr;
+    double *device_pmeritreg = nullptr;
+    unsigned char *device_zdtnotreg = nullptr;
+    unsigned char *device_zmidlength = nullptr;
+
+    unsigned char *cub_storage = nullptr;
+    SizeType cub_storage_len = 0;
+    cub::KeyValuePair<int, double> *cub_out = nullptr;
 };
 
 

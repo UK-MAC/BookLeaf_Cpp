@@ -50,8 +50,8 @@ SHAPES:"""
 N = int(sys.argv[1])
 
 # Mesh size
-elperpe = (15000.0 * 3750.0) / (512.0 * 24.0)
-meshprod = elperpe * (24.0 * N)
+elperpe = (15000.0 * 3750.0) / (32.0 * 4.0)
+meshprod = elperpe * (4.0 * N)
 meshh = sqrt(meshprod / 4.0)
 meshw = 4.0 * meshh
 meshh = int(meshh + 0.5)

@@ -21,18 +21,13 @@
 
 #include "common/sizes.h"
 #include "common/error.h"
+#include "common/view.h"
 #include "infrastructure/io/output_formatting.h"
 
 
 
 namespace bookleaf {
 namespace hydro {
-
-Config::Config()
-{
-}
-
-
 
 std::ostream &
 operator<<(std::ostream &os, Config const &rhs)
@@ -139,20 +134,140 @@ rationalise(Config &hydro, int num_regions, Error &err)
 
 void
 initHydroConfig(
-        Sizes const &sizes __attribute__((unused)),
-        hydro::Config &hydro __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        hydro::Config &hydro,
+        Error &err)
 {
-    // XXX Stub for extra variant hydro config init
+    auto cuda_err = cudaMalloc(&hydro.device_kappareg,
+            sizeof(double) * sizes.nreg);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&hydro.device_pmeritreg,
+            sizeof(double) * sizes.nreg);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&hydro.device_zdtnotreg,
+            sizeof(unsigned char) * sizes.nreg);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&hydro.device_zmidlength,
+            sizeof(unsigned char) * sizes.nreg);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    // Copy to device
+    cuda_err = cudaMemcpy(hydro.device_kappareg, hydro.kappareg.data(),
+            sizeof(double) * sizes.nreg, cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.device_pmeritreg, hydro.pmeritreg.data(),
+            sizeof(double) * sizes.nreg, cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.device_zdtnotreg, hydro.zdtnotreg.data(),
+            sizeof(unsigned char) * sizes.nreg, cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.device_zmidlength, hydro.zmidlength.data(),
+            sizeof(unsigned char) * sizes.nreg, cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
+
+    // Init Cub reductions
+    double *tmp_in;
+    cuda_err = cudaMalloc(&tmp_in, sizeof(double) * sizes.nel);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&hydro.cub_out, sizeof(cub::KeyValuePair<int, double>));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    hydro.cub_storage = nullptr;
+    hydro.cub_storage_len = 0;
+
+    cuda_err = cub::DeviceReduce::ArgMin(
+            hydro.cub_storage,
+            hydro.cub_storage_len,
+            tmp_in,
+            hydro.cub_out,
+            sizes.nel);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to calculate reduction scratch");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&hydro.cub_storage, hydro.cub_storage_len);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaFree(tmp_in);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to free device memory");
+        return;
+    }
 }
 
 
 
 void
 killHydroConfig(
-        hydro::Config &hydro __attribute__((unused)))
+        hydro::Config &hydro)
 {
-    // XXX Stub for extra variant hydro config shutdown
+    if (hydro.cub_storage != nullptr) {
+        cudaFree(hydro.cub_out);
+        cudaFree(hydro.cub_storage);
+        hydro.cub_storage = nullptr;
+        hydro.cub_storage_len = 0;
+    }
+
+    if (hydro.device_kappareg != nullptr) {
+        cudaFree(hydro.device_kappareg);
+        hydro.device_kappareg = nullptr;
+    }
+
+    if (hydro.device_pmeritreg != nullptr) {
+        cudaFree(hydro.device_pmeritreg);
+        hydro.device_pmeritreg = nullptr;
+    }
+
+    if (hydro.device_zdtnotreg != nullptr) {
+        cudaFree(hydro.device_zdtnotreg);
+        hydro.device_zdtnotreg = nullptr;
+    }
+
+    if (hydro.device_zmidlength != nullptr) {
+        cudaFree(hydro.device_zmidlength);
+        hydro.device_zmidlength = nullptr;
+    }
 }
 
 } // namespace hydro

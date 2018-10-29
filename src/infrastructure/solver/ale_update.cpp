@@ -40,7 +40,8 @@ aleUpdate(
 
     // Hydro update
     Error err;
-    ale::driver::hydroUpdate(*config.ale, *runtime.sizes, timers, data, err);
+    ale::driver::hydroUpdate(*config.geom, *config.ale, *runtime.sizes, timers,
+            data, err);
     if (err.failed()) {
         halt(config, runtime, timers, data, err);
     }

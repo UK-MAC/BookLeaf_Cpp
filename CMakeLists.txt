@@ -191,6 +191,7 @@ set(BOOKLEAF_LIB_SRC
     ${PROJECT_SOURCE_DIR}/src/utilities/misc/average.cpp
     ${PROJECT_SOURCE_DIR}/src/utilities/eos/config.cpp
     ${PROJECT_SOURCE_DIR}/src/utilities/eos/get_eos.cpp
+    ${PROJECT_SOURCE_DIR}/src/utilities/geometry/config.cpp
     ${PROJECT_SOURCE_DIR}/src/utilities/geometry/geometry.cpp
     ${PROJECT_SOURCE_DIR}/src/utilities/mix/driver/list.cpp
     ${PROJECT_SOURCE_DIR}/src/utilities/mix/kernel/list.cpp
@@ -217,7 +218,6 @@ set(BOOKLEAF_LIB_SRC
 # executable and any unit tests.
 add_library(libbookleaf STATIC ${BOOKLEAF_LIB_SRC})
 set_target_properties(libbookleaf PROPERTIES OUTPUT_NAME bookleaf)
-target_compile_features(libbookleaf PUBLIC cxx_std_11)
 target_include_directories(libbookleaf PUBLIC include)
 
 # The main bookleaf executable.
@@ -229,6 +229,11 @@ target_link_libraries(bookleaf PRIVATE libbookleaf)
 # ------------------------------------------------------------------------------
 # Compilation settings
 # ------------------------------------------------------------------------------
+target_compile_options(libbookleaf PUBLIC --std=c++11)
+
+# CUDA options
+target_compile_options(libbookleaf PUBLIC --expt-extended-lambda)
+
 # Generate mesh (this can't be disabled at the moment).
 add_definitions("-DBOOKLEAF_MESH_GENERATION")
 
@@ -288,6 +293,10 @@ endif ()
 find_package(YamlCpp REQUIRED)
 target_include_directories(libbookleaf PUBLIC ${YamlCpp_INCLUDES})
 target_link_libraries(libbookleaf PRIVATE ${YamlCpp_LIBRARIES})
+
+# Locate CUB
+find_package(CUB REQUIRED)
+target_include_directories(libbookleaf PUBLIC ${CUB_INCLUDES})
 
 # Locate zlib
 if (ENABLE_ZLIB)
@@ -381,7 +390,8 @@ endif (ENABLE_CALIPER)
 # ------------------------------------------------------------------------------
 # Tools
 # ------------------------------------------------------------------------------
-add_subdirectory(tools)
+# Tools currently not useful for CUDA variant
+#add_subdirectory(tools)
 
 
 
@@ -402,9 +412,10 @@ install(
 # ------------------------------------------------------------------------------
 # Testing (requires zlib for decompressing dumps)
 # ------------------------------------------------------------------------------
-if (BUILD_TESTS AND ENABLE_ZLIB)
-    enable_testing()
-    add_subdirectory(test)
-elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
-    message(WARNING "Not building tests as ZLib was disabled")
-endif ()
+# Tests currently not useful for CUDA variant
+#if (BUILD_TESTS AND ENABLE_ZLIB)
+    #enable_testing()
+    #add_subdirectory(test)
+#elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
+    #message(WARNING "Not building tests as ZLib was disabled")
+#endif ()

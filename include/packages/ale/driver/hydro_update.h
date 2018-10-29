@@ -22,6 +22,7 @@
 
 namespace bookleaf {
 
+namespace geometry { struct Config; }
 struct Sizes;
 class TimerControl;
 class DataControl;
@@ -33,8 +34,14 @@ struct Config;
 
 namespace driver {
 
-void hydroUpdate(ale::Config const &ale, Sizes const &sizes,
-        TimerControl &timers, DataControl &data, Error &err);
+void
+hydroUpdate(
+        geometry::Config const &geom,
+        ale::Config const &ale,
+        Sizes const &sizes,
+        TimerControl &timers,
+        DataControl &data,
+        Error &err);
 
 } // namespace driver
 } // namespace ale

@@ -22,6 +22,7 @@
 
 namespace bookleaf {
 
+namespace geometry { struct Config; }
 struct Sizes;
 struct Error;
 struct GlobalConfiguration;
@@ -38,6 +39,7 @@ namespace driver {
 
 void
 setInitialConditions(
+        geometry::Config const &geom,
         setup::Config &setup_config,
         GlobalConfiguration &global,
         comms::Comm &comm,

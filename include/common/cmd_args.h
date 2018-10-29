@@ -35,6 +35,7 @@ public:
     std::string input_deck_file;    // Input deck file
     bool        overwrite_dumps;    // Overwrite existing dump files?
     bool        print_bindings;     // Print processor bindings
+    int         cuda_device_id;     // CUDA device ID
 
 #ifdef BOOKLEAF_DEBUG
     // Debug options

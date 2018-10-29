@@ -97,6 +97,8 @@ printPreprocessingOptions(
     std::cout << "  MPI parallelism not included\n";
 #endif
 
+    std::cout << "  CUDA variant\n";
+
 #ifdef BOOKLEAF_SILO_SUPPORT
     std::cout << "  Silo visualisation dumps available\n";
 #else
@@ -121,6 +123,19 @@ printBinding(
         hostname = std::string(_hostname);
     }
 
+    int device_id;
+    std::string device_name;
+    {
+        auto cuda_err = cudaGetDevice(&device_id);
+        if (cuda_err != cudaSuccess) {
+            assert(false && "unhandled error");
+        }
+
+        cudaDeviceProp device_prop;
+        cudaGetDeviceProperties(&device_prop, device_id);
+        device_name = device_prop.name;
+    }
+
 #ifdef BOOKLEAF_MPI_SUPPORT
     TYPH_Barrier();
 #endif
@@ -129,7 +144,8 @@ printBinding(
     for (int iproc = 0; iproc < comm.nproc; iproc++) {
         if (iproc == comm.rank) {
             std::cout << "  rank " << iproc << " -> " << hostname << ":"
-                      << sched_getcpu() << "\n";
+                      << sched_getcpu() << " [";
+            std::cout << "device " << device_id << " (" << device_name << ")]\n";
         }
 
 #ifdef BOOKLEAF_MPI_SUPPORT

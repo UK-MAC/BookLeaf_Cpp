@@ -22,6 +22,9 @@
 #include <numeric>
 #include <vector>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 #include "common/defs.h"
 #include "common/data_id.h"
 #include "common/view.h"
@@ -126,22 +129,22 @@ public:
 
     /** \brief Construct and return a view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    View<T, NumRows, NumCols>
+    DeviceView<T, NumRows, NumCols>
     device();
 
     /** \brief Construct and return a view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    View<T, NumRows, NumCols>
+    DeviceView<T, NumRows, NumCols>
     device(SizeType num_rows);
 
     /** \brief Construct and return a read-only view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    ConstView<T, NumRows, NumCols>
+    ConstDeviceView<T, NumRows, NumCols>
     cdevice() const;
 
     /** \brief Construct and return a read-only view of the device allocation. */
     template <typename T, SizeType NumRows, SizeType NumCols = 1>
-    ConstView<T, NumRows, NumCols>
+    ConstDeviceView<T, NumRows, NumCols>
     cdevice(SizeType num_rows) const;
 
 
@@ -207,6 +210,9 @@ private:
     static unsigned char *host_sync_buf;    //!< Host buffer for partial sync
     static unsigned char *device_sync_buf;  //!< Device buffer for partial sync
     static size_type      sync_buf_size;    //!< Partial sync buffer size (bytes)
+
+    static unsigned char *transpose_buf;    //!< Space for transposing
+    static size_type      transpose_size;   //!< Size of transpose_buf
 
     DataID         id;                //!< Global data ID
     std::string    name;              //!< Human-readable name
@@ -277,53 +283,53 @@ Data::chost(SizeType num_rows) const
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-View<T, NumRows, NumCols>
+DeviceView<T, NumRows, NumCols>
 Data::device()
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return DeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    return DeviceView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-View<T, NumRows, NumCols>
+DeviceView<T, NumRows, NumCols>
 Data::device(SizeType num_rows)
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return DeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    return DeviceView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-ConstView<T, NumRows, NumCols>
+ConstDeviceView<T, NumRows, NumCols>
 Data::cdevice() const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstDeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    return ConstDeviceView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
 }
 
 
 
 template <typename T, SizeType NumRows, SizeType NumCols>
-ConstView<T, NumRows, NumCols>
+ConstDeviceView<T, NumRows, NumCols>
 Data::cdevice(SizeType num_rows) const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstDeviceView<T, NumRows, NumCols>(nullptr, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    return ConstDeviceView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
 }
 
 
@@ -345,6 +351,9 @@ Data::allocate(
     dims[0] = num_rows;
     dims[1] = num_cols;
 
+    allocated_T_size = sizeof(T);
+    allocated_type = getTypeName<T>();
+
     // Allocate memory and fill with initial value
     len = num_rows * num_cols;
 
@@ -353,16 +362,25 @@ Data::allocate(
         assert(false && "unhandled error");
     }
 
-    // ... XXX Device not used in reference version
-    device_ptr = nullptr;
+    auto cuda_err = cudaMalloc(&device_ptr, len * sizeof(T));
+    if (cuda_err != cudaSuccess) {
+        assert(false && "failed to allocated device memory");
+    }
+
+    if (len * sizeof(T) > transpose_size) {
+        transpose_size = len * sizeof(T);
+        if (transpose_buf == nullptr) {
+            transpose_buf = (unsigned char *) malloc(transpose_size);
+        } else {
+            transpose_buf = (unsigned char *) realloc(
+                    (void *) transpose_buf, transpose_size);
+        }
+    }
 
     T *thost_ptr = (T *) host_ptr;
     std::fill(thost_ptr, thost_ptr + len, initial_value);
 
     syncDevice(false);
-
-    allocated_T_size = sizeof(T);
-    allocated_type = getTypeName<T>();
 }
 
 

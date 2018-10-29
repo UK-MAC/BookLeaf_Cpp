@@ -15,27 +15,40 @@
  * You should have received a copy of the GNU General Public License along with
  * BookLeaf. If not, see http://www.gnu.org/licenses/.
  * @HEADER@ */
-#ifndef BOOKLEAF_PACKAGES_ALE_KERNEL_GETMESHSTATUS_H
-#define BOOKLEAF_PACKAGES_ALE_KERNEL_GETMESHSTATUS_H
+#ifndef BOOKLEAF_UTILITIES_GEOMETRY_CONFIG_H
+#define BOOKLEAF_UTILITIES_GEOMETRY_CONFIG_H
 
-#include "common/view.h"
+#include "common/defs.h"
 
 
 
 namespace bookleaf {
-namespace ale {
-namespace kernel {
+
+struct Sizes;
+struct Error;
+
+namespace geometry {
+
+struct Config
+{
+    unsigned char *cub_storage = nullptr;
+    SizeType cub_storage_len = 0;
+    int *cub_out = nullptr;
+};
 
 void
-getMeshStatus(
-        int nnd,
-        bool zeul,
-        DeviceView<int, VarDim> ndstatus);
+initGeometryConfig(
+        Sizes const &sizes,
+        geometry::Config &geom,
+        Error &err);
 
-} // namespace kernel
-} // namespace ale
+void
+killGeometryConfig(
+        geometry::Config &geom);
+
+} // namespace geometry
 } // namespace bookleaf
 
 
 
-#endif // BOOKLEAF_PACKAGES_ALE_KERNEL_GETMESHSTATUS_H
+#endif // BOOKLEAF_UTILITIES_GEOMETRY_CONFIG_H

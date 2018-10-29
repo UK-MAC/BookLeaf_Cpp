@@ -27,6 +27,7 @@
 #include "common/data_id.h"
 #include "common/data_control.h"
 #include "common/view.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -40,14 +41,36 @@ template <typename T>
 void
 cornerGather(
         int nel,
-        ConstView<int, VarDim, NCORN> elnd,
-        ConstView<T, VarDim>          nd,
-        View<T, VarDim, NCORN>        el)
+        ConstDeviceView<int, VarDim, NCORN> elnd,
+        ConstDeviceView<T, VarDim>          nd,
+        DeviceView<T, VarDim, NCORN>        el)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const i)
+    {
+        for (int j = 0; j < NCORN; j++) {
+            el(i, j) = nd(elnd(i, j));
+        }
+    });
+
+    cudaSync();
+}
+
+
+
+template <typename T>
+void
+hostCornerGather(
+        int nel,
+        ConstView<int, VarDim, NCORN> elnd,
+        ConstView<T, VarDim>          nd,
+        View<T, VarDim, NCORN>        el)
+{
     for (int i = 0; i < nel; i++) {
         for (int j = 0; j < NCORN; j++) {
             el(i, j) = nd(elnd(i, j));
@@ -179,11 +202,34 @@ cornerGather(
 {
     using constants::NCORN;
 
+    auto elnd = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto nd   = data[ndid].cdevice<T, VarDim>();
+    auto el   = data[elid].device<T, VarDim, NCORN>();
+
+    kernel::cornerGather<T>(
+            sizes.nel,
+            elnd,
+            nd,
+            el);
+}
+
+
+
+template <typename T = double>
+void
+hostCornerGather(
+        Sizes const &sizes,
+        DataID ndid,
+        DataID elid,
+        DataControl &data)
+{
+    using constants::NCORN;
+
     auto elnd = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto nd   = data[ndid].chost<T, VarDim>();
     auto el   = data[elid].host<T, VarDim, NCORN>();
 
-    kernel::cornerGather<T>(
+    kernel::hostCornerGather<T>(
             sizes.nel,
             elnd,
             nd,

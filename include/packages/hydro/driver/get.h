@@ -23,6 +23,7 @@
 // XXX(timrlaw): Combined header for the various hydro::driver::get* routines
 namespace bookleaf {
 
+namespace geometry { struct Config; }
 struct Sizes;
 struct Runtime;
 class TimerControl;
@@ -72,6 +73,7 @@ getArtificialViscosity(
 
 void
 getState(
+        geometry::Config const &geom,
         Runtime const &runtime,
         TimerControl &timers,
         DataControl &data,

@@ -29,6 +29,7 @@
 
 #include "common/error.h"
 #include "common/constants.h"
+#include "common/data_control.h"
 #include "utilities/comms/config.h"
 #include "infrastructure/io/output_formatting.h"
 
@@ -56,7 +57,9 @@ metisPartition(
     // XXX(timrlaw): idx_t and real_t are internal types from ParMETIS,
     //               configurable at build time.
 
-    ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel);
+    //ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel);
+    int const *conn_data = _conn_data;
+    #define IXconn(i, j) (index2D((j), (i), NDAT))
 
     std::unique_ptr<int[]> nelg(new int[nproc]);
 
@@ -105,7 +108,7 @@ metisPartition(
     // Convert global mesh into a format understood by Metis
     for (int iel = 0; iel < nel; iel++) {
         for (int icn = 0; icn < NCORN; icn++) {
-            eind[iel*NCORN+icn] = (idx_t) conn_data(iel, 3+icn);
+            eind[iel*NCORN+icn] = (idx_t) conn_data[IXconn(iel, 3+icn)];
         }
     }
 
@@ -164,6 +167,8 @@ metisPartition(
     for (int iel = 0; iel < nel; iel++) {
         partitioning(iel) = (int) part[iel];
     }
+
+    #undef IXconn
 }
 #endif
 

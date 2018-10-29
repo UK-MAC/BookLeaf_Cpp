@@ -19,6 +19,7 @@
 
 #include <algorithm> // std::min_element, std::max_element
 
+#include "common/sizes.h"
 #include "common/error.h"
 #include "infrastructure/io/output_formatting.h"
 #include "packages/time/config.h"
@@ -145,6 +146,69 @@ rationalise(ale::Config &ale, time::Config const &time, Error &err)
             ale.zexist = false;
             clear_arrays();
         }
+    }
+}
+
+
+
+void
+initALEConfig(
+        Sizes const &sizes,
+        ale::Config &ale,
+        Error &err)
+{
+    // Init Cub reductions
+    double *tmp_in;
+    auto cuda_err = cudaMalloc(&tmp_in, sizeof(double) * sizes.nel);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&ale.cub_out, sizeof(cub::KeyValuePair<int, double>));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    ale.cub_storage = nullptr;
+    ale.cub_storage_len = 0;
+
+    cuda_err = cub::DeviceReduce::ArgMin(
+            ale.cub_storage,
+            ale.cub_storage_len,
+            tmp_in,
+            ale.cub_out,
+            sizes.nel);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to calculate reduction scratch");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&ale.cub_storage, ale.cub_storage_len);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocate device memory");
+        return;
+    }
+
+    cuda_err = cudaFree(tmp_in);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to free device memory");
+        return;
+    }
+}
+
+
+
+void
+killALEConfig(
+        ale::Config &ale)
+{
+    if (ale.cub_storage != nullptr) {
+        cudaFree(ale.cub_out);
+        cudaFree(ale.cub_storage);
+        ale.cub_storage = nullptr;
+        ale.cub_storage_len = 0;
     }
 }
 

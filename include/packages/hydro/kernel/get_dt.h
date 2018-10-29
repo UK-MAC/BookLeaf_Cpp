@@ -30,23 +30,27 @@ namespace bookleaf {
 struct Error;
 
 namespace hydro {
+
+struct Config;
+
 namespace kernel {
 
 using constants::NCORN;
 
 void
 getDtCfl(
+        hydro::Config const &hydro,
         int nel,
         double zcut,
         double cfl_sf,
-        unsigned char const *zdtnotreg,
-        unsigned char const *zmidlength,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        View<double, VarDim>             rscratch11,
-        View<double, VarDim>             rscratch12,
+        ConstDeviceView<unsigned char, VarDim> zdtnotreg,
+        ConstDeviceView<unsigned char, VarDim> zmidlength,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        DeviceView<double, VarDim>             rscratch11,
+        DeviceView<double, VarDim>             rscratch12,
         double &rdt,
         int &idt,
         std::string &sdt,
@@ -54,15 +58,17 @@ getDtCfl(
 
 void
 getDtDiv(
+        hydro::Config const &hydro,
         int nel,
         double div_sf,
-        ConstView<double, VarDim>        a1,
-        ConstView<double, VarDim>        a3,
-        ConstView<double, VarDim>        b1,
-        ConstView<double, VarDim>        b3,
-        ConstView<double, VarDim>        elvolume,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        a1,
+        ConstDeviceView<double, VarDim>        a3,
+        ConstDeviceView<double, VarDim>        b1,
+        ConstDeviceView<double, VarDim>        b3,
+        ConstDeviceView<double, VarDim>        elvolume,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt);

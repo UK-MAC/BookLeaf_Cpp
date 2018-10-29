@@ -29,28 +29,42 @@ build if it cannot find it.
 * (OPTIONAL) Caliper (https://github.com/LLNL/Caliper)
 * (OPTIONAL) zlib (https://www.zlib.net)
 
+## CUDA Dependencies
+
+The CUDA version of BookLeaf additionally requires CUDA itself, and [NVIDIA
+CUB](https://nvlabs.github.io/cub/).
+
 ## Building
 
-BookLeaf uses CMake, and tries to be idiomatic in doing so. The typical CMake
-process looks something like the following (inside the top-level BookLeaf
-directory):
+BookLeaf uses CMake, and tries to be idiomatic in doing so.  We recommend using
+the `nvcc_wrapper` script available
+[here](https://github.com/kokkos/nvcc_wrapper) to build the CUDA variant as this
+dramatically simplifies managing the compiler options. This build process using
+`nvcc_wrapper` looks something like the following (where `sm_70` is replaced
+with the CUDA architecture of the NVIDIA GPU you wish to run on):
 
 ```
 mkdir build
 cd build
-export CXX=<compiler, e.g. g++>
+export CXX=nvcc_wrapper
 cmake \
     -DCMAKE_INSTALL_PREFIX=$HOME \
     -DCMAKE_BUILD_TYPE="Release" \
+    -DCMAKE_CXX_FLAGS="-ccbin <path to host compiler> -arch sm_70" \
+    -DYamlCpp_ROOT_DIR=<path to install> \
+    -DCUB_ROOT_DIR=<path to install> \
     -DENABLE_TYPHON=ON \
+    -DTyphon_ROOT_DIR=<path to install> \
     -DENABLE_PARMETIS=ON \
+    -DMETIS_ROOT_DIR=<path to install> \
+    -DParMETIS_ROOT_DIR=<path to install> \
     -DENABLE_SILO=ON \
+    -DHDF5_ROOT=<path to install> \
+    -DSilo_ROOT_DIR=<path to install> \
     -DENABLE_CALIPER=ON \
+    -DCaliper_ROOT_DIR=<path to install> \
     ..
 make
-make test
 ```
 
-`make test` will run both unit tests for individual kernels, and (TODO
-validation tests for the entire application), but requires building with zlib
-(which is the default).
+BookLeaf's unit tests currently do not work with the CUDA version.

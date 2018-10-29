@@ -17,6 +17,7 @@
  * @HEADER@ */
 #include "packages/ale/driver/hydro_update.h"
 
+#include "utilities/geometry/config.h"
 #include "packages/ale/config.h"
 #include "utilities/geometry/geometry.h"
 #include "utilities/density/get_density.h"
@@ -31,6 +32,7 @@ namespace driver {
 
 void
 hydroUpdate(
+        geometry::Config const &geom,
         ale::Config const &ale,
         Sizes const &sizes,
         TimerControl &timers,
@@ -38,8 +40,8 @@ hydroUpdate(
         Error &err)
 {
     // update geometry
-    geometry::driver::getGeometry(sizes, timers, TimerID::GETGEOMETRYA, data,
-            err);
+    geometry::driver::getGeometry(geom, sizes, timers, TimerID::GETGEOMETRYA,
+            data, err);
 
     // update density to be consistent with geometry
     density::driver::getDensity(sizes, data);

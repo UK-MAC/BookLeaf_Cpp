@@ -19,6 +19,7 @@
 
 #include "common/sizes.h"
 #include "common/error.h"
+#include "common/view.h"
 #include "infrastructure/io/output_formatting.h"
 
 
@@ -121,20 +122,75 @@ rationalise(
 
 void
 initEOSConfig(
-        Sizes const &sizes __attribute__((unused)),
-        EOS &eos __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        EOS &eos,
+        Error &err)
 {
-    // XXX Stub for extra variant EOS config init
+    auto cuda_err = cudaMalloc(&eos.types, sizeof(int) * sizes.nmat);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocated device memory");
+        return;
+    }
+
+    cuda_err = cudaMalloc(&eos.params,
+            sizeof(double) * sizes.nmat * MaterialEOS::NUM_PARAMS);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to allocated device memory");
+        return;
+    }
+
+    // Gather types
+    std::unique_ptr<int []> _host_types(new int[sizes.nmat]);
+    View<int, VarDim> host_types(_host_types.get(), sizes.nmat);
+
+    for (int imat = 0; imat < sizes.nmat; imat++) {
+        host_types(imat) = (int) eos.mat_eos[imat].type;
+    }
+
+    // Gather parameters
+    std::unique_ptr<double []> _host_params(
+            new double[sizes.nmat * MaterialEOS::NUM_PARAMS]);
+    View<double, VarDim, MaterialEOS::NUM_PARAMS> host_params(
+            _host_params.get(), sizes.nmat);
+
+    for (int imat = 0; imat < sizes.nmat; imat++) {
+        for (int iparam = 0; iparam < MaterialEOS::NUM_PARAMS; iparam++) {
+            host_params(imat, iparam) = eos.mat_eos[imat].params[iparam];
+        }
+    }
+
+    // Copy to device
+    cuda_err = cudaMemcpy(eos.types, host_types.data(), sizeof(int) * sizes.nmat,
+            cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(eos.params, host_params.data(),
+            sizeof(double) * sizes.nmat * MaterialEOS::NUM_PARAMS,
+            cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to copy to device memory");
+        return;
+    }
 }
 
 
 
 void
 killEOSConfig(
-        EOS &eos __attribute__((unused)))
+        EOS &eos)
 {
-    // XXX Stub for extra variant EOS config shutdown
+    if (eos.types != nullptr) {
+        cudaFree(eos.types);
+        eos.types = nullptr;
+    }
+
+    if (eos.params != nullptr) {
+        cudaFree(eos.params);
+        eos.params = nullptr;
+    }
 }
 
 } // namespace bookleaf

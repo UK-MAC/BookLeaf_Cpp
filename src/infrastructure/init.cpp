@@ -26,6 +26,7 @@
 #include "common/sizes.h"
 #include "common/timestep.h"
 #include "common/timer_control.h"
+#include "common/cmd_args.h"
 #include "packages/init/driver.h"
 #include "packages/setup/config.h"
 #include "utilities/io/config.h"
@@ -37,6 +38,7 @@
 #endif
 
 #include "utilities/eos/config.h"
+#include "utilities/geometry/config.h"
 #include "utilities/data/global_configuration.h"
 #include "common/data_control.h"
 #include "packages/time/config.h"
@@ -53,12 +55,53 @@ namespace init {
 
 void
 initParallelism(
-        comms::Comms &comms)
+        comms::Comms &comms,
+        Error &err)
 {
-    Error err;
     comms::initComms(comms, err);
     if (err.failed()) {
         assert(false && "unhandled error");
+        return;
+    }
+
+    // Initialise CUDA
+    int device_count = 0;
+    auto cuda_err = cudaGetDeviceCount(&device_count);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to get CUDA device count\n");
+        return;
+    }
+
+    int device_id = CMD_ARGS.cuda_device_id;
+
+    // If not specified on the command line, cuda_device_id will be -1.
+    // Set the default depending on whether we are in an MPI context.
+    //
+    // XXX This code may need to be tweaked when running BookLeaf on multiple
+    //     nodes each with multiple GPUs---there isn't a clean way to do it in
+    //     general (Kokkos does something funky with MPI environment variables).
+    //
+    if (device_id < 0) {
+#ifdef BOOKLEAF_MPI_SUPPORT
+        if (comms.world->nproc > 1) {
+            device_id = comms.world->rank % device_count;
+        } else {
+            device_id = 0;
+        }
+#else
+        device_id = 0;
+#endif
+    }
+
+    if (device_id >= device_count) {
+        FAIL_WITH_LINE(err, "ERROR: Not enough CUDA devices for ID " +
+                std::to_string(device_id) + "\n");
+        return;
+    }
+
+    cuda_err = cudaSetDevice(device_id);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to set CUDA device\n");
         return;
     }
 }
@@ -240,16 +283,27 @@ init(
     initEOSConfig(*runtime.sizes, *config.eos, err);
     if (err.failed()) return;
 
+    // Initialise geometry config
+    initGeometryConfig(*runtime.sizes, *config.geom, err);
+    if (err.failed()) return;
+
     // Initialise hydro config
     initHydroConfig(*runtime.sizes, *config.hydro, err);
     if (err.failed()) return;
+
+    // Initialise ALE config
+    if (config.ale->zexist) {
+        initALEConfig(*runtime.sizes, *config.ale, err);
+        if (err.failed()) return;
+    }
 
     // Initialise
     bookleaf::init::driver::initElementOrdering(config, *runtime.sizes, data);
 
     // Initialise initial conditions
-    setup::driver::setInitialConditions(*config.setup, *config.global,
-            *config.comms->spatial, *runtime.sizes, timers, data, err);
+    setup::driver::setInitialConditions(*config.geom, *config.setup,
+            *config.global, *config.comms->spatial, *runtime.sizes, timers,
+            data, err);
     if (err.failed()) return;
 
     // Initialise state

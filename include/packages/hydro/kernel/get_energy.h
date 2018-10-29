@@ -33,12 +33,12 @@ void
 getEnergy(
         double dt,
         double zerocut,
-        ConstView<double, VarDim, NCORN> cnfx,
-        ConstView<double, VarDim, NCORN> cnfy,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        ConstView<double, VarDim>        elmass,
-        View<double, VarDim>             elenergy,
+        ConstDeviceView<double, VarDim, NCORN> cnfx,
+        ConstDeviceView<double, VarDim, NCORN> cnfy,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        elmass,
+        DeviceView<double, VarDim>             elenergy,
         int nel);
 
 } // namespace kernel

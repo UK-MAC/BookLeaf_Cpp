@@ -22,7 +22,7 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-#include <random>
+//#include <random>
 
 #include "packages/setup/config.h"
 #include "common/data_control.h"
@@ -87,10 +87,10 @@ remapCellIndicators(
 
 void
 renumberMesh(
-        bookleaf::Config const &config,
+        bookleaf::Config const &config __attribute__((unused)),
         setup::Config &setup_config,
         TimerControl &timers,
-        Error &err)
+        Error &err __attribute__((unused)))
 {
     ScopedTimer st(timers, TimerID::MESHRENUM);
 
@@ -102,7 +102,7 @@ renumberMesh(
         mdata.dims[1]
     };
 
-    int const side = dims[1] >= dims[0] ? 1 : 0;
+    int const side __attribute__((unused)) = dims[1] >= dims[0] ? 1 : 0;
     int const nelg = dims[0] * dims[1];
     int const nndg = (dims[0]+1) * (dims[1]+1);
 

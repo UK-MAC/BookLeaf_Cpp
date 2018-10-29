@@ -23,6 +23,7 @@
 #include "packages/setup/config.h"
 
 #include "utilities/eos/config.h"
+#include "utilities/geometry/config.h"
 #include "utilities/data/global_configuration.h"
 #include "utilities/io/config.h"
 #include "utilities/comms/config.h"
@@ -35,6 +36,7 @@ Config::Config() :
     time  (new time::Config()),
     hydro (new hydro::Config()),
     eos   (new EOS()),
+    geom  (new geometry::Config()),
     ale   (new ale::Config()),
     io    (new io_utils::Labels()),
     comms (new comms::Comms()),

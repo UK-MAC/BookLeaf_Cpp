@@ -47,6 +47,9 @@ struct EOS
     double pcut = 1.e-8;    // Pressure cutoff
 
     std::vector<MaterialEOS> mat_eos;
+
+    int *types = nullptr;
+    double *params = nullptr;
 };
 
 

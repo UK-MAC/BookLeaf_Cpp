@@ -76,22 +76,23 @@ main(int argc, char *argv[])
     CALI_MARK_BEGIN("initialisation");
 #endif
 
-    Config      config;
-    Runtime     runtime;
-    DataControl data;
-    Error       err;
+    Config       config;
+    Runtime      runtime;
+    DataControl  data;
+    TimerControl timers;
+    Error        err;
 
     // -------------------------------------------------------------------------
     // Initialise parallelism
     // -------------------------------------------------------------------------
-    inf::init::initParallelism(*config.comms);
+    inf::init::initParallelism(*config.comms, err);
+    if (err.failed()) {
+        halt(config, runtime, timers, data, err);
+    }
 
     // -------------------------------------------------------------------------
-    // Initialse timers and start relevant ones
+    // Start timers
     // -------------------------------------------------------------------------
-    TimerControl timers;
-
-    // Start initial timers
     timers.start(TimerID::TOTAL);
     timers.start(TimerID::INIT);
 

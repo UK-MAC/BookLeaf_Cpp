@@ -53,8 +53,8 @@ testSod(
     using constants::NCORN;
 
     // Gather co-ordinates
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDX, DataID::CNX, data);
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDY, DataID::CNY, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDX, DataID::CNX, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDY, DataID::CNY, data);
 
     double _basis;
     double _l1[2];

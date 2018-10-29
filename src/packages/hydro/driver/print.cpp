@@ -67,8 +67,8 @@ shortPrint(hydro::Config const &hydro, Runtime const &runtime,
     kernel::Flags mat(nmat);
 
     // Gather velocity to elements
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDU, CNU, data);
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDV, CNV, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDU, CNU, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDV, CNV, data);
 
     // Calculate table values
     kernel::initShortPrint(reg);

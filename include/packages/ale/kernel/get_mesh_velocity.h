@@ -30,8 +30,8 @@ void
 getMeshVelocity(
         int nnd,
         bool zeul,
-        View<double, VarDim> ndu,
-        View<double, VarDim> ndv);
+        DeviceView<double, VarDim> ndu,
+        DeviceView<double, VarDim> ndv);
 
 } // namespace kernel
 } // namespace ale

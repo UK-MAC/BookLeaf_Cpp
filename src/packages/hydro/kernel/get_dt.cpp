@@ -18,15 +18,18 @@
 #include "packages/hydro/kernel/get_dt.h"
 
 #include <limits>
-#include <cmath>
 
 #ifdef BOOKLEAF_CALIPER_SUPPORT
 #include <caliper/cali.h>
 #endif
 
+#include <cub/device/device_reduce.cuh>
+
 #include "common/constants.h"
 #include "common/error.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
+#include "packages/hydro/config.h"
 
 
 
@@ -35,7 +38,7 @@ namespace hydro {
 namespace kernel {
 namespace {
 
-inline double
+inline __device__ double
 denom(double x1, double y1, double x2, double y2)
 {
     double w1 = y1 - y2;
@@ -45,7 +48,7 @@ denom(double x1, double y1, double x2, double y2)
 
 
 
-inline double
+inline __device__ double
 distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 {
     double w1 = 0.5 * (x3 + x4) - x1;
@@ -55,7 +58,7 @@ distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 
 
 
-inline double
+inline __device__ double
 distpl(double x3, double y3, double x4, double y4, double x1, double y1,
         double x2, double y2)
 {
@@ -67,11 +70,11 @@ distpl(double x3, double y3, double x4, double y4, double x1, double y1,
 
 
 // These two kernels were originally located in the geometry utility
-inline void
+inline __device__ void
 dlm(
         int iel,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
         double res[NCORN])
 {
     double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
@@ -101,12 +104,12 @@ dlm(
 
 
 
-inline void
+inline __device__ void
 dln(
         double zcut,
         int iel,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
         double res[NCORN])
 {
     double elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
@@ -135,17 +138,18 @@ dln(
 
 void
 getDtCfl(
+        hydro::Config const &hydro,
         int nel,
         double zcut,
         double cfl_sf,
-        unsigned char const *zdtnotreg,
-        unsigned char const *zmidlength,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        View<double, VarDim>             rscratch11,
-        View<double, VarDim>             rscratch12,
+        ConstDeviceView<unsigned char, VarDim> zdtnotreg,
+        ConstDeviceView<unsigned char, VarDim> zmidlength,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        DeviceView<double, VarDim>             rscratch11,
+        DeviceView<double, VarDim>             rscratch12,
         double &rdt,
         int &idt,
         std::string &sdt,
@@ -156,43 +160,60 @@ getDtCfl(
 #endif
 
     // Calculate CFL condition
-    for (int iel = 0; iel < nel; iel++) {
-        double result[NCORN];
-
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         int ireg = elreg(iel);
-        if (zdtnotreg[ireg]) {
-            rscratch11(iel) = std::numeric_limits<double>::max();
-            rscratch12(iel) = std::numeric_limits<double>::min();
 
-        } else {
-            if (zmidlength[ireg]) dlm(iel, cnx, cny, result);
-            else                  dln(zcut, iel, cnx, cny, result);
+        double resultm[NCORN];
+        dlm(iel, cnx, cny, resultm);
 
-            // Minimise result
-            double w1 = result[0];
-            for (int i = 1; i < NCORN; i++) {
-                w1 = (result[i] < w1) ? result[i] : w1;
-            }
+        double resultn[NCORN];
+        dln(zcut, iel, cnx, cny, resultn);
 
-            rscratch11(iel) = w1/elcs2(iel);
-            rscratch12(iel) = w1;
+        // Minimise result
+        double *result = zmidlength(ireg) ? resultm : resultn;
+        double w1 = result[0];
+        for (int i = 1; i < NCORN; i++) {
+            w1 = (result[i] < w1) ? result[i] : w1;
         }
-    }
+
+        rscratch11(iel) = zdtnotreg(ireg) ?
+                            NPP_MAXABS_64F : w1/elcs2(iel);
+        rscratch12(iel) = zdtnotreg(ireg) ?
+                            NPP_MINABS_64F : w1;
+    });
+
+    cudaDeviceSynchronize();
 
     // Find minimum CFL condition
-    int min_idx = 0;
-    for (int iel = 1; iel < nel; iel++) {
-        if (rscratch11(iel) < rscratch11(min_idx)) min_idx = iel;
+    auto &cub_storage_len = const_cast<SizeType &>(hydro.cub_storage_len);
+    auto cuda_err = cub::DeviceReduce::ArgMin(
+            hydro.cub_storage,
+            cub_storage_len,
+            rscratch11.data(),
+            hydro.cub_out,
+            nel);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Reduction failed");
+        return;
     }
 
-    double w1 = rscratch11(min_idx);
+    cudaDeviceSynchronize();
+
+    cub::KeyValuePair<int, double> res;
+    cudaMemcpy(&res, hydro.cub_out, sizeof(cub::KeyValuePair<int, double>),
+            cudaMemcpyDeviceToHost);
+
+    double w1 = res.value;
     if (w1 < 0) {
         FAIL_WITH_LINE(err, "ERROR");
         return;
     }
 
     rdt = cfl_sf*sqrt(w1);
-    idt = min_idx;
+    idt = res.key;
     sdt = "     CFL";
 }
 
@@ -200,15 +221,17 @@ getDtCfl(
 
 void
 getDtDiv(
+        hydro::Config const &hydro,
         int nel,
         double div_sf,
-        ConstView<double, VarDim>        a1,
-        ConstView<double, VarDim>        a3,
-        ConstView<double, VarDim>        b1,
-        ConstView<double, VarDim>        b3,
-        ConstView<double, VarDim>        elvolume,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        a1,
+        ConstDeviceView<double, VarDim>        a3,
+        ConstDeviceView<double, VarDim>        b1,
+        ConstDeviceView<double, VarDim>        b3,
+        ConstDeviceView<double, VarDim>        elvolume,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -217,9 +240,10 @@ getDtDiv(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::min();
-    int min_idx = 0;
-    for (int iel = 0; iel < nel; iel++) {
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
                     cnv(iel, 0) * ( a3(iel) - a1(iel)) +
                     cnu(iel, 1) * ( b3(iel) + b1(iel)) +
@@ -229,13 +253,28 @@ getDtDiv(
                     cnu(iel, 3) * (-b3(iel) - b1(iel)) +
                     cnv(iel, 3) * ( a3(iel) + a1(iel));
 
-        w1 = fabs(w1) / elvolume(iel);
-        min_idx = w1 > w2 ? iel : min_idx;
-        w2 = w1 > w2 ? w1 : w2;
-    }
+        scratch(iel) = fabs(w1) / elvolume(iel);
+    });
 
-    rdt = div_sf/w2;
-    idt = min_idx;
+    cudaDeviceSynchronize();
+
+    // Reduce scratch
+    auto &cub_storage_len = const_cast<SizeType &>(hydro.cub_storage_len);
+    cub::DeviceReduce::ArgMax(
+            hydro.cub_storage,
+            cub_storage_len,
+            scratch.data(),
+            hydro.cub_out,
+            nel);
+
+    cudaDeviceSynchronize();
+
+    cub::KeyValuePair<int, double> res;
+    cudaMemcpy(&res, hydro.cub_out, sizeof(cub::KeyValuePair<int, double>),
+            cudaMemcpyDeviceToHost);
+
+    rdt = div_sf/res.value;
+    idt = res.key;
     sdt = "     DIV";
 }
 

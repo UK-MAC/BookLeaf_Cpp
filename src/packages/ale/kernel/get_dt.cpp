@@ -24,8 +24,12 @@
 #include <caliper/cali.h>
 #endif
 
+#include <cub/device/device_reduce.cuh>
+
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
+#include "packages/ale/config.h"
 
 
 
@@ -35,13 +39,15 @@ namespace kernel {
 
 void
 getDt(
+        ale::Config const &ale,
         int nel,
         double zerocut,
         double ale_sf,
         bool zeul,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        ConstView<double, VarDim>        ellength,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        ellength,
+        DeviceView<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt)
@@ -54,20 +60,39 @@ getDt(
     int ii = 0;
 
     if (zeul) {
-        for (int iel = 0; iel < nel; iel++) {
-
+        dispatchCuda(
+                nel,
+                [=] __device__ (int const iel)
+        {
             // Minimise node velocity squared
-            double w1 = -std::numeric_limits<double>::max();
+            double w1 = -NPP_MAXABS_64F;
             for (int icn = 0; icn < NCORN; icn++) {
-                double w2 = cnu(iel, icn) * cnu(iel, icn) +
-                            cnv(iel, icn) * cnv(iel, icn);
-                w1 = std::max(w1, w2);
+                double w = cnu(iel, icn) * cnu(iel, icn) +
+                           cnv(iel, icn) * cnv(iel, icn);
+                w1 = max(w1, w);
             }
 
-            w1 = ellength(iel) / std::max(w1, zerocut);
-            ii = w1 < w2 ? iel : ii;
-            w2 = w1 < w2 ? w1 : w2;
-        }
+            scratch(iel) = ellength(iel) / max(w1, zerocut);
+        });
+
+        cudaDeviceSynchronize();
+
+        auto &cub_storage_len = const_cast<SizeType &>(ale.cub_storage_len);
+        auto cuda_err = cub::DeviceReduce::ArgMin(
+                ale.cub_storage,
+                cub_storage_len,
+                scratch.data(),
+                ale.cub_out,
+                nel);
+
+        cudaDeviceSynchronize();
+
+        cub::KeyValuePair<int, double> res;
+        cudaMemcpy(&res, ale.cub_out, sizeof(cub::KeyValuePair<int, double>),
+                cudaMemcpyDeviceToHost);
+
+        w2 = res.value;
+        ii = res.key;
 
     } else {
         // XXX Missing code that can't (or hasn't) been merged

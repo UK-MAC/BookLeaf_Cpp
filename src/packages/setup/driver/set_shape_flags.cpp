@@ -48,8 +48,8 @@ setShapeFlags(
     }
 
     // Gather coordinates
-    utils::driver::cornerGather(sizes, DataID::NDX, DataID::SETUP_CNX, dh);
-    utils::driver::cornerGather(sizes, DataID::NDY, DataID::SETUP_CNY, dh);
+    utils::driver::hostCornerGather(sizes, DataID::NDX, DataID::SETUP_CNX, dh);
+    utils::driver::hostCornerGather(sizes, DataID::NDY, DataID::SETUP_CNY, dh);
 
     // Choose function to check whether a point is inside the shape, based on
     // shape type

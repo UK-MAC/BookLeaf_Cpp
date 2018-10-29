@@ -31,47 +31,47 @@ using constants::NCORN;
 
 void
 initAcceleration(
-        View<double, VarDim> ndarea,
-        View<double, VarDim> ndmass,
-        View<double, VarDim> ndudot,
-        View<double, VarDim> ndvdot,
+        DeviceView<double, VarDim> ndarea,
+        DeviceView<double, VarDim> ndmass,
+        DeviceView<double, VarDim> ndudot,
+        DeviceView<double, VarDim> ndvdot,
         int nnd);
 
 void
 scatterAcceleration(
         double zerocut,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim, NCORN> cnwt,
-        ConstView<double, VarDim, NCORN> cnmass,
-        ConstView<double, VarDim, NCORN> cnfx,
-        ConstView<double, VarDim, NCORN> cnfy,
-        View<double, VarDim>             ndarea,
-        View<double, VarDim>             ndmass,
-        View<double, VarDim>             ndudot,
-        View<double, VarDim>             ndvdot,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim, NCORN> cnwt,
+        ConstDeviceView<double, VarDim, NCORN> cnmass,
+        ConstDeviceView<double, VarDim, NCORN> cnfx,
+        ConstDeviceView<double, VarDim, NCORN> cnfy,
+        DeviceView<double, VarDim>             ndarea,
+        DeviceView<double, VarDim>             ndmass,
+        DeviceView<double, VarDim>             ndudot,
+        DeviceView<double, VarDim>             ndvdot,
         int nnd);
 
 void
 getAcceleration(
         double dencut,
         double zerocut,
-        ConstView<double, VarDim> ndarea,
-        View<double, VarDim>      ndmass,
-        View<double, VarDim>      ndudot,
-        View<double, VarDim>      ndvdot,
+        ConstDeviceView<double, VarDim> ndarea,
+        DeviceView<double, VarDim>      ndmass,
+        DeviceView<double, VarDim>      ndudot,
+        DeviceView<double, VarDim>      ndvdot,
         int nnd);
 
 void
 applyAcceleration(
         double dt,
-        View<double, VarDim> ndubar,
-        View<double, VarDim> ndvbar,
-        View<double, VarDim> ndu,
-        View<double, VarDim> ndv,
+        DeviceView<double, VarDim> ndubar,
+        DeviceView<double, VarDim> ndvbar,
+        DeviceView<double, VarDim> ndu,
+        DeviceView<double, VarDim> ndv,
         int nnd);
 
 } // namespace kernel

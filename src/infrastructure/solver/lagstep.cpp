@@ -76,7 +76,7 @@ getState(
 {
     // Update hydro state
     Error err;
-    hydro::driver::getState(runtime, timers, data, err);
+    hydro::driver::getState(*config.geom, runtime, timers, data, err);
     if (err.failed()) {
         halt(config, runtime, timers, data, err);
     }

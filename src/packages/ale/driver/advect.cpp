@@ -62,21 +62,21 @@ advectBasisEl(
 
     ScopedTimer st(timers, timerid);
 
-    auto elel      = data[DataID::IELEL].chost<int, VarDim, NFACE>();
-    auto elfc      = data[DataID::IELFC].chost<int, VarDim, NFACE>();
-    auto cnwt      = data[DataID::CNWT].chost<double, VarDim, NCORN>();
-    auto fcdv      = data[DataID::ALE_FCDV].chost<double, VarDim, NFACE>();
-    auto fcdm      = data[DataID::ALE_FCDM].host<double, VarDim, NFACE>();
-    auto elvolume  = data[DataID::ELVOLUME].host<double, VarDim>();
-    auto elmass    = data[DataID::ELMASS].host<double, VarDim>();
-    auto eldensity = data[DataID::ELDENSITY].host<double, VarDim>();
-    auto rwork1    = data[DataID::ALE_RWORK1].host<double, VarDim>();
-    auto rwork2    = data[DataID::ALE_RWORK2].host<double, VarDim>();
-    auto store1    = data[DataID::ALE_STORE1].host<double, VarDim>();
-    auto store2    = data[DataID::ALE_STORE2].host<double, VarDim>();
-    auto store3    = data[DataID::ALE_STORE3].host<double, VarDim>();
-    auto store5    = data[DataID::ALE_STORE5].host<double, VarDim>();
-    auto store6    = data[DataID::ALE_STORE6].host<double, VarDim>();
+    auto elel      = data[DataID::IELEL].cdevice<int, VarDim, NFACE>();
+    auto elfc      = data[DataID::IELFC].cdevice<int, VarDim, NFACE>();
+    auto cnwt      = data[DataID::CNWT].cdevice<double, VarDim, NCORN>();
+    auto fcdv      = data[DataID::ALE_FCDV].cdevice<double, VarDim, NFACE>();
+    auto fcdm      = data[DataID::ALE_FCDM].device<double, VarDim, NFACE>();
+    auto elvolume  = data[DataID::ELVOLUME].device<double, VarDim>();
+    auto elmass    = data[DataID::ELMASS].device<double, VarDim>();
+    auto eldensity = data[DataID::ELDENSITY].device<double, VarDim>();
+    auto rwork1    = data[DataID::ALE_RWORK1].device<double, VarDim>();
+    auto rwork2    = data[DataID::ALE_RWORK2].device<double, VarDim>();
+    auto store1    = data[DataID::ALE_STORE1].device<double, VarDim>();
+    auto store2    = data[DataID::ALE_STORE2].device<double, VarDim>();
+    auto store3    = data[DataID::ALE_STORE3].device<double, VarDim>();
+    auto store5    = data[DataID::ALE_STORE5].device<double, VarDim>();
+    auto store6    = data[DataID::ALE_STORE6].device<double, VarDim>();
 
     // Calculate total volume flux
     kernel::sumFlux(id1, id2, sizes.nel, sizes.nel1, elel, elfc, fcdv, rwork1);
@@ -110,16 +110,16 @@ advectVarEl(
 
     ScopedTimer st(timers, timerid);
 
-    auto elel     = data[DataID::IELEL].chost<int, VarDim, NFACE>();
-    auto elfc     = data[DataID::IELFC].chost<int, VarDim, NFACE>();
-    auto elmass   = data[DataID::ELMASS].chost<double, VarDim>();
-    auto cnmass   = data[DataID::CNMASS].chost<double, VarDim, NCORN>();
-    auto elenergy = data[DataID::ELENERGY].host<double, VarDim>();
-    auto fcdm     = data[DataID::ALE_FCDM].chost<double, VarDim, NFACE>();
-    auto flux     = data[DataID::ALE_FLUX].host<double, VarDim, NFACE>();
-    auto store2   = data[DataID::ALE_STORE2].chost<double, VarDim>();
-    auto store6   = data[DataID::ALE_STORE6].chost<double, VarDim>();
-    auto rwork1   = data[DataID::ALE_RWORK1].host<double, VarDim>();
+    auto elel     = data[DataID::IELEL].cdevice<int, VarDim, NFACE>();
+    auto elfc     = data[DataID::IELFC].cdevice<int, VarDim, NFACE>();
+    auto elmass   = data[DataID::ELMASS].cdevice<double, VarDim>();
+    auto cnmass   = data[DataID::CNMASS].cdevice<double, VarDim, NCORN>();
+    auto elenergy = data[DataID::ELENERGY].device<double, VarDim>();
+    auto fcdm     = data[DataID::ALE_FCDM].cdevice<double, VarDim, NFACE>();
+    auto flux     = data[DataID::ALE_FLUX].device<double, VarDim, NFACE>();
+    auto store2   = data[DataID::ALE_STORE2].cdevice<double, VarDim>();
+    auto store6   = data[DataID::ALE_STORE6].cdevice<double, VarDim>();
+    auto rwork1   = data[DataID::ALE_RWORK1].device<double, VarDim>();
 
     // Internal energy (mass weighted)
     kernel::fluxElVl(id1, id2, sizes.nel1, sizes.nel2, elel, elfc, cnmass, fcdm,
@@ -146,27 +146,27 @@ advectBasisNd(
 
     ScopedTimer st(timers, timerid);
 
-    auto elnd     = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    auto elel     = data[DataID::IELEL].chost<int, VarDim, NFACE>();
-    auto elfc     = data[DataID::IELFC].chost<int, VarDim, NFACE>();
-    auto elsort   = data[DataID::IELSORT2].chost<int, VarDim>();
-    auto ndeln    = data[DataID::INDELN].chost<int, VarDim>();
-    auto ndelf    = data[DataID::INDELF].chost<int, VarDim>();
-    auto ndel     = data[DataID::INDEL].chost<int, VarDim>();
-    auto elvolume = data[DataID::ELVOLUME].chost<double, VarDim>();
-    auto cnmass   = data[DataID::CNMASS].host<double, VarDim, NCORN>();
-    auto fcdv     = data[DataID::ALE_FCDV].chost<double, VarDim, NFACE>();
-    auto fcdm     = data[DataID::ALE_FCDM].chost<double, VarDim, NFACE>();
-    auto flux     = data[DataID::ALE_FLUX].host<double, VarDim, NFACE>();
-    auto store1   = data[DataID::ALE_STORE1].host<double, VarDim>();
-    auto store2   = data[DataID::ALE_STORE2].host<double, VarDim>();
-    auto store3   = data[DataID::ALE_STORE3].host<double, VarDim>();
-    auto store4   = data[DataID::ALE_STORE4].host<double, VarDim>();
-    auto store5   = data[DataID::ALE_STORE5].host<double, VarDim>();
-    auto store6   = data[DataID::ALE_STORE6].host<double, VarDim>();
-    auto rwork1   = data[DataID::ALE_RWORK1].host<double, VarDim, NCORN>();
-    auto rwork2   = data[DataID::ALE_RWORK2].host<double, VarDim, NCORN>();
-    auto rwork3   = data[DataID::ALE_RWORK3].host<double, VarDim, NCORN>();
+    auto elnd     = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto elel     = data[DataID::IELEL].cdevice<int, VarDim, NFACE>();
+    auto elfc     = data[DataID::IELFC].cdevice<int, VarDim, NFACE>();
+    auto ndeln    = data[DataID::INDELN].cdevice<int, VarDim>();
+    auto ndelf    = data[DataID::INDELF].cdevice<int, VarDim>();
+    auto ndel     = data[DataID::INDEL].cdevice<int, VarDim>();
+    auto elsort   = data[DataID::IELSORT2].cdevice<int, VarDim>();
+    auto elvolume = data[DataID::ELVOLUME].cdevice<double, VarDim>();
+    auto cnmass   = data[DataID::CNMASS].device<double, VarDim, NCORN>();
+    auto fcdv     = data[DataID::ALE_FCDV].cdevice<double, VarDim, NFACE>();
+    auto fcdm     = data[DataID::ALE_FCDM].cdevice<double, VarDim, NFACE>();
+    auto flux     = data[DataID::ALE_FLUX].device<double, VarDim, NFACE>();
+    auto store1   = data[DataID::ALE_STORE1].device<double, VarDim>();
+    auto store2   = data[DataID::ALE_STORE2].device<double, VarDim>();
+    auto store3   = data[DataID::ALE_STORE3].device<double, VarDim>();
+    auto store4   = data[DataID::ALE_STORE4].device<double, VarDim>();
+    auto store5   = data[DataID::ALE_STORE5].device<double, VarDim>();
+    auto store6   = data[DataID::ALE_STORE6].device<double, VarDim>();
+    auto rwork1   = data[DataID::ALE_RWORK1].device<double, VarDim, NCORN>();
+    auto rwork2   = data[DataID::ALE_RWORK2].device<double, VarDim, NCORN>();
+    auto rwork3   = data[DataID::ALE_RWORK3].device<double, VarDim, NCORN>();
 
     // Initialise
     kernel::initBasisNd(store3, store4, store2, sizes.nnd2);
@@ -204,26 +204,26 @@ advectVarNd(
 
     ScopedTimer st(timers, timerid);
 
-    auto elnd     = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    auto elel     = data[DataID::IELEL].chost<int, VarDim, NFACE>();
-    auto elfc     = data[DataID::IELFC].chost<int, VarDim, NFACE>();
-    auto ndeln    = data[DataID::INDELN].chost<int, VarDim>();
-    auto ndelf    = data[DataID::INDELF].chost<int, VarDim>();
-    auto ndel     = data[DataID::INDEL].chost<int, VarDim>();
-    auto cnu      = data[DataID::ALE_CNU].chost<double, VarDim, NCORN>();
-    auto cnv      = data[DataID::ALE_CNV].chost<double, VarDim, NCORN>();
-    auto ndu      = data[DataID::NDU].host<double, VarDim>();
-    auto ndv      = data[DataID::NDV].host<double, VarDim>();
-    auto fcdm     = data[DataID::ALE_FCDM].host<double, VarDim>();
-    auto flux     = data[DataID::ALE_FLUX].host<double, VarDim, NFACE>();
-    auto ndstatus = data[DataID::ALE_INDSTATUS].chost<int, VarDim>();
-    auto ndtype   = data[DataID::INDTYPE].chost<int, VarDim>();
-    auto active   = data[DataID::ALE_ZACTIVE].host<unsigned char, VarDim>();
-    auto store1   = data[DataID::ALE_STORE1].chost<double, VarDim>();
-    auto store2   = data[DataID::ALE_STORE2].chost<double, VarDim>();
-    auto store6   = data[DataID::ALE_STORE6].chost<double, VarDim>();
-    auto rwork2   = data[DataID::ALE_RWORK2].chost<double, VarDim, NCORN>();
-    auto rwork3   = data[DataID::ALE_RWORK3].chost<double, VarDim, NCORN>();
+    auto elnd     = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto elel     = data[DataID::IELEL].cdevice<int, VarDim, NFACE>();
+    auto elfc     = data[DataID::IELFC].cdevice<int, VarDim, NFACE>();
+    auto ndeln    = data[DataID::INDELN].cdevice<int, VarDim>();
+    auto ndelf    = data[DataID::INDELF].cdevice<int, VarDim>();
+    auto ndel     = data[DataID::INDEL].cdevice<int, VarDim>();
+    auto cnu      = data[DataID::ALE_CNU].cdevice<double, VarDim, NCORN>();
+    auto cnv      = data[DataID::ALE_CNV].cdevice<double, VarDim, NCORN>();
+    auto ndu      = data[DataID::NDU].device<double, VarDim>();
+    auto ndv      = data[DataID::NDV].device<double, VarDim>();
+    auto fcdm     = data[DataID::ALE_FCDM].device<double, VarDim>();
+    auto flux     = data[DataID::ALE_FLUX].device<double, VarDim, NFACE>();
+    auto ndstatus = data[DataID::ALE_INDSTATUS].cdevice<int, VarDim>();
+    auto ndtype   = data[DataID::INDTYPE].cdevice<int, VarDim>();
+    auto active   = data[DataID::ALE_ZACTIVE].device<unsigned char, VarDim>();
+    auto store1   = data[DataID::ALE_STORE1].cdevice<double, VarDim>();
+    auto store2   = data[DataID::ALE_STORE2].cdevice<double, VarDim>();
+    auto store6   = data[DataID::ALE_STORE6].cdevice<double, VarDim>();
+    auto rwork2   = data[DataID::ALE_RWORK2].cdevice<double, VarDim, NCORN>();
+    auto rwork3   = data[DataID::ALE_RWORK3].cdevice<double, VarDim, NCORN>();
 
     // Momentum (mass weighted)
     kernel::activeNd(-1, ndstatus, ndtype, active, sizes.nnd);

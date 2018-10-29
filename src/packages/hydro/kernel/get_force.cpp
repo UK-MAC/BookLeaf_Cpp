@@ -18,7 +18,6 @@
 #include "packages/hydro/kernel/get_force.h"
 
 #include <cassert>
-#include <cmath>
 
 #ifdef BOOKLEAF_CALIPER_SUPPORT
 #include <caliper/cali.h>
@@ -26,6 +25,7 @@
 
 #include "common/constants.h"
 #include "common/data_control.h"
+#include "common/cuda_utils.h"
 
 
 
@@ -35,20 +35,23 @@ namespace kernel {
 
 void
 getForcePressure(
-        ConstView<double, VarDim>   elpressure,
-        ConstView<double, VarDim>   a1,
-        ConstView<double, VarDim>   a3,
-        ConstView<double, VarDim>   b1,
-        ConstView<double, VarDim>   b3,
-        View<double, VarDim, NCORN> cnfx,
-        View<double, VarDim, NCORN> cnfy,
+        ConstDeviceView<double, VarDim>   elpressure,
+        ConstDeviceView<double, VarDim>   a1,
+        ConstDeviceView<double, VarDim>   a3,
+        ConstDeviceView<double, VarDim>   b1,
+        ConstDeviceView<double, VarDim>   b3,
+        DeviceView<double, VarDim, NCORN> cnfx,
+        DeviceView<double, VarDim, NCORN> cnfy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         double const w1 = elpressure(iel);
 
         cnfx(iel, 0) = w1 * (-b3(iel) + b1(iel));
@@ -60,24 +63,29 @@ getForcePressure(
         cnfy(iel, 1) = w1 * (-a3(iel) - a1(iel));
         cnfy(iel, 2) = w1 * (-a3(iel) + a1(iel));
         cnfy(iel, 3) = w1 * ( a3(iel) + a1(iel));
-    }
+    });
+
+    cudaSync();
 }
 
 
 
 void
 getForceViscosity(
-        ConstView<double, VarDim, NCORN> cnviscx,
-        ConstView<double, VarDim, NCORN> cnviscy,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim, NCORN> cnviscx,
+        ConstDeviceView<double, VarDim, NCORN> cnviscy,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         cnfx(iel, 0) += cnviscx(iel, 0);
         cnfx(iel, 1) += cnviscx(iel, 1);
         cnfx(iel, 2) += cnviscx(iel, 2);
@@ -87,22 +95,24 @@ getForceViscosity(
         cnfy(iel, 1) += cnviscy(iel, 1);
         cnfy(iel, 2) += cnviscy(iel, 2);
         cnfy(iel, 3) += cnviscy(iel, 3);
-    }
+    });
+
+    cudaSync();
 }
 
 
 
 void
 getForceSubzonalPressure(
-        double const *pmeritreg,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elcs2,
-        ConstView<double, VarDim, NCORN> cnx,
-        ConstView<double, VarDim, NCORN> cny,
-        ConstView<double, VarDim, NCORN> spmass,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim>        pmeritreg,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elcs2,
+        ConstDeviceView<double, VarDim, NCORN> cnx,
+        ConstDeviceView<double, VarDim, NCORN> cny,
+        ConstDeviceView<double, VarDim, NCORN> spmass,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -111,14 +121,16 @@ getForceSubzonalPressure(
 
     // XXX Missing code here that can't be merged
 
-    for (int iel = 0; iel < nel; iel++) {
-
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         double lfx[NCORN][NCORN];
         double lfy[NCORN][NCORN];
 
         // Info
         // XXX(timrlaw): Why the abs here? elreg should always be positive
-        int const ireg = std::abs((int) elreg(iel));
+        int const ireg = abs((int) elreg(iel));
         double const w1 = pmeritreg[ireg];
 
         // Centroid
@@ -194,7 +206,9 @@ getForceSubzonalPressure(
         cnfy(iel, 1) += w1 * (lfy[0][1] + w4 + w3 + w6);
         cnfy(iel, 2) += w1 * (lfy[0][2] + w4 + w5 + w6);
         cnfy(iel, 3) += w1 * (lfy[0][3] + w2 + w5 + w6);
-    }
+    });
+
+    cudaSync();
 }
 
 
@@ -202,14 +216,14 @@ getForceSubzonalPressure(
 void
 getForceHourglass(
         double dt,
-        double const *kappareg,
-        ConstView<int, VarDim>           elreg,
-        ConstView<double, VarDim>        eldensity,
-        ConstView<double, VarDim>        elarea,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        View<double, VarDim, NCORN>      cnfx,
-        View<double, VarDim, NCORN>      cnfy,
+        ConstDeviceView<double, VarDim>        kappareg,
+        ConstDeviceView<int, VarDim>           elreg,
+        ConstDeviceView<double, VarDim>        eldensity,
+        ConstDeviceView<double, VarDim>        elarea,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        DeviceView<double, VarDim, NCORN>      cnfx,
+        DeviceView<double, VarDim, NCORN>      cnfy,
         int nel)
 {
 #ifdef BOOKLEAF_CALIPER_SUPPORT
@@ -218,7 +232,10 @@ getForceHourglass(
 
     // Hourglass restoring force
     double const w4 = 1.0 / dt;
-    for (int iel = 0; iel < nel; iel++) {
+    dispatchCuda(
+            nel,
+            [=] __device__ (int const iel)
+    {
         double w2 = cnu(iel, 0) - cnu(iel, 1) + cnu(iel, 2) - cnu(iel, 3);
         double w3 = cnv(iel, 0) - cnv(iel, 1) + cnv(iel, 2) - cnv(iel, 3);
 
@@ -236,7 +253,9 @@ getForceHourglass(
         cnfy(iel, 1) -= w3;
         cnfy(iel, 2) += w3;
         cnfy(iel, 3) -= w3;
-    }
+    });
+
+    cudaSync();
 }
 
 } // namespace kernel

@@ -27,19 +27,24 @@
 
 namespace bookleaf {
 namespace ale {
+
+struct Config;
+
 namespace kernel {
 
 using constants::NCORN;
 
 void
 getDt(
+        ale::Config const &ale,
         int nel,
         double zerocut,
         double ale_sf,
         bool zeul,
-        ConstView<double, VarDim, NCORN> cnu,
-        ConstView<double, VarDim, NCORN> cnv,
-        ConstView<double, VarDim>        ellength,
+        ConstDeviceView<double, VarDim, NCORN> cnu,
+        ConstDeviceView<double, VarDim, NCORN> cnv,
+        ConstDeviceView<double, VarDim>        ellength,
+        DeviceView<double, VarDim>             scratch,
         double &rdt,
         int &idt,
         std::string &sdt);

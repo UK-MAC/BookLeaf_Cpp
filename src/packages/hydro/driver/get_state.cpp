@@ -21,6 +21,7 @@
 
 #include "common/runtime.h"
 #include "common/error.h"
+#include "utilities/geometry/config.h"
 #include "utilities/geometry/geometry.h"
 #include "utilities/density/get_density.h"
 #include "common/timer_control.h"
@@ -33,6 +34,7 @@ namespace driver {
 
 void
 getState(
+        geometry::Config const &geom,
         Runtime const &runtime,
         TimerControl &timers,
         DataControl &data,
@@ -42,8 +44,8 @@ getState(
     geometry::driver::getVertex(runtime, data);
 
     // Update geometry and iso-parametric terms
-    geometry::driver::getGeometry(*runtime.sizes, timers, TimerID::GETGEOMETRYL,
-            data, err);
+    geometry::driver::getGeometry(geom, *runtime.sizes, timers,
+            TimerID::GETGEOMETRYL, data, err);
     if (err.failed()) return;
 
     // Update density

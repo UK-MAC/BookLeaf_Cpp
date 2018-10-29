@@ -36,23 +36,23 @@ fluxElVl(
         int id2,
         int ilsize,
         int iasize,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NCORN> cnbasis,
-        ConstView<double, VarDim, NFACE> fcdbasis,
-        ConstView<double, VarDim>        elvar,
-        View<double, VarDim, NFACE>      fcflux);
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NCORN> cnbasis,
+        ConstDeviceView<double, VarDim, NFACE> fcdbasis,
+        ConstDeviceView<double, VarDim>        elvar,
+        DeviceView<double, VarDim, NFACE>      fcflux);
 
 void
 fluxNdVl(
         int ilsize,
         int iasize,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NCORN> cnbasis,
-        ConstView<double, VarDim, NCORN> cndbasis,
-        ConstView<double, VarDim, NCORN> cnvar,
-        View<double, VarDim, NCORN>      cnflux);
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NCORN> cnbasis,
+        ConstDeviceView<double, VarDim, NCORN> cndbasis,
+        ConstDeviceView<double, VarDim, NCORN> cnvar,
+        DeviceView<double, VarDim, NCORN>      cnflux);
 
 void
 updateEl(
@@ -60,31 +60,31 @@ updateEl(
         int id2,
         int ilsize,
         int iasize,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim>        elbase0,
-        ConstView<double, VarDim>        elbase1,
-        ConstView<double, VarDim>        cut,
-        ConstView<double, VarDim, NFACE> fcflux,
-        View<double, VarDim>             elflux,
-        View<double, VarDim>             elvar);
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim>        elbase0,
+        ConstDeviceView<double, VarDim>        elbase1,
+        ConstDeviceView<double, VarDim>        cut,
+        ConstDeviceView<double, VarDim, NFACE> fcflux,
+        DeviceView<double, VarDim>             elflux,
+        DeviceView<double, VarDim>             elvar);
 
 void
 updateNd(
         int iusize,
         int icsize,
         int insize,
-        ConstView<int, VarDim, NCORN>    elnd,
-        ConstView<int, VarDim>           ndeln,
-        ConstView<int, VarDim>           ndelf,
-        ConstView<int, VarDim>           ndel,
-        ConstView<double, VarDim>        ndbase0,
-        ConstView<double, VarDim>        ndbase1,
-        ConstView<double, VarDim>        cut,
-        ConstView<unsigned char, VarDim> active,
-        ConstView<double, VarDim, NCORN> cnflux,
-        View<double, VarDim>             ndflux,
-        View<double, VarDim>             ndvar);
+        ConstDeviceView<int, VarDim, NCORN>    elnd,
+        ConstDeviceView<int, VarDim>           ndeln,
+        ConstDeviceView<int, VarDim>           ndelf,
+        ConstDeviceView<int, VarDim>           ndel,
+        ConstDeviceView<double, VarDim>        ndbase0,
+        ConstDeviceView<double, VarDim>        ndbase1,
+        ConstDeviceView<double, VarDim>        cut,
+        ConstDeviceView<unsigned char, VarDim> active,
+        ConstDeviceView<double, VarDim, NCORN> cnflux,
+        DeviceView<double, VarDim>             ndflux,
+        DeviceView<double, VarDim>             ndvar);
 
 void
 sumFlux(
@@ -92,10 +92,10 @@ sumFlux(
         int id2,
         int ilsize,
         int iasize,
-        ConstView<int, VarDim, NFACE>    elel,
-        ConstView<int, VarDim, NFACE>    elfc,
-        ConstView<double, VarDim, NFACE> fcflux,
-        View<double, VarDim>             elflux);
+        ConstDeviceView<int, VarDim, NFACE>    elel,
+        ConstDeviceView<int, VarDim, NFACE>    elfc,
+        ConstDeviceView<double, VarDim, NFACE> fcflux,
+        DeviceView<double, VarDim>             elflux);
 
 } // namespace kernel
 } // namespace ale

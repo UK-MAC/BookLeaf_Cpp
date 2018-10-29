@@ -83,6 +83,7 @@ CmdArgs::setDefaults()
     input_deck_file = "control.yaml";
     overwrite_dumps = false;
     print_bindings = false;
+    cuda_device_id = -1;
 
 #ifdef BOOKLEAF_DEBUG
     timestep_cap = -1;
@@ -103,9 +104,9 @@ CmdArgs::read(int argc, char **argv)
     setDefaults();
 
 #ifndef BOOKLEAF_DEBUG
-    std::string opt_str("fp");
+    std::string opt_str("fpg:");
 #else
-    std::string opt_str("fpc:d:");
+    std::string opt_str("fpg:c:d:");
 #endif
 
     int opt;
@@ -117,6 +118,10 @@ CmdArgs::read(int argc, char **argv)
 
             case 'p':
                 print_bindings = true;
+                break;
+
+            case 'g':
+                cuda_device_id = std::stoi(optarg);
                 break;
 
 #ifdef BOOKLEAF_DEBUG
@@ -173,15 +178,16 @@ CmdArgs::printUsage(std::string invocation)
     std::cerr << "Usage: " << invocation << " ";
 
 #ifndef BOOKLEAF_DEBUG
-    std::cerr << "[-fp]";
+    std::cerr << "[-fpg]";
 #else
-    std::cerr << "[-fp] [-c <n>] [-d <dump-specifier-list>]";
+    std::cerr << "[-fpg] [-c <n>] [-d <dump-specifier-list>]";
 #endif
 
     std::cerr << " [input_deck.yaml]\n";
     std::cerr << "\n";
     std::cerr << "\t-f\toverwrite existing dump files (default: off)\n";
     std::cerr << "\t-p\tprint cpu bindings at start of run (default: off)\n";
+    std::cerr << "\t-g\tcuda device id (default: 0)\n";
     std::cerr << "\n";
 
 #ifdef BOOKLEAF_DEBUG

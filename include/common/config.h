@@ -29,6 +29,7 @@ namespace hydro { struct Config; }
 namespace ale { struct Config; }
 struct GlobalConfiguration;
 struct EOS;
+namespace geometry { struct Config; }
 namespace io_utils { struct Labels; }
 namespace comms { struct Comms; }
 namespace setup { struct Config; }
@@ -38,6 +39,7 @@ struct Config
     std::shared_ptr<time::Config>        time;
     std::shared_ptr<hydro::Config>       hydro;
     std::shared_ptr<EOS>                 eos;
+    std::shared_ptr<geometry::Config>    geom;
     std::shared_ptr<ale::Config>         ale;
     std::shared_ptr<io_utils::Labels>    io;
     std::shared_ptr<comms::Comms>        comms;

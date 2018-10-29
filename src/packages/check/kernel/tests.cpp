@@ -102,10 +102,10 @@ testSod(
         View<double, 2>                  l1)
 {
     double _centroid[NDIM];
-    View<double, NDIM> centroid(_centroid);
+    View<double, NDIM> centroid(_centroid, NDIM);
 
     double _solution[2];
-    View<double, 2> solution(_solution);
+    View<double, 2> solution(_solution, 2);
 
     // Initialise
     basis(0) = 0.;

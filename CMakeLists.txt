@@ -217,7 +217,6 @@ set(BOOKLEAF_LIB_SRC
 # executable and any unit tests.
 add_library(libbookleaf STATIC ${BOOKLEAF_LIB_SRC})
 set_target_properties(libbookleaf PROPERTIES OUTPUT_NAME bookleaf)
-target_compile_features(libbookleaf PUBLIC cxx_std_11)
 target_include_directories(libbookleaf PUBLIC include)
 
 # The main bookleaf executable.
@@ -229,6 +228,14 @@ target_link_libraries(bookleaf PRIVATE libbookleaf)
 # ------------------------------------------------------------------------------
 # Compilation settings
 # ------------------------------------------------------------------------------
+target_compile_options(libbookleaf PUBLIC --std=c++11)
+
+# CUDA options
+if (RAJA_ENABLE_CUDA)
+    target_compile_options(libbookleaf PUBLIC --expt-extended-lambda)
+    add_definitions("-DBOOKLEAF_RAJA_CUDA_SUPPORT")
+endif (RAJA_ENABLE_CUDA)
+
 # Generate mesh (this can't be disabled at the moment).
 add_definitions("-DBOOKLEAF_MESH_GENERATION")
 
@@ -288,6 +295,16 @@ endif ()
 find_package(YamlCpp REQUIRED)
 target_include_directories(libbookleaf PUBLIC ${YamlCpp_INCLUDES})
 target_link_libraries(libbookleaf PRIVATE ${YamlCpp_LIBRARIES})
+
+# Check OpenMP support
+find_package(OpenMP COMPONENTS CXX REQUIRED)
+target_compile_options(libbookleaf PUBLIC ${OpenMP_CXX_FLAGS})
+target_link_libraries(libbookleaf PUBLIC OpenMP::OpenMP_CXX)
+
+# Locata RAJA
+find_package(RAJA REQUIRED)
+target_include_directories(libbookleaf PUBLIC ${RAJA_INCLUDES})
+target_link_libraries(libbookleaf PUBLIC ${RAJA_LIBRARIES})
 
 # Locate zlib
 if (ENABLE_ZLIB)
@@ -381,7 +398,9 @@ endif (ENABLE_CALIPER)
 # ------------------------------------------------------------------------------
 # Tools
 # ------------------------------------------------------------------------------
-add_subdirectory(tools)
+if (NOT RAJA_ENABLE_CUDA)
+    add_subdirectory(tools)
+endif (NOT RAJA_ENABLE_CUDA)
 
 
 
@@ -402,9 +421,11 @@ install(
 # ------------------------------------------------------------------------------
 # Testing (requires zlib for decompressing dumps)
 # ------------------------------------------------------------------------------
-if (BUILD_TESTS AND ENABLE_ZLIB)
-    enable_testing()
-    add_subdirectory(test)
-elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
-    message(WARNING "Not building tests as ZLib was disabled")
-endif ()
+if (NOT RAJA_ENABLE_CUDA)
+    if (BUILD_TESTS AND ENABLE_ZLIB)
+        enable_testing()
+        add_subdirectory(test)
+    elseif (BUILD_TESTS AND NOT ENABLE_ZLIB)
+        message(WARNING "Not building tests as ZLib was disabled")
+    endif ()
+endif (NOT RAJA_ENABLE_CUDA)

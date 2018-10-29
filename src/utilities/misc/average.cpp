@@ -42,7 +42,10 @@ average(
         ConstView<double, VarDim> mxarray2,
         View<double, VarDim>      elarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nmx),
+            BOOKLEAF_DEVICE_LAMBDA (int const imx)
+    {
         double w1 = 0.;
         int icp = imxfcp(imx);
         for (int ii = 0; ii < imxncp(imx); ii++) {
@@ -51,7 +54,7 @@ average(
         }
 
         elarray(imxel(imx)) = w1;
-    }
+    });
 }
 
 
@@ -68,7 +71,10 @@ average(
         View<double, VarDim, NCORN>      elarray1,
         View<double, VarDim, NCORN>      elarray2)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nmx),
+            BOOKLEAF_DEVICE_LAMBDA (int const imx)
+    {
         double w1[NCORN] = {0};
         double w2[NCORN] = {0};
 
@@ -86,7 +92,7 @@ average(
             elarray1(iel, icn) = w1[icn];
             elarray2(iel, icn) = w2[icn];
         }
-    }
+    });
 }
 
 } // namespace

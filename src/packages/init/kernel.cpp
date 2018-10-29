@@ -318,7 +318,7 @@ nodeType(
         int nnd)
 {
     int _nodes[NCORN] = {0};
-    View<int, NCORN> nodes(_nodes);
+    View<int, NCORN> nodes(_nodes, NCORN);
 
     for (int iel = 0; iel < nel; iel++) {
         for (int j = 0; j < NCORN; j++) {

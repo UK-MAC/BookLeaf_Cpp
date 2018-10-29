@@ -56,7 +56,7 @@ metisPartition(
     // XXX(timrlaw): idx_t and real_t are internal types from ParMETIS,
     //               configurable at build time.
 
-    ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel);
+    ConstView<int, VarDim, NDAT> conn_data(_conn_data, nel, NDAT);
 
     std::unique_ptr<int[]> nelg(new int[nproc]);
 

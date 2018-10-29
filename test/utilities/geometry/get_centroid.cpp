@@ -37,11 +37,11 @@ main(
     _y[2] = 1.0;
     _y[3] = 1.0;
 
-    ConstView<double, constants::NCORN> x(_x);
-    ConstView<double, constants::NCORN> y(_y);
+    ConstView<double, constants::NCORN> x(_x, constants::NCORN);
+    ConstView<double, constants::NCORN> y(_y, constants::NCORN);
 
     double _centroid[constants::NDIM];
-    View<double, constants::NDIM> centroid(_centroid);
+    View<double, constants::NDIM> centroid(_centroid, constants::NDIM);
 
     geometry::kernel::getCentroid(x, y, centroid);
 

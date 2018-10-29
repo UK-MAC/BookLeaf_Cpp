@@ -29,7 +29,7 @@ main(int argc, char const *argv[])
     int const nnd = 2626;
 
     ConstView<int, VarDim, NCORN> elnd(
-            (int *) pre_dump[0].data, pre_dump[0].size / NCORN);
+            (int *) pre_dump[0].data, pre_dump[0].size / NCORN, NCORN);
     ConstView<int, VarDim> ndeln(
             (int *) pre_dump[1].data, pre_dump[1].size);
     ConstView<int, VarDim> ndelf(
@@ -43,7 +43,7 @@ main(int argc, char const *argv[])
             (double *) pre_dump[5].data, pre_dump[5].size);
 
     ConstView<double, VarDim, NCORN> cnm1(
-            (double *) pre_dump[6].data, pre_dump[6].size / NCORN);
+            (double *) pre_dump[6].data, pre_dump[6].size / NCORN, NCORN);
 
     View<double, VarDim> ndv0(
             (double *) pre_dump[7].data, pre_dump[7].size);

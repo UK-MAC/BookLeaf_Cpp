@@ -35,9 +35,9 @@ getDt(ale::Config const &ale, Sizes const &sizes, DataControl &data, Dt *&dt)
 {
     using constants::NCORN;
 
-    auto cnu   = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
-    auto cnv   = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
-    auto ellen = data[DataID::TIME_ELLENGTH].chost<double, VarDim>();
+    auto cnu   = data[DataID::TIME_CNU].cdevice<double, VarDim, NCORN>();
+    auto cnv   = data[DataID::TIME_CNV].cdevice<double, VarDim, NCORN>();
+    auto ellen = data[DataID::TIME_ELLENGTH].cdevice<double, VarDim>();
 
     dt->next = new Dt();
     dt = dt->next;

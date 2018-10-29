@@ -45,8 +45,8 @@ main(
     _param[1] = 0.5;
     _param[2] = 0.6;
 
-    ConstView<double, constants::NCORN> x(_x);
-    ConstView<double, constants::NCORN> y(_y);
+    ConstView<double, constants::NCORN> x(_x, constants::NCORN);
+    ConstView<double, constants::NCORN> y(_y, constants::NCORN);
 
     int const nnd = setup::kernel::intersect(_param, x, y,
             setup::kernel::insideCircle);

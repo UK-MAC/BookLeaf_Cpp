@@ -28,12 +28,6 @@
 namespace bookleaf {
 namespace hydro {
 
-Config::Config()
-{
-}
-
-
-
 std::ostream &
 operator<<(std::ostream &os, Config const &rhs)
 {
@@ -139,20 +133,105 @@ rationalise(Config &hydro, int num_regions, Error &err)
 
 void
 initHydroConfig(
-        Sizes const &sizes __attribute__((unused)),
-        hydro::Config &hydro __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        hydro::Config &hydro,
+        Error &err)
 {
-    // XXX Stub for extra variant hydro config init
+#ifndef BOOKLEAF_RAJA_CUDA_SUPPORT
+    hydro.d_kappareg = new double[sizes.nreg];
+    hydro.d_pmeritreg = new double[sizes.nreg];
+    hydro.d_zdtnotreg = new unsigned char[sizes.nreg];
+    hydro.d_zmidlength = new unsigned char[sizes.nreg];
+
+    if ((hydro.d_kappareg == nullptr) ||
+        (hydro.d_pmeritreg == nullptr) ||
+        (hydro.d_zdtnotreg == nullptr) ||
+        (hydro.d_zmidlength == nullptr))
+    {
+        FAIL_WITH_LINE(err, "ERROR: failed to allocate hydro config");
+        return;
+    }
+
+    std::copy(hydro.kappareg.begin(), hydro.kappareg.end(), hydro.d_kappareg);
+    std::copy(hydro.pmeritreg.begin(), hydro.pmeritreg.end(), hydro.d_pmeritreg);
+    std::copy(hydro.zdtnotreg.begin(), hydro.zdtnotreg.end(), hydro.d_zdtnotreg);
+    std::copy(hydro.zmidlength.begin(), hydro.zmidlength.end(), hydro.d_zmidlength);
+#else
+    auto cuda_err = cudaMalloc((void **) &hydro.d_kappareg,
+            sizes.nreg * sizeof(double));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    cuda_err = cudaMalloc((void **) &hydro.d_pmeritreg,
+            sizes.nreg * sizeof(double));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    cuda_err = cudaMalloc((void **) &hydro.d_zdtnotreg,
+            sizes.nreg * sizeof(unsigned char));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    cuda_err = cudaMalloc((void **) &hydro.d_zmidlength,
+            sizes.nreg * sizeof(unsigned char));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.d_kappareg, hydro.kappareg.data(),
+            sizes.nreg * sizeof(double), cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.d_pmeritreg, hydro.pmeritreg.data(),
+            sizes.nreg * sizeof(double), cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.d_zdtnotreg, hydro.zdtnotreg.data(),
+            sizes.nreg * sizeof(unsigned char), cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(hydro.d_zmidlength, hydro.zmidlength.data(),
+            sizes.nreg * sizeof(unsigned char), cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+#endif
 }
 
 
 
 void
 killHydroConfig(
-        hydro::Config &hydro __attribute__((unused)))
+        hydro::Config &hydro)
 {
-    // XXX Stub for extra variant hydro config shutdown
+#ifndef BOOKLEAF_RAJA_CUDA_SUPPORT
+    delete[] hydro.d_kappareg;
+    delete[] hydro.d_pmeritreg;
+    delete[] hydro.d_zdtnotreg;
+    delete[] hydro.d_zmidlength;
+#else
+    cudaFree(hydro.d_kappareg);
+    cudaFree(hydro.d_pmeritreg);
+    cudaFree(hydro.d_zdtnotreg);
+    cudaFree(hydro.d_zmidlength);
+#endif
 }
 
 } // namespace hydro

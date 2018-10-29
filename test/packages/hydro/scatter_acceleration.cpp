@@ -37,19 +37,19 @@ main(int argc, char const *argv[])
     ConstView<int, VarDim> ndel(
             (int *) pre_dump[2].data, pre_dump[2].size);
     ConstView<int, VarDim, NCORN> elnd(
-            (int *) pre_dump[3].data, pre_dump[3].size / NCORN);
+            (int *) pre_dump[3].data, pre_dump[3].size / NCORN, NCORN);
 
     ConstView<double, VarDim> eldensity(
             (double *) pre_dump[4].data, pre_dump[4].size);
 
     ConstView<double, VarDim, NCORN> cnwt(
-            (double *) pre_dump[5].data, pre_dump[5].size / NCORN);
+            (double *) pre_dump[5].data, pre_dump[5].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnmass(
-            (double *) pre_dump[6].data, pre_dump[6].size / NCORN);
+            (double *) pre_dump[6].data, pre_dump[6].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnfx(
-            (double *) pre_dump[7].data, pre_dump[7].size / NCORN);
+            (double *) pre_dump[7].data, pre_dump[7].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnfy(
-            (double *) pre_dump[8].data, pre_dump[8].size / NCORN);
+            (double *) pre_dump[8].data, pre_dump[8].size / NCORN, NCORN);
 
     View<double, VarDim> ndarea(
             (double *) pre_dump[9].data, pre_dump[9].size);

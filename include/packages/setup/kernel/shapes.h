@@ -88,8 +88,8 @@ intersect(
     double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
     double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
 
-    ConstView<double, NCORN> elx(_elx);
-    ConstView<double, NCORN> ely(_ely);
+    ConstView<double, NCORN> elx(_elx, NCORN);
+    ConstView<double, NCORN> ely(_ely, NCORN);
 
     return intersect(shape_param, elx, ely, is_inside_shape);
 }
@@ -121,7 +121,7 @@ subdivide(
     int constexpr MAXITERATION = 10;
 
     double _centroid[NDIM];
-    View<double, NDIM> centroid(_centroid);
+    View<double, NDIM> centroid(_centroid, NDIM);
     geometry::kernel::getCentroid(x, y, centroid);
 
     nit++;
@@ -131,8 +131,8 @@ subdivide(
 
     double _x_loc[NCORN] = {0};
     double _y_loc[NCORN] = {0};
-    View<double, NCORN> x_loc(_x_loc);
-    View<double, NCORN> y_loc(_y_loc);
+    View<double, NCORN> x_loc(_x_loc, NCORN);
+    View<double, NCORN> y_loc(_y_loc, NCORN);
 
     //    y
     //    ^
@@ -189,8 +189,8 @@ subdivide(
     double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
     double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
 
-    ConstView<double, NCORN> elx(_elx);
-    ConstView<double, NCORN> ely(_ely);
+    ConstView<double, NCORN> elx(_elx, NCORN);
+    ConstView<double, NCORN> ely(_ely, NCORN);
 
     return subdivide(nit, shape_param, elx, ely, is_inside_shape);
 }

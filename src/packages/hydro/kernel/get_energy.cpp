@@ -21,6 +21,7 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
 #include "common/constants.h"
 #include "common/data_control.h"
 
@@ -47,7 +48,10 @@ getEnergy(
 #endif
 
     // FdS internal energy update
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         double w1 = cnfx(iel, 0) * cnu(iel, 0) +
                     cnfy(iel, 0) * cnv(iel, 0) +
                     cnfx(iel, 1) * cnu(iel, 1) +
@@ -57,9 +61,9 @@ getEnergy(
                     cnfx(iel, 3) * cnu(iel, 3) +
                     cnfy(iel, 3) * cnv(iel, 3);
 
-        w1 = -w1 / std::max(elmass(iel), zerocut);
+        w1 = -w1 / BL_MAX(elmass(iel), zerocut);
         elenergy(iel) += w1 * dt;
-    }
+    });
 }
 
 } // namespace kernel

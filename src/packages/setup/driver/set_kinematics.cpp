@@ -60,8 +60,8 @@ setKinematics(
     auto rscratch11 = data[DataID::RSCRATCH11].host<double, VarDim>();
 
     if (any_regions) {
-        for (SizeType i = 0; i < rscratch11.size(); i++) {
-            rscratch11[i] = 0.;
+        for (int i = 0; i < sizes.nnd2; i++) {
+            rscratch11(i) = 0.;
         }
     }
 

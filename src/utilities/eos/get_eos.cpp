@@ -24,6 +24,7 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
 #include "common/sizes.h"
 #include "common/data_control.h"
 #include "common/timer_control.h"
@@ -36,19 +37,25 @@ namespace eos {
 namespace kernel {
 namespace {
 
-inline double
-getPressure(int mat, double density, double energy, EOS const &eos)
+BOOKLEAF_DEVICE_FUNCTION
+double
+getPressure(
+        int const *mat_types,
+        double const *mat_params,
+        double pcut,
+        int mat,
+        double density,
+        double energy)
 {
     double pressure = 0.;
     MaterialEOS::Type type = MaterialEOS::Type::VOID;
 
-    int const imat = std::max(mat, 0);
-    assert(imat < (int) eos.mat_eos.size());
+    int const imat = BL_MAX(mat, 0);
     if (mat >= 0) {
-        type = eos.mat_eos[imat].type;
+        type = (MaterialEOS::Type) mat_types[imat];
     }
 
-    double const *params = eos.mat_eos[imat].params;
+    double const *params = &mat_params[imat*MaterialEOS::NUM_PARAMS];
     switch (type) {
     case MaterialEOS::Type::VOID:
         pressure = 0.;
@@ -64,8 +71,8 @@ getPressure(int mat, double density, double energy, EOS const &eos)
     case MaterialEOS::Type::TAIT:
         {
             double t1 = density / params[2];
-            pressure = params[0] * (::pow(t1, params[1]) - 1.);
-            pressure = std::max(pressure, params[3]);
+            pressure = params[0] * (BL_POW(t1, params[1]) - 1.);
+            pressure = BL_MAX(pressure, params[3]);
         }
         break;
 
@@ -75,8 +82,8 @@ getPressure(int mat, double density, double energy, EOS const &eos)
             double t1 = params[3] * params[5] / density;
             double t2 = params[4] * params[5] / density;
             double t3 = params[0] * density * energy;
-            double t4 = (1. - params[0] / t1) * params[1] * std::exp(-t1);
-            double t5 = (1. - params[0] / t2) * params[2] * std::exp(-t2);
+            double t4 = (1. - params[0] / t1) * params[1] * BL_EXP(-t1);
+            double t5 = (1. - params[0] / t2) * params[2] * BL_EXP(-t2);
             pressure = t3 + t4 + t5;
         }
         break;
@@ -85,28 +92,35 @@ getPressure(int mat, double density, double energy, EOS const &eos)
         pressure = -1.;
     }
 
-    if (std::fabs(pressure) < eos.pcut) pressure = 0.;
+    if (BL_FABS(pressure) < pcut) pressure = 0.;
     return pressure;
 }
 
 
 
-inline double
-getCS2(int mat, double density, double energy, EOS const &eos)
+BOOKLEAF_DEVICE_FUNCTION
+double
+getCS2(
+        int const *mat_types,
+        double const *mat_params,
+        double pcut,
+        double ccut,
+        int mat,
+        double density,
+        double energy)
 {
     double cs2 = 0.;
     MaterialEOS::Type type = MaterialEOS::Type::VOID;
 
     int const imat = mat;
-    assert(imat < (int) eos.mat_eos.size());
     if (mat >= 0) {
-        type = eos.mat_eos[imat].type;
+        type = (MaterialEOS::Type) mat_types[imat];
     }
 
-    double const *params = eos.mat_eos[imat].params;
+    double const *params = &mat_params[imat*MaterialEOS::NUM_PARAMS];
     switch (type) {
     case MaterialEOS::Type::VOID:
-        cs2 = eos.ccut;
+        cs2 = ccut;
         break;
 
     // Ideal gas law
@@ -121,7 +135,7 @@ getCS2(int mat, double density, double energy, EOS const &eos)
             double t1 = density / params[2];
             double t2 = params[1] - 1.;
             cs2 = (params[0] * params[1]) / params[3];
-            cs2 = cs2 * ::pow(t1, t2);
+            cs2 = cs2 * BL_POW(t1, t2);
         }
         break;
 
@@ -129,25 +143,25 @@ getCS2(int mat, double density, double energy, EOS const &eos)
     case MaterialEOS::Type::JWL:
         {
             double t1 = params[5] / density;
-            double t2 = getPressure(imat, density, energy, eos);
+            double t2 = getPressure(mat_types, mat_params, pcut, imat, density, energy);
             double t3 = params[3] * t1;
 
             double t4 = params[0] / params[3] + params[0]*t1 - t3*t1;
-            t4 *= params[1] * std::exp(-t3);
+            t4 *= params[1] * BL_EXP(-t3);
 
             t3 = params[4] * t1;
             double t5 = params[0] / params[4] + params[0]*t1 - t3*t1;
-            t5 *= params[2] * std::exp(-t3);
+            t5 *= params[2] * BL_EXP(-t3);
 
             cs2 = params[0] *  t2 / density + params[0] * energy - t4 - t5;
         }
         break;
 
     default:
-        cs2 = eos.ccut;
+        cs2 = ccut;
     }
 
-    cs2 = std::max(cs2, eos.ccut);
+    cs2 = BL_MAX(cs2, ccut);
     return cs2;
 }
 
@@ -167,20 +181,33 @@ getEOS(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    int const *mat_types = eos.d_mat_types;
+    double const *mat_params = eos.d_mat_params;
+    double const pcut = eos.pcut;
+    double const ccut = eos.ccut;
+
     // Update pressure and sound speed
-    for (int i = 0; i < len; i++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, len),
+            BOOKLEAF_DEVICE_LAMBDA (int const i)
+    {
         pressure(i) = getPressure(
+                mat_types,
+                mat_params,
+                pcut,
                 mat(i),
                 density(i),
-                energy(i),
-                eos);
+                energy(i));
 
         cs2(i) = getCS2(
+                mat_types,
+                mat_params,
+                pcut,
+                ccut,
                 mat(i),
                 density(i),
-                energy(i),
-                eos);
-    }
+                energy(i));
+    });
 }
 
 } // namespace kernel
@@ -201,11 +228,11 @@ getEOS(
 
     // XXX Missing code here that can't be merged
 
-    auto elmat      = data[DataID::IELMAT].chost<int, VarDim>();
-    auto eldensity  = data[DataID::ELDENSITY].chost<double, VarDim>();
-    auto elenergy   = data[DataID::ELENERGY].chost<double, VarDim>();
-    auto elpressure = data[DataID::ELPRESSURE].host<double, VarDim>();
-    auto elcs2      = data[DataID::ELCS2].host<double, VarDim>();
+    auto elmat      = data[DataID::IELMAT].cdevice<int, VarDim>();
+    auto eldensity  = data[DataID::ELDENSITY].cdevice<double, VarDim>();
+    auto elenergy   = data[DataID::ELENERGY].cdevice<double, VarDim>();
+    auto elpressure = data[DataID::ELPRESSURE].device<double, VarDim>();
+    auto elcs2      = data[DataID::ELCS2].device<double, VarDim>();
 
     // Update pressure and sound speed
     kernel::getEOS(
@@ -218,11 +245,11 @@ getEOS(
             nel);
 
     if (sizes.ncp > 0) {
-        auto cpmat      = data[DataID::ICPMAT].chost<int, VarDim>();
-        auto cpdensity  = data[DataID::CPDENSITY].chost<double, VarDim>();
-        auto cpenergy   = data[DataID::CPENERGY].chost<double, VarDim>();
-        auto cppressure = data[DataID::CPPRESSURE].host<double, VarDim>();
-        auto cpcs2      = data[DataID::CPCS2].host<double, VarDim>();
+        auto cpmat      = data[DataID::ICPMAT].cdevice<int, VarDim>();
+        auto cpdensity  = data[DataID::CPDENSITY].cdevice<double, VarDim>();
+        auto cpenergy   = data[DataID::CPENERGY].cdevice<double, VarDim>();
+        auto cppressure = data[DataID::CPPRESSURE].device<double, VarDim>();
+        auto cpcs2      = data[DataID::CPCS2].device<double, VarDim>();
 
         kernel::getEOS(
                 eos,

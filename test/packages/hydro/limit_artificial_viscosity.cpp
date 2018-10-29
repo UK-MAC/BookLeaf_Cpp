@@ -36,11 +36,11 @@ main(int argc, char const *argv[])
             (int *) pre_dump[0].data, pre_dump[0].size);
 
     ConstView<int, VarDim, NFACE> elel(
-            (int *) pre_dump[1].data, pre_dump[1].size / NFACE);
+            (int *) pre_dump[1].data, pre_dump[1].size / NFACE, NFACE);
     ConstView<int, VarDim, NCORN> elnd(
-            (int *) pre_dump[2].data, pre_dump[2].size / NCORN);
+            (int *) pre_dump[2].data, pre_dump[2].size / NCORN, NCORN);
     ConstView<int, VarDim, NFACE> elfc(
-            (int *) pre_dump[3].data, pre_dump[3].size / NFACE);
+            (int *) pre_dump[3].data, pre_dump[3].size / NFACE, NFACE);
 
     ConstView<double, VarDim> eldensity(
             (double *) pre_dump[4].data, pre_dump[4].size);
@@ -48,21 +48,21 @@ main(int argc, char const *argv[])
             (double *) pre_dump[5].data, pre_dump[5].size);
 
     ConstView<double, VarDim, NFACE> du(
-            (double *) pre_dump[6].data, pre_dump[6].size / NFACE);
+            (double *) pre_dump[6].data, pre_dump[6].size / NFACE, NFACE);
     ConstView<double, VarDim, NFACE> dv(
-            (double *) pre_dump[7].data, pre_dump[7].size / NFACE);
+            (double *) pre_dump[7].data, pre_dump[7].size / NFACE, NFACE);
     ConstView<double, VarDim, NFACE> dx(
-            (double *) pre_dump[8].data, pre_dump[8].size / NFACE);
+            (double *) pre_dump[8].data, pre_dump[8].size / NFACE, NFACE);
     ConstView<double, VarDim, NFACE> dy(
-            (double *) pre_dump[9].data, pre_dump[9].size / NFACE);
+            (double *) pre_dump[9].data, pre_dump[9].size / NFACE, NFACE);
 
     View<double, VarDim, NCORN> scratch(
-            (double *) pre_dump[10].data, pre_dump[10].size / NCORN);
+            (double *) pre_dump[10].data, pre_dump[10].size / NCORN, NCORN);
 
     View<double, VarDim, NFACE> cnviscx(
-            (double *) pre_dump[11].data, pre_dump[11].size / NFACE);
+            (double *) pre_dump[11].data, pre_dump[11].size / NFACE, NFACE);
     View<double, VarDim, NFACE> cnviscy(
-            (double *) pre_dump[12].data, pre_dump[12].size / NFACE);
+            (double *) pre_dump[12].data, pre_dump[12].size / NFACE, NFACE);
 
     View<double, VarDim> elvisc(
             (double *) pre_dump[13].data, pre_dump[13].size);

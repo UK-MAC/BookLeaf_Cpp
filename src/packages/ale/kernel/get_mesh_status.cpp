@@ -38,9 +38,12 @@ getMeshStatus(
 #endif
 
     if (zeul) {
-        for (int ind = 0; ind < nnd; ind++) {
+        RAJA::forall<RAJA_POLICY>(
+                RAJA::RangeSegment(0, nnd),
+                BOOKLEAF_DEVICE_LAMBDA (int const ind)
+        {
             ndstatus(ind) = 2;
-        }
+        });
 
     } else {
         // XXX Missing code that can't be (or hasn't been) merged.

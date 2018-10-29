@@ -42,9 +42,12 @@ getCs2(
 #endif
 
     // Apply Q correction to soundspeed^2 (cs^2 = cs_eos^2 + 2Q/rho)
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         elcs2(iel) += elvisc(iel);
-    }
+    });
 }
 
 } // namespace kernel
@@ -56,8 +59,8 @@ getCs2(
         Sizes const &sizes,
         DataControl &data)
 {
-    auto elcs2  = data[DataID::ELCS2].host<double, VarDim>();
-    auto elvisc = data[DataID::ELVISC].chost<double, VarDim>();
+    auto elcs2  = data[DataID::ELCS2].device<double, VarDim>();
+    auto elvisc = data[DataID::ELVISC].cdevice<double, VarDim>();
 
     kernel::getCs2(elvisc, elcs2, sizes.nel);
 

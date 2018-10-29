@@ -48,6 +48,30 @@ cornerGather(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const i)
+    {
+        for (int j = 0; j < NCORN; j++) {
+            el(i, j) = nd(elnd(i, j));
+        }
+    });
+}
+
+
+
+template <typename T>
+void
+hostCornerGather(
+        int nel,
+        ConstView<int, VarDim, NCORN> elnd,
+        ConstView<T, VarDim>          nd,
+        View<T, VarDim, NCORN>        el)
+{
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
     for (int i = 0; i < nel; i++) {
         for (int j = 0; j < NCORN; j++) {
             el(i, j) = nd(elnd(i, j));
@@ -67,12 +91,15 @@ mxGather(
         ConstView<T, VarDim>   elarray,
         View<T, VarDim>        mxarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nmx),
+            BOOKLEAF_DEVICE_LAMBDA (int const imx)
+    {
         T const w = elarray(imxel(imx));
         for (int icp = imxfcp(imx); icp < imxfcp(imx) + imxncp(imx); icp++) {
             mxarray(icp) = w;
         }
-    }
+    });
 }
 
 
@@ -93,7 +120,10 @@ mxGather(
         View<T, VarDim>        mxarray3,
         View<T, VarDim>        mxarray4)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nmx),
+            BOOKLEAF_DEVICE_LAMBDA (int const imx)
+    {
         int const iel = imxel(imx);
         T const w1 = elarray1(iel);
         T const w2 = elarray2(iel);
@@ -105,7 +135,7 @@ mxGather(
             mxarray3(icp) = w3;
             mxarray4(icp) = w4;
         }
-    }
+    });
 }
 
 
@@ -120,7 +150,10 @@ mxComponentCornerGather(
         ConstView<T, VarDim, NCORN> elarray,
         View<T, VarDim, NCORN>      mxarray)
 {
-    for (int imx = 0; imx < nmx; imx++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nmx),
+            BOOKLEAF_DEVICE_LAMBDA (int const imx)
+    {
         T w[NCORN];
 
         int const iel = imxel(imx);
@@ -133,7 +166,7 @@ mxComponentCornerGather(
                 mxarray(icp, j) = w[j];
             }
         }
-    }
+    });
 }
 
 
@@ -179,11 +212,34 @@ cornerGather(
 {
     using constants::NCORN;
 
+    auto elnd = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto nd   = data[ndid].cdevice<T, VarDim>();
+    auto el   = data[elid].device<T, VarDim, NCORN>();
+
+    kernel::cornerGather<T>(
+            sizes.nel,
+            elnd,
+            nd,
+            el);
+}
+
+
+
+template <typename T = double>
+void
+hostCornerGather(
+        Sizes const &sizes,
+        DataID ndid,
+        DataID elid,
+        DataControl &data)
+{
+    using constants::NCORN;
+
     auto elnd = data[DataID::IELND].chost<int, VarDim, NCORN>();
     auto nd   = data[ndid].chost<T, VarDim>();
     auto el   = data[elid].host<T, VarDim, NCORN>();
 
-    kernel::cornerGather<T>(
+    kernel::hostCornerGather<T>(
             sizes.nel,
             elnd,
             nd,

@@ -46,9 +46,12 @@ getDensity(
 #endif
 
     // Mass conserved, get density from updated volume
-    for (int i = 0; i < len; i++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, len),
+            BOOKLEAF_DEVICE_LAMBDA (int const i)
+    {
         density(i) = mass(i) / volume(i);
-    }
+    });
 }
 
 } // namespace kernel
@@ -60,17 +63,17 @@ getDensity(Sizes const &sizes, DataControl &data)
 {
     int const nel = sizes.nel;
 
-    auto elmass    = data[DataID::ELMASS].chost<double, VarDim>();
-    auto elvolume  = data[DataID::ELVOLUME].chost<double, VarDim>();
-    auto eldensity = data[DataID::ELDENSITY].host<double, VarDim>();
+    auto elmass    = data[DataID::ELMASS].cdevice<double, VarDim>();
+    auto elvolume  = data[DataID::ELVOLUME].cdevice<double, VarDim>();
+    auto eldensity = data[DataID::ELDENSITY].device<double, VarDim>();
 
     kernel::getDensity(elmass, elvolume, eldensity, nel);
 
     int const ncp = sizes.ncp;
     if (ncp > 0) {
-        auto cpmass    = data[DataID::CPMASS].chost<double, VarDim>();
-        auto cpvolume  = data[DataID::CPVOLUME].chost<double, VarDim>();
-        auto cpdensity = data[DataID::CPDENSITY].host<double, VarDim>();
+        auto cpmass    = data[DataID::CPMASS].cdevice<double, VarDim>();
+        auto cpvolume  = data[DataID::CPVOLUME].cdevice<double, VarDim>();
+        auto cpdensity = data[DataID::CPDENSITY].device<double, VarDim>();
 
         kernel::getDensity(cpmass, cpvolume, cpdensity, ncp);
     }

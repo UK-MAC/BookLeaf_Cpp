@@ -50,7 +50,7 @@ setCellFlags(
         setFlagIf(nel, iflag, itest, test, flag);
 
     } else {
-        if (itest < 0 || itest >= (int) flag.size()) {
+        if (itest < 0 || itest >= nel) {
             err.fail("ERROR: incorrect cell index in flag::cell");
             return;
         }
@@ -105,7 +105,7 @@ setShapeRegion(
 
     for (int iel = 0; iel < nel; iel++) {
         double _point[NDIM];
-        View<double, NDIM> point(_point);
+        View<double, NDIM> point(_point, NDIM);
 
         geometry::kernel::getCentroid(iel, cnx, cny, point);
 

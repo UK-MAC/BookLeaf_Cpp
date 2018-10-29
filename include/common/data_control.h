@@ -186,6 +186,7 @@ DataControl::entry(
                 TYPH_AUXILIARY_NONE, nullptr, 0);
 
         int tdims[2] = { (int) num_rows, (int) num_cols };
+
         TYPH_Set_Quant_Address(taddr, d.data<T>(), tdims, 2);
         d.setTyphonHandle(taddr);
     }

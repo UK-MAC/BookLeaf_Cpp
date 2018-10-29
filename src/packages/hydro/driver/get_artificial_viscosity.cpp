@@ -55,24 +55,24 @@ getArtificialViscosity(
 
     int const nel = sizes.nel;
 
-    auto cnx       = data[DataID::CNX].chost<double, VarDim, NCORN>();
-    auto cny       = data[DataID::CNY].chost<double, VarDim, NCORN>();
-    auto cnu       = data[DataID::TIME_CNU].chost<double, VarDim, NCORN>();
-    auto cnv       = data[DataID::TIME_CNV].chost<double, VarDim, NCORN>();
-    auto ndtype    = data[DataID::INDTYPE].chost<int, VarDim>();
-    auto elel      = data[DataID::IELEL].chost<int, VarDim, NFACE>();
-    auto elnd      = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    auto elfc      = data[DataID::IELFC].chost<int, VarDim, NFACE>();
-    auto eldensity = data[DataID::ELDENSITY].chost<double, VarDim>();
-    auto elcs2     = data[DataID::ELCS2].chost<double, VarDim>();
-    auto elvisc    = data[DataID::ELVISC].host<double, VarDim>();
-    auto dx        = data[DataID::TIME_DX].host<double, VarDim, NFACE>();
-    auto dy        = data[DataID::TIME_DY].host<double, VarDim, NFACE>();
-    auto du        = data[DataID::TIME_DU].host<double, VarDim, NFACE>();
-    auto dv        = data[DataID::TIME_DV].host<double, VarDim, NFACE>();
-    auto edviscx   = data[DataID::CNVISCX].host<double, VarDim, NFACE>();
-    auto edviscy   = data[DataID::CNVISCY].host<double, VarDim, NFACE>();
-    auto store     = data[DataID::TIME_STORE].host<double, VarDim, NCORN>();
+    auto cnx       = data[DataID::CNX].cdevice<double, VarDim, NCORN>();
+    auto cny       = data[DataID::CNY].cdevice<double, VarDim, NCORN>();
+    auto cnu       = data[DataID::TIME_CNU].cdevice<double, VarDim, NCORN>();
+    auto cnv       = data[DataID::TIME_CNV].cdevice<double, VarDim, NCORN>();
+    auto ndtype    = data[DataID::INDTYPE].cdevice<int, VarDim>();
+    auto elel      = data[DataID::IELEL].cdevice<int, VarDim, NFACE>();
+    auto elnd      = data[DataID::IELND].cdevice<int, VarDim, NCORN>();
+    auto elfc      = data[DataID::IELFC].cdevice<int, VarDim, NFACE>();
+    auto eldensity = data[DataID::ELDENSITY].cdevice<double, VarDim>();
+    auto elcs2     = data[DataID::ELCS2].cdevice<double, VarDim>();
+    auto elvisc    = data[DataID::ELVISC].device<double, VarDim>();
+    auto dx        = data[DataID::TIME_DX].device<double, VarDim, NFACE>();
+    auto dy        = data[DataID::TIME_DY].device<double, VarDim, NFACE>();
+    auto du        = data[DataID::TIME_DU].device<double, VarDim, NFACE>();
+    auto dv        = data[DataID::TIME_DV].device<double, VarDim, NFACE>();
+    auto edviscx   = data[DataID::CNVISCX].device<double, VarDim, NFACE>();
+    auto edviscy   = data[DataID::CNVISCY].device<double, VarDim, NFACE>();
+    auto store     = data[DataID::TIME_STORE].device<double, VarDim, NCORN>();
 
     // XXX Missing code here that can't be merged
 
@@ -90,10 +90,10 @@ getArtificialViscosity(
     }
 #endif
 
-    auto cdx = data[DataID::TIME_DX].chost<double, VarDim, NFACE>();
-    auto cdy = data[DataID::TIME_DY].chost<double, VarDim, NFACE>();
-    auto cdu = data[DataID::TIME_DU].chost<double, VarDim, NFACE>();
-    auto cdv = data[DataID::TIME_DV].chost<double, VarDim, NFACE>();
+    auto cdx = data[DataID::TIME_DX].cdevice<double, VarDim, NFACE>();
+    auto cdy = data[DataID::TIME_DY].cdevice<double, VarDim, NFACE>();
+    auto cdu = data[DataID::TIME_DU].cdevice<double, VarDim, NFACE>();
+    auto cdv = data[DataID::TIME_DV].cdevice<double, VarDim, NFACE>();
 
     // Christensen's monotonic limit
     kernel::limitArtificialViscosity(sizes.nel, hydro.global->zerocut,

@@ -220,7 +220,7 @@ SiloIODriver::writeData(
 
         // Copy elmat to scratch
         for (int i = 0; i < sizes.nel; i++) {
-            scratch[i] = elmat[i];
+            scratch(i) = elmat(i);
         }
 
         {
@@ -481,14 +481,14 @@ SiloIODriver::writeDataMesh(
 
     // Write zone list
     auto node_list = data[DataID::IELND].chost<int, VarDim, NCORN>();
-    int *node_list_ptr = const_cast<int *>(node_list.data());
-    int len_node_list = node_list.size();
+    int *node_list_ptr = const_cast<int *>(node_list.data);
+    int len_node_list = sizes.nel * NCORN;
 
     int *zone_glob_ptr = nullptr;
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (comm.nproc > 1) {
         auto zone_glob = data[DataID::IELLOCGLOB].chost<int, VarDim>();
-        zone_glob_ptr = const_cast<int *>(zone_glob.data());
+        zone_glob_ptr = const_cast<int *>(zone_glob.data);
     } else
 #endif
     {
@@ -542,7 +542,7 @@ SiloIODriver::writeDataMesh(
     // Prepare coordinate pointers
     auto ndx = data[DataID::NDX].chost<double, VarDim>();
     auto ndy = data[DataID::NDY].chost<double, VarDim>();
-    double const *coords[2] = { ndx.data(), ndy.data() };
+    double const *coords[2] = { ndx.data, ndy.data };
 
     // Create option list
     if ((opt_list = DBMakeOptlist(4)) == nullptr) {
@@ -561,7 +561,7 @@ SiloIODriver::writeDataMesh(
 #ifdef BOOKLEAF_MPI_SUPPORT
     if (comm.nproc > 1) {
         auto node_glob = data[DataID::INDLOCGLOB].chost<int, VarDim>();
-        node_glob_ptr = const_cast<int *>(node_glob.data());
+        node_glob_ptr = const_cast<int *>(node_glob.data);
     } else
 #endif
     {
@@ -638,7 +638,7 @@ SiloIODriver::writeDataMaterial(
 
     // Prepare other material data
     int nel = sizes.nel;
-    int *_mat_list = const_cast<int *>(mat_list.data());
+    int *_mat_list = const_cast<int *>(mat_list.data);
 
     // Write material data object
     if (DBPutMaterial(
@@ -703,12 +703,12 @@ SiloIODriver::writeDataMaterial(
     // Prepare other material data
     int nel = sizes.nel;
 
-    int *_mat_list = const_cast<int *>(mat_list.data());
+    int *_mat_list = const_cast<int *>(mat_list.data);
 
-    int  *_mix_next = const_cast<int *>(mix_next.data());
-    int   *_mix_mat = const_cast<int *>(mix_mat.data());
-    int  *_mix_zone = const_cast<int *>(mix_zone.data());
-    double *_mix_vf = const_cast<double *>(mix_vf.data());
+    int  *_mix_next = const_cast<int *>(mix_next.data);
+    int   *_mix_mat = const_cast<int *>(mix_mat.data);
+    int  *_mix_zone = const_cast<int *>(mix_zone.data);
+    double *_mix_vf = const_cast<double *>(mix_vf.data);
 
     // Write material data object
     if (DBPutMaterial(
@@ -752,7 +752,7 @@ SiloIODriver::writeDataVariable(
     int centre = zcentre ? DB_ZONECENT : DB_NODECENT;
     var_name = var_name.substr(2);
 
-    double *_var = const_cast<double *>(var.data());
+    double *_var = const_cast<double *>(var.data);
 
     if (DBPutUcdvar1(
                 fdata,              // File handle
@@ -787,8 +787,8 @@ SiloIODriver::writeDataVariable(
     int centre = zcentre ? DB_ZONECENT : DB_NODECENT;
     var_name = var_name.substr(2);
 
-    double *_var     = const_cast<double *>(var.data());
-    double *_mix_var = const_cast<double *>(mix_var.data());
+    double *_var     = const_cast<double *>(var.data);
+    double *_mix_var = const_cast<double *>(mix_var.data);
 
     if (DBPutUcdvar1(
                 fdata,              // File handle
@@ -821,7 +821,7 @@ SiloIODriver::writeDataVariable(
     int centre = zcentre ? DB_ZONECENT : DB_NODECENT;
     var_name = var_name.substr(2);
 
-    int *_var = const_cast<int *>(var.data());
+    int *_var = const_cast<int *>(var.data);
 
     if (DBPutUcdvar1(
                 fdata,              // File handle

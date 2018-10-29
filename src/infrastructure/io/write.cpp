@@ -97,6 +97,8 @@ printPreprocessingOptions(
     std::cout << "  MPI parallelism not included\n";
 #endif
 
+    std::cout << "  RAJA variant\n";
+
 #ifdef BOOKLEAF_SILO_SUPPORT
     std::cout << "  Silo visualisation dumps available\n";
 #else
@@ -121,6 +123,21 @@ printBinding(
         hostname = std::string(_hostname);
     }
 
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+    int device_id;
+    std::string device_name;
+    {
+        auto cuda_err = cudaGetDevice(&device_id);
+        if (cuda_err != cudaSuccess) {
+            assert(false && "unhandled error");
+        }
+
+        cudaDeviceProp device_prop;
+        cudaGetDeviceProperties(&device_prop, device_id);
+        device_name = device_prop.name;
+    }
+#endif
+
 #ifdef BOOKLEAF_MPI_SUPPORT
     TYPH_Barrier();
 #endif
@@ -128,8 +145,14 @@ printBinding(
     // Print binding
     for (int iproc = 0; iproc < comm.nproc; iproc++) {
         if (iproc == comm.rank) {
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+            std::cout << "  rank " << iproc << " -> " << hostname << ":"
+                      << sched_getcpu() << " [";
+            std::cout << "device " << device_id << " (" << device_name << ")]\n";
+#else
             std::cout << "  rank " << iproc << " -> " << hostname << ":"
                       << sched_getcpu() << "\n";
+#endif
         }
 
 #ifdef BOOKLEAF_MPI_SUPPORT

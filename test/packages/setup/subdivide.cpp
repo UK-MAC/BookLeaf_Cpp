@@ -47,8 +47,8 @@ main(
     _param[2] = 0.5;
     _param[3] = 0.5;
 
-    ConstView<double, constants::NCORN> x(_x);
-    ConstView<double, constants::NCORN> y(_y);
+    ConstView<double, constants::NCORN> x(_x, constants::NCORN);
+    ConstView<double, constants::NCORN> y(_y, constants::NCORN);
 
     double const vf = setup::kernel::subdivide(0, _param, x, y,
             setup::kernel::insideRectangle);

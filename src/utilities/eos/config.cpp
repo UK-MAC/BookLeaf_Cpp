@@ -121,20 +121,90 @@ rationalise(
 
 void
 initEOSConfig(
-        Sizes const &sizes __attribute__((unused)),
-        EOS &eos __attribute__((unused)),
-        Error &err __attribute__((unused)))
+        Sizes const &sizes,
+        EOS &eos,
+        Error &err)
 {
-    // XXX Stub for extra variant EOS config init
+#ifndef BOOKLEAF_RAJA_CUDA_SUPPORT
+    eos.d_mat_types = new int[sizes.nmat];
+    eos.d_mat_params = new double[sizes.nmat * MaterialEOS::NUM_PARAMS];
+
+    if ((eos.d_mat_types == nullptr) || (eos.d_mat_params == nullptr)) {
+        FAIL_WITH_LINE(err, "ERROR: failed to allocated EOS config");
+        return;
+    }
+
+    for (int imat = 0; imat < sizes.nmat; imat++) {
+        eos.d_mat_types[imat] = (int) eos.mat_eos[imat].type;
+        for (int iparam = 0; iparam < MaterialEOS::NUM_PARAMS; iparam++) {
+            eos.d_mat_params[imat*MaterialEOS::NUM_PARAMS+iparam] =
+                eos.mat_eos[imat].params[iparam];
+        }
+    }
+#else
+    auto cuda_err = cudaMalloc((void **) &eos.d_mat_types,
+            sizes.nmat * sizeof(int));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    cuda_err = cudaMalloc((void **) &eos.d_mat_params,
+            sizes.nmat * MaterialEOS::NUM_PARAMS * sizeof(double));
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMalloc failed");
+        return;
+    }
+
+    int *tmp_mat_types = new int[sizes.nmat];
+    double *tmp_mat_params = new double[sizes.nmat * MaterialEOS::NUM_PARAMS];
+
+    if ((tmp_mat_types == nullptr) || (tmp_mat_params == nullptr)) {
+        FAIL_WITH_LINE(err, "ERROR: failed to allocated EOS config");
+        return;
+    }
+
+    for (int imat = 0; imat < sizes.nmat; imat++) {
+        tmp_mat_types[imat] = (int) eos.mat_eos[imat].type;
+        for (int iparam = 0; iparam < MaterialEOS::NUM_PARAMS; iparam++) {
+            tmp_mat_params[imat*MaterialEOS::NUM_PARAMS+iparam] =
+                eos.mat_eos[imat].params[iparam];
+        }
+    }
+
+    cuda_err = cudaMemcpy(eos.d_mat_types, tmp_mat_types,
+            sizes.nmat * sizeof(int), cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+
+    cuda_err = cudaMemcpy(eos.d_mat_params, tmp_mat_params,
+            sizes.nmat * MaterialEOS::NUM_PARAMS * sizeof(double),
+            cudaMemcpyHostToDevice);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: cudaMemcpy failed");
+        return;
+    }
+
+    delete[] tmp_mat_types;
+    delete[] tmp_mat_params;
+#endif
 }
 
 
 
 void
 killEOSConfig(
-        EOS &eos __attribute__((unused)))
+        EOS &eos)
 {
-    // XXX Stub for extra variant EOS config shutdown
+#ifndef BOOKLEAF_RAJA_CUDA_SUPPORT
+    delete[] eos.d_mat_types;
+    delete[] eos.d_mat_params;
+#else
+    cudaFree(eos.d_mat_types);
+    cudaFree(eos.d_mat_params);
+#endif
 }
 
 } // namespace bookleaf

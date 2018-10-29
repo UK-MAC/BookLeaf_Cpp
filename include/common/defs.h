@@ -21,6 +21,8 @@
 #include <string>
 #include <type_traits>
 
+#include <RAJA/RAJA.hpp>
+
 
 
 namespace bookleaf {
@@ -33,6 +35,58 @@ typedef std::size_t SizeType;
 
 /** \brief Mark the number of rows in a view as varying at runtime. */
 SizeType constexpr VarDim = (SizeType) (-1);
+
+namespace internal {
+
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+int constexpr CUDA_BLOCK_SIZE = 1024;
+#endif
+
+/** \brief RAJA execution policy to use for host kernels. */
+//using RAJA_HOST_POLICY = RAJA::omp_parallel_for_exec;
+
+/** \brief RAJA execution policy to use for device kernels. */
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+using RAJA_DEVICE_POLICY = RAJA::cuda_exec<CUDA_BLOCK_SIZE, false>;
+#else
+using RAJA_DEVICE_POLICY = RAJA::omp_parallel_for_exec;
+#endif
+
+/** \brief RAJA reduction policy for host kernels. */
+//using RAJA_HOST_REDUCTION_POLICY = RAJA::omp_reduce;
+
+/** \brief RAJA reduction policy for device kernels. */
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+using RAJA_DEVICE_REDUCTION_POLICY = RAJA::cuda_reduce<CUDA_BLOCK_SIZE, false>;
+#else
+using RAJA_DEVICE_REDUCTION_POLICY = RAJA::omp_reduce;
+#endif
+
+/** \brief RAJA host layout permutation. */
+using RAJA_HOST_PERMUTATION = RAJA::PERM_IJ;
+
+/** \brief RAJA device layout permutation. */
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+using RAJA_DEVICE_PERMUTATION = RAJA::PERM_JI;
+#else
+using RAJA_DEVICE_PERMUTATION = RAJA::PERM_IJ;
+#endif
+
+} // namespace internal
+
+/** \brief Primary RAJA execution policy. */
+using RAJA_POLICY = internal::RAJA_DEVICE_POLICY;
+
+/** \brief Primary RAJA reduction policy. */
+using RAJA_REDUCTION_POLICY = internal::RAJA_DEVICE_REDUCTION_POLICY;
+
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+#define BOOKLEAF_DEVICE_LAMBDA [=] __device__
+#define BOOKLEAF_DEVICE_FUNCTION __device__
+#else
+#define BOOKLEAF_DEVICE_LAMBDA [=]
+#define BOOKLEAF_DEVICE_FUNCTION
+#endif
 
 
 

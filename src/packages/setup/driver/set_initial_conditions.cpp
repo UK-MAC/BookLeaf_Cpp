@@ -80,7 +80,7 @@ setRegionFlags(
 
         case Indicator::Type::BACKGROUND:
             kernel::setFlag(
-                    flag.size(),
+                    sizes.nel,
                     region.index,
                     flag);
             break;
@@ -96,7 +96,7 @@ setRegionFlags(
                 auto ip = data[ipid].chost<int, VarDim>();
 
                 kernel::flag::setCellFlags(
-                        flag.size(),
+                        sizes.nel,
                         region.index,
                         region.value,
                         comm.nproc,
@@ -166,7 +166,7 @@ setMaterialFlags(
 
         case Indicator::Type::BACKGROUND:
             kernel::setFlag(
-                    flag.size(),
+                    sizes.nel,
                     material.index,
                     flag);
             break;
@@ -178,7 +178,7 @@ setMaterialFlags(
                 auto ip = data[ipid].chost<int, VarDim>();
 
                 kernel::flag::setCellFlags(
-                        flag.size(),
+                        sizes.nel,
                         material.index,
                         material.value,
                         comm.nproc,
@@ -197,7 +197,7 @@ setMaterialFlags(
 
         case Indicator::Type::REGION:
             kernel::setFlagIf(
-                    flag.size(),
+                    sizes.nel,
                     material.index,
                     material.value,
                     test,

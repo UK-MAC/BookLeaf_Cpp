@@ -51,8 +51,10 @@ updateBasisEl(
 #endif
 
     // update element basis
-    for (int iel = 0; iel < nel; iel++) {
-
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         // store basis variables
         elvpr(iel) = elvolume(iel);
         elmpr(iel) = elmass(iel);
@@ -70,7 +72,7 @@ updateBasisEl(
 
         // density
         eldensity(iel) = elmass(iel) / elvolume(iel);
-    }
+    });
 }
 
 
@@ -87,11 +89,14 @@ initBasisNd(
 #endif
 
     // initialise basis
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         ndv0(ind) = 0.;
         ndv1(ind) = 0.;
         ndm0(ind) = 0.;
-    }
+    });
 }
 
 
@@ -114,7 +119,10 @@ calcBasisNd(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -136,7 +144,7 @@ calcBasisNd(
             ndv1(ind) += w2;
             ndm0(ind) += w3;
         }
-    }
+    });
 }
 
 
@@ -163,12 +171,15 @@ fluxBasisNd(
     id2--;
 
     // Initialise flux
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         cnflux(iel, 0) = 0.;
         cnflux(iel, 1) = 0.;
         cnflux(iel, 2) = 0.;
         cnflux(iel, 3) = 0.;
-    }
+    });
 
     // Construct volume and mass flux
     for (int i1 = id1; i1 <= id2; i1++) {
@@ -182,8 +193,10 @@ fluxBasisNd(
         //               either.
         //for (int ii = 0; ii < nel; ii++) {
             //int const iel = elsort(ii);
-        for (int iel = 0; iel < nel; iel++) {
-
+        RAJA::forall<RAJA_POLICY>(
+                RAJA::RangeSegment(0, nel),
+                BOOKLEAF_DEVICE_LAMBDA (int const iel)
+        {
             int const ie1 = elel(iel, i1);
             int const ie2 = elel(iel, i2);
             int const is1 = elfc(iel, i1);
@@ -216,7 +229,7 @@ fluxBasisNd(
             cnflux(iel, 1) += w3;
             cnflux(iel, 2) += w3;
             cnflux(iel, 3) += w3;
-        }
+        });
     }
 }
 
@@ -239,7 +252,10 @@ massBasisNd(
 #endif
 
     // Construct post nodal mass
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -255,14 +271,17 @@ massBasisNd(
 
             ndm1(ind) += cnflux(iel, icn);
         }
-    }
+    });
 
     // Construct post corner mass
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         for (int icn = 0; icn < NCORN; icn++) {
             cnm1(iel, icn) += cnflux(iel, icn);
         }
-    }
+    });
 }
 
 
@@ -281,10 +300,13 @@ cutBasisNd(
 #endif
 
     // Construct cut-offs
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         cutv(ind) = cut;
         cutm(ind) = dencut * ndv0(ind);
-    }
+    });
 }
 
 
@@ -302,13 +324,16 @@ activeNd(
 #endif
 
     // Set active flag
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         bool const is_active = (ndstatus(ind) > 0) &&
                                (ndtype(ind) != ibc) &&
                                (ndtype(ind) != -3);
 
         active(ind) = is_active ? 1 : 0;
-    }
+    });
 }
 
 } // namespace kernel

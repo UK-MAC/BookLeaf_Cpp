@@ -61,6 +61,39 @@ initParallelism(
         assert(false && "unhandled error");
         return;
     }
+
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+    // Initialise CUDA
+    int device_count = 0;
+    auto cuda_err = cudaGetDeviceCount(&device_count);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to get CUDA device count\n");
+        return;
+    }
+
+    int device_id;
+#ifdef BOOKLEAF_MPI_SUPPORT
+    if (comms.world->nproc > 1) {
+        device_id = comms.world->rank % device_count;
+    } else {
+        device_id = 0;
+    }
+#else
+    device_id = 0;
+#endif
+
+    if (device_id >= device_count) {
+        FAIL_WITH_LINE(err, "ERROR: Not enough CUDA devices for ID " +
+                std::to_string(device_id) + "\n");
+        return;
+    }
+
+    cuda_err = cudaSetDevice(device_id);
+    if (cuda_err != cudaSuccess) {
+        FAIL_WITH_LINE(err, "ERROR: Failed to set CUDA device\n");
+        return;
+    }
+#endif
 }
 
 

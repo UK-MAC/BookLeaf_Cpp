@@ -45,12 +45,12 @@ getEnergy(
 
     int const nel = runtime.sizes->nel;
 
-    auto lag_cnfx = data[DataID::LAG_CNFX].chost<double, VarDim, NCORN>();
-    auto lag_cnfy = data[DataID::LAG_CNFY].chost<double, VarDim, NCORN>();
-    auto lag_cnu  = data[DataID::LAG_CNU].chost<double, VarDim, NCORN>();
-    auto lag_cnv  = data[DataID::LAG_CNV].chost<double, VarDim, NCORN>();
-    auto elmass   = data[DataID::ELMASS].chost<double, VarDim>();
-    auto elenergy = data[DataID::ELENERGY].host<double, VarDim>();
+    auto lag_cnfx = data[DataID::LAG_CNFX].cdevice<double, VarDim, NCORN>();
+    auto lag_cnfy = data[DataID::LAG_CNFY].cdevice<double, VarDim, NCORN>();
+    auto lag_cnu  = data[DataID::LAG_CNU].cdevice<double, VarDim, NCORN>();
+    auto lag_cnv  = data[DataID::LAG_CNV].cdevice<double, VarDim, NCORN>();
+    auto elmass   = data[DataID::ELMASS].cdevice<double, VarDim>();
+    auto elenergy = data[DataID::ELENERGY].device<double, VarDim>();
 
     // Hydro internal energy update
     hydro::kernel::getEnergy(
@@ -66,16 +66,16 @@ getEnergy(
 
     int const ncp = runtime.sizes->ncp;
     if (ncp > 0) {
-        auto mxel     = data[DataID::IMXEL].chost<int, VarDim>();
-        auto mxfcp    = data[DataID::IMXFCP].chost<int, VarDim>();
-        auto mxncp    = data[DataID::IMXNCP].chost<int, VarDim>();
-        auto lag_cpfx = data[DataID::LAG_CPFX].chost<double, VarDim, NCORN>();
-        auto lag_cpfy = data[DataID::LAG_CPFY].chost<double, VarDim, NCORN>();
-        auto lag_cpu  = data[DataID::LAG_CPU].host<double, VarDim, NCORN>();
-        auto lag_cpv  = data[DataID::LAG_CPV].host<double, VarDim, NCORN>();
-        auto cpmass   = data[DataID::CPMASS].chost<double, VarDim>();
-        auto cpenergy = data[DataID::CPENERGY].host<double, VarDim>();
-        auto frvolume = data[DataID::FRVOLUME].chost<double, VarDim>();
+        auto mxel     = data[DataID::IMXEL].cdevice<int, VarDim>();
+        auto mxfcp    = data[DataID::IMXFCP].cdevice<int, VarDim>();
+        auto mxncp    = data[DataID::IMXNCP].cdevice<int, VarDim>();
+        auto lag_cpfx = data[DataID::LAG_CPFX].cdevice<double, VarDim, NCORN>();
+        auto lag_cpfy = data[DataID::LAG_CPFY].cdevice<double, VarDim, NCORN>();
+        auto lag_cpu  = data[DataID::LAG_CPU].device<double, VarDim, NCORN>();
+        auto lag_cpv  = data[DataID::LAG_CPV].device<double, VarDim, NCORN>();
+        auto cpmass   = data[DataID::CPMASS].cdevice<double, VarDim>();
+        auto cpenergy = data[DataID::CPENERGY].device<double, VarDim>();
+        auto frvolume = data[DataID::FRVOLUME].cdevice<double, VarDim>();
 
         utils::kernel::mxAverageCornerGather(runtime.sizes->nmx, mxel, mxfcp,
                 mxncp, lag_cnu, frvolume, lag_cpu);

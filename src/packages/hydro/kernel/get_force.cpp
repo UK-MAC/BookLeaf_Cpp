@@ -48,7 +48,10 @@ getForcePressure(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         double const w1 = elpressure(iel);
 
         cnfx(iel, 0) = w1 * (-b3(iel) + b1(iel));
@@ -60,7 +63,7 @@ getForcePressure(
         cnfy(iel, 1) = w1 * (-a3(iel) - a1(iel));
         cnfy(iel, 2) = w1 * (-a3(iel) + a1(iel));
         cnfy(iel, 3) = w1 * ( a3(iel) + a1(iel));
-    }
+    });
 }
 
 
@@ -77,7 +80,10 @@ getForceViscosity(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         cnfx(iel, 0) += cnviscx(iel, 0);
         cnfx(iel, 1) += cnviscx(iel, 1);
         cnfx(iel, 2) += cnviscx(iel, 2);
@@ -87,7 +93,7 @@ getForceViscosity(
         cnfy(iel, 1) += cnviscy(iel, 1);
         cnfy(iel, 2) += cnviscy(iel, 2);
         cnfy(iel, 3) += cnviscy(iel, 3);
-    }
+    });
 }
 
 
@@ -111,8 +117,10 @@ getForceSubzonalPressure(
 
     // XXX Missing code here that can't be merged
 
-    for (int iel = 0; iel < nel; iel++) {
-
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         double lfx[NCORN][NCORN];
         double lfy[NCORN][NCORN];
 
@@ -194,7 +202,7 @@ getForceSubzonalPressure(
         cnfy(iel, 1) += w1 * (lfy[0][1] + w4 + w3 + w6);
         cnfy(iel, 2) += w1 * (lfy[0][2] + w4 + w5 + w6);
         cnfy(iel, 3) += w1 * (lfy[0][3] + w2 + w5 + w6);
-    }
+    });
 }
 
 
@@ -218,7 +226,10 @@ getForceHourglass(
 
     // Hourglass restoring force
     double const w4 = 1.0 / dt;
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         double w2 = cnu(iel, 0) - cnu(iel, 1) + cnu(iel, 2) - cnu(iel, 3);
         double w3 = cnv(iel, 0) - cnv(iel, 1) + cnv(iel, 2) - cnv(iel, 3);
 
@@ -236,7 +247,7 @@ getForceHourglass(
         cnfy(iel, 1) -= w3;
         cnfy(iel, 2) += w3;
         cnfy(iel, 3) -= w3;
-    }
+    });
 }
 
 } // namespace kernel

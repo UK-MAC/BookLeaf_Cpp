@@ -27,142 +27,46 @@
 
 namespace bookleaf {
 
-/**
- * \brief  Lightweight interface to 2 dimensional arrays.
- * \author timrlaw
- *
- * Uses std::enable_if throughout to leverage SFINAE, in order to selectively
- * include methods based on template arguments.
- */
+// Views alias RAJA views
+
+namespace internal {
+
 template <
     typename T,
     SizeType NumRows,
-    SizeType NumCols = 1>
-class View
+    SizeType NumCols>
+struct ViewWrapper
 {
-public:
-    typedef          SizeType                   size_type;
-    typedef          T                          value_type;
-    typedef          T const                    const_value_type;
-    typedef typename std::remove_const<T>::type nonconst_value_type;
+    typedef typename RAJA::View<T, RAJA::Layout<2>> type;
 
-    static_assert(NumCols != VarDim, "number of columns cannot be variable");
-
-public:
-    // -------------------------------------------------------------------------
-    // Constructors
-    // -------------------------------------------------------------------------
-    /** \brief Fixed size constructor */
-    template <SizeType _NumRows = NumRows>
-    explicit View(
-            typename std::enable_if<_NumRows != VarDim, T>::type *_ptr)
-        : ptr(_ptr), num_rows(0) {}
-
-    /** \brief Variable size constructor */
-    template <SizeType _NumRows = NumRows>
-    View(
-            typename std::enable_if<_NumRows == VarDim, T>::type *_ptr,
-            size_type _num_rows)
-        : ptr(_ptr), num_rows(_num_rows) {}
-
-    /** \brief Copy-constructor */
-    View(View const &rhs) : ptr(rhs.ptr), num_rows(rhs.num_rows) {}
-
-    /**
-     * \brief Copy-constructor---non-const to const view
-     *
-     * Use SFINAE to only enable this copy-constructor when the current view is
-     * const, otherwise it is a duplicate of the first copy-constructor and
-     * the compiler will complain.
-     */
-    template <bool IsConst = std::is_const<value_type>::value>
-    View(View<
-            typename std::enable_if<IsConst, nonconst_value_type>::type,
-            NumRows,
-            NumCols
-         > const &rhs)
-        : ptr(rhs.ptr), num_rows(rhs.num_rows) {}
-
-    friend View<const_value_type, NumRows, NumCols>;
-
-
-    // -------------------------------------------------------------------------
-    // Size accessors
-    // -------------------------------------------------------------------------
-    /** \brief Get the number of rows */
-    BOOKLEAF_INLINE
-    size_type
-    rows() const { return NumRows == VarDim ? num_rows : NumRows; }
-
-    /** \brief Get the number of columns */
-    BOOKLEAF_INLINE static
-    size_type constexpr
-    cols() { return NumCols; }
-
-    /** \brief Get the total size */
-    BOOKLEAF_INLINE
-    size_type
-    size() const { return (NumRows == VarDim ? num_rows : NumRows) * NumCols; }
-
-
-    // -------------------------------------------------------------------------
-    // Data accessors
-    // -------------------------------------------------------------------------
-    /** \brief Return a raw data pointer */
-    BOOKLEAF_INLINE
-    value_type *
-    data()
-    {
-        return ptr;
-    }
-
-    /** \brief Read/write 1D element accessor */
-    template <SizeType _NumCols = NumCols>
-    BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols == 1, value_type &>::type
-    operator()(size_type i) const
-    {
-        assert(i < rows() && "invalid row index");
-
-        return ptr[i];
-    }
-
-    /** \brief Read/write 2D element accessor */
-    template <SizeType _NumCols = NumCols>
-    BOOKLEAF_INLINE
-    typename std::enable_if<_NumCols != 1, value_type &>::type
-    operator()(size_type i, size_type j) const
-    {
-        assert(i < rows() && "invalid row index");
-        assert(j < cols() && "invalid column index");
-
-        return ptr[i * NumCols + j];
-    }
-
-    /** \brief Read/write flat accessor */
-    BOOKLEAF_INLINE
-    value_type &
-    operator[](size_type idx) const
-    {
-        assert(idx < size() && "invalid index");
-
-        return ptr[idx];
-    }
-
-
-private:
-    T       * ptr;          //!< Data pointer
-    size_type num_rows;     //!< Number of rows if NumRows == VarDim
+    static SizeType constexpr num_rows = NumRows;
+    static SizeType constexpr num_cols = NumCols;
 };
 
+template <
+    typename T,
+    SizeType NumRows>
+struct ViewWrapper<T, NumRows, 1>
+{
+    typedef typename RAJA::View<T, RAJA::Layout<1>> type;
 
+    static SizeType constexpr num_rows = NumRows;
+    static SizeType constexpr num_cols = 1;
+};
 
-/** \brief Alias for constant views */
+} // namespace internal
+
 template <
     typename T,
     SizeType NumRows,
     SizeType NumCols = 1>
-using ConstView = View<T const, NumRows, NumCols>;
+using View = typename internal::ViewWrapper<T, NumRows, NumCols>::type;
+
+template <
+    typename T,
+    SizeType NumRows,
+    SizeType NumCols = 1>
+using ConstView = typename internal::ViewWrapper<T const, NumRows, NumCols>::type;
 
 } // namespace bookleaf
 

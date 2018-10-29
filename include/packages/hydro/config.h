@@ -52,12 +52,15 @@ struct Config
     std::vector<unsigned char> zdtnotreg;
     std::vector<unsigned char> zmidlength;
 
+    double *d_kappareg = nullptr;
+    double *d_pmeritreg = nullptr;
+    unsigned char *d_zdtnotreg = nullptr;
+    unsigned char *d_zmidlength = nullptr;
+
     std::shared_ptr<comms::Comm>         comm;
     std::shared_ptr<GlobalConfiguration> global;
     std::shared_ptr<io_utils::Labels>    io;
     std::shared_ptr<EOS>                 eos;
-
-    Config();
 };
 
 

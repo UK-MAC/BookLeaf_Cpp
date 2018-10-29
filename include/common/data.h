@@ -105,42 +105,82 @@ public:
     // Views
     // -------------------------------------------------------------------------
     /** \brief Construct and return a view of the host allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    View<T, NumRows>
+    host();
+
+    /** \brief Construct and return a view of the host allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     View<T, NumRows, NumCols>
     host();
 
     /** \brief Construct and return a view of the host allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    View<T, NumRows>
+    host(SizeType num_rows);
+
+    /** \brief Construct and return a view of the host allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     View<T, NumRows, NumCols>
     host(SizeType num_rows);
 
     /** \brief Construct and return a read-only view of the host allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    ConstView<T, NumRows>
+    chost() const;
+
+    /** \brief Construct and return a read-only view of the host allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     ConstView<T, NumRows, NumCols>
     chost() const;
 
     /** \brief Construct and return a read-only view of the host allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    ConstView<T, NumRows>
+    chost(SizeType num_rows) const;
+
+    /** \brief Construct and return a read-only view of the host allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     ConstView<T, NumRows, NumCols>
     chost(SizeType num_rows) const;
 
     /** \brief Construct and return a view of the device allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    View<T, NumRows>
+    device();
+
+    /** \brief Construct and return a view of the device allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     View<T, NumRows, NumCols>
     device();
 
     /** \brief Construct and return a view of the device allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    View<T, NumRows>
+    device(SizeType num_rows);
+
+    /** \brief Construct and return a view of the device allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     View<T, NumRows, NumCols>
     device(SizeType num_rows);
 
     /** \brief Construct and return a read-only view of the device allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    ConstView<T, NumRows>
+    cdevice() const;
+
+    /** \brief Construct and return a read-only view of the device allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     ConstView<T, NumRows, NumCols>
     cdevice() const;
 
     /** \brief Construct and return a read-only view of the device allocation. */
-    template <typename T, SizeType NumRows, SizeType NumCols = 1>
+    template <typename T, SizeType NumRows>
+    ConstView<T, NumRows>
+    cdevice(SizeType num_rows) const;
+
+    /** \brief Construct and return a read-only view of the device allocation. */
+    template <typename T, SizeType NumRows, SizeType NumCols>
     ConstView<T, NumRows, NumCols>
     cdevice(SizeType num_rows) const;
 
@@ -208,6 +248,9 @@ private:
     static unsigned char *device_sync_buf;  //!< Device buffer for partial sync
     static size_type      sync_buf_size;    //!< Partial sync buffer size (bytes)
 
+    static unsigned char *transpose_buf;    //!< Space for transposing
+    static size_type      transpose_size;   //!< Size of transpose_buf (bytes)
+
     DataID         id;                //!< Global data ID
     std::string    name;              //!< Human-readable name
 
@@ -224,15 +267,46 @@ private:
 
 
 
+template <typename T, SizeType NumRows>
+View<T, NumRows>
+Data::host()
+{
+    if (!isAllocated()) {
+        return View<T, NumRows>(nullptr, 0);
+    }
+
+    return View<T, NumRows>((T *) host_ptr, dims[0]);
+}
+
+
+
 template <typename T, SizeType NumRows, SizeType NumCols>
 View<T, NumRows, NumCols>
 Data::host()
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return View<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) host_ptr, dims[0]);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) dims[0], (long) dims[1]},
+                RAJA::as_array<internal::RAJA_HOST_PERMUTATION>::get());
+
+    return View<T, NumRows, NumCols>((T *) host_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+View<T, NumRows>
+Data::host(SizeType num_rows)
+{
+    if (!isAllocated()) {
+        return View<T, NumRows>(nullptr, 0);
+    }
+
+    return View<T, NumRows>((T *) host_ptr, num_rows);
 }
 
 
@@ -242,10 +316,28 @@ View<T, NumRows, NumCols>
 Data::host(SizeType num_rows)
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return View<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) host_ptr, num_rows);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) num_rows, (long) dims[1]},
+                RAJA::as_array<internal::RAJA_HOST_PERMUTATION>::get());
+
+    return View<T, NumRows, NumCols>((T *) host_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+ConstView<T, NumRows>
+Data::chost() const
+{
+    if (!isAllocated()) {
+        return ConstView<T, NumRows>(nullptr, 0);
+    }
+
+    return ConstView<T, NumRows>((T *) host_ptr, dims[0]);
 }
 
 
@@ -255,10 +347,28 @@ ConstView<T, NumRows, NumCols>
 Data::chost() const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstView<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) host_ptr, dims[0]);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) dims[0], (long) dims[1]},
+                RAJA::as_array<internal::RAJA_HOST_PERMUTATION>::get());
+
+    return ConstView<T, NumRows, NumCols>((T *) host_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+ConstView<T, NumRows>
+Data::chost(SizeType num_rows) const
+{
+    if (!isAllocated()) {
+        return ConstView<T, NumRows>(nullptr, 0);
+    }
+
+    return ConstView<T, NumRows>((T *) host_ptr, num_rows);
 }
 
 
@@ -268,10 +378,28 @@ ConstView<T, NumRows, NumCols>
 Data::chost(SizeType num_rows) const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstView<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) host_ptr, num_rows);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) num_rows, (long) dims[1]},
+                RAJA::as_array<internal::RAJA_HOST_PERMUTATION>::get());
+
+    return ConstView<T, NumRows, NumCols>((T *) host_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+View<T, NumRows>
+Data::device()
+{
+    if (!isAllocated()) {
+        return View<T, NumRows>(nullptr, 0);
+    }
+
+    return View<T, NumRows>((T *) device_ptr, dims[0]);
 }
 
 
@@ -281,10 +409,28 @@ View<T, NumRows, NumCols>
 Data::device()
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return View<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) dims[0], (long) dims[1]},
+                RAJA::as_array<internal::RAJA_DEVICE_PERMUTATION>::get());
+
+    return View<T, NumRows, NumCols>((T *) device_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+View<T, NumRows>
+Data::device(SizeType num_rows)
+{
+    if (!isAllocated()) {
+        return View<T, NumRows>(nullptr, 0);
+    }
+
+    return View<T, NumRows>((T *) device_ptr, num_rows);
 }
 
 
@@ -294,10 +440,28 @@ View<T, NumRows, NumCols>
 Data::device(SizeType num_rows)
 {
     if (!isAllocated()) {
-        return View<T, NumRows, NumCols>(nullptr, 0);
+        return View<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return View<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) num_rows, (long) dims[1]},
+                RAJA::as_array<internal::RAJA_DEVICE_PERMUTATION>::get());
+
+    return View<T, NumRows, NumCols>((T *) device_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+ConstView<T, NumRows>
+Data::cdevice() const
+{
+    if (!isAllocated()) {
+        return ConstView<T, NumRows>(nullptr, 0);
+    }
+
+    return ConstView<T, NumRows>((T *) device_ptr, dims[0]);
 }
 
 
@@ -307,10 +471,28 @@ ConstView<T, NumRows, NumCols>
 Data::cdevice() const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstView<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, dims[0]);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) dims[0], (long) dims[1]},
+                RAJA::as_array<internal::RAJA_DEVICE_PERMUTATION>::get());
+
+    return ConstView<T, NumRows, NumCols>((T *) device_ptr, layout);
+}
+
+
+
+template <typename T, SizeType NumRows>
+ConstView<T, NumRows>
+Data::cdevice(SizeType num_rows) const
+{
+    if (!isAllocated()) {
+        return ConstView<T, NumRows>(nullptr, 0);
+    }
+
+    return ConstView<T, NumRows>((T *) device_ptr, num_rows);
 }
 
 
@@ -320,10 +502,15 @@ ConstView<T, NumRows, NumCols>
 Data::cdevice(SizeType num_rows) const
 {
     if (!isAllocated()) {
-        return ConstView<T, NumRows, NumCols>(nullptr, 0);
+        return ConstView<T, NumRows, NumCols>(nullptr, 0, 0);
     }
 
-    return ConstView<T, NumRows, NumCols>((T *) device_ptr, num_rows);
+    RAJA::Layout<2> layout =
+        RAJA::make_permuted_layout(
+                {(long) num_rows, (long) dims[1]},
+                RAJA::as_array<internal::RAJA_DEVICE_PERMUTATION>::get());
+
+    return ConstView<T, NumRows, NumCols>((T *) device_ptr, layout);
 }
 
 
@@ -348,21 +535,37 @@ Data::allocate(
     // Allocate memory and fill with initial value
     len = num_rows * num_cols;
 
+    allocated_T_size = sizeof(T);
+    allocated_type = getTypeName<T>();
+
     host_ptr = (unsigned char *) malloc(len * sizeof(T));
     if (host_ptr == nullptr) {
         assert(false && "unhandled error");
     }
 
-    // ... XXX Device not used in reference version
-    device_ptr = nullptr;
+#ifdef BOOKLEAF_RAJA_CUDA_SUPPORT
+    auto cuda_err = cudaMalloc((void **) &device_ptr, len * sizeof(T));
+    if (cuda_err != cudaSuccess) {
+        assert(false && "failed to allocate device memory");
+    }
+
+    if (len * sizeof(T) > transpose_size) {
+        transpose_size = len * sizeof(T);
+        if (transpose_buf == nullptr) {
+            transpose_buf = (unsigned char *) malloc(transpose_size);
+        } else {
+            transpose_buf = (unsigned char *) realloc(
+                    (void *) transpose_buf, transpose_size);
+        }
+    }
+#else
+    device_ptr = host_ptr;
+#endif
 
     T *thost_ptr = (T *) host_ptr;
     std::fill(thost_ptr, thost_ptr + len, initial_value);
 
     syncDevice(false);
-
-    allocated_T_size = sizeof(T);
-    allocated_type = getTypeName<T>();
 }
 
 

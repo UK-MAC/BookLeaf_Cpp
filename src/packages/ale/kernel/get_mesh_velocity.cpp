@@ -39,10 +39,13 @@ getMeshVelocity(
 #endif
 
     if (zeul) {
-        for (int ind = 0; ind < nnd; ind++) {
+        RAJA::forall<RAJA_POLICY>(
+                RAJA::RangeSegment(0, nnd),
+                BOOKLEAF_DEVICE_LAMBDA (int const ind)
+        {
             ndu(ind) = -ndu(ind);
             ndv(ind) = -ndv(ind);
-        }
+        });
 
     } else {
         // XXX Missing code that can't (or hasn't) been merged.

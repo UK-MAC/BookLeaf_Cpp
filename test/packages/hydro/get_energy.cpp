@@ -39,13 +39,13 @@ main(int argc, char const *argv[])
     int const nel = 2500;
 
     ConstView<double, VarDim, NCORN> cnfx(
-            (double *) pre_dump[0].data, pre_dump[0].size / NCORN);
+            (double *) pre_dump[0].data, pre_dump[0].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnfy(
-            (double *) pre_dump[1].data, pre_dump[1].size / NCORN);
+            (double *) pre_dump[1].data, pre_dump[1].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnu(
-            (double *) pre_dump[2].data, pre_dump[2].size / NCORN);
+            (double *) pre_dump[2].data, pre_dump[2].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnv(
-            (double *) pre_dump[3].data, pre_dump[3].size / NCORN);
+            (double *) pre_dump[3].data, pre_dump[3].size / NCORN, NCORN);
 
     ConstView<double, VarDim> elmass(
             (double *) pre_dump[4].data, pre_dump[4].size);

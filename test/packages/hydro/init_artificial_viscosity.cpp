@@ -30,30 +30,30 @@ main(int argc, char const *argv[])
     int const nel = 2500;
 
     ConstView<double, VarDim, NCORN> cnx(
-            (double *) pre_dump[0].data, pre_dump[0].size / NCORN);
+            (double *) pre_dump[0].data, pre_dump[0].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cny(
-            (double *) pre_dump[1].data, pre_dump[1].size / NCORN);
+            (double *) pre_dump[1].data, pre_dump[1].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnu(
-            (double *) pre_dump[2].data, pre_dump[2].size / NCORN);
+            (double *) pre_dump[2].data, pre_dump[2].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cnv(
-            (double *) pre_dump[3].data, pre_dump[3].size / NCORN);
+            (double *) pre_dump[3].data, pre_dump[3].size / NCORN, NCORN);
 
     View<double, VarDim> elvisc(
             (double *) pre_dump[4].data, pre_dump[4].size);
 
     View<double, VarDim, NFACE> dx(
-            (double *) pre_dump[5].data, pre_dump[5].size / NFACE);
+            (double *) pre_dump[5].data, pre_dump[5].size / NFACE, NFACE);
     View<double, VarDim, NFACE> dy(
-            (double *) pre_dump[6].data, pre_dump[6].size / NFACE);
+            (double *) pre_dump[6].data, pre_dump[6].size / NFACE, NFACE);
     View<double, VarDim, NFACE> du(
-            (double *) pre_dump[7].data, pre_dump[7].size / NFACE);
+            (double *) pre_dump[7].data, pre_dump[7].size / NFACE, NFACE);
     View<double, VarDim, NFACE> dv(
-            (double *) pre_dump[8].data, pre_dump[8].size / NFACE);
+            (double *) pre_dump[8].data, pre_dump[8].size / NFACE, NFACE);
 
     View<double, VarDim, NFACE> cnviscx(
-            (double *) pre_dump[9].data, pre_dump[9].size / NFACE);
+            (double *) pre_dump[9].data, pre_dump[9].size / NFACE, NFACE);
     View<double, VarDim, NFACE> cnviscy(
-            (double *) pre_dump[10].data, pre_dump[10].size / NFACE);
+            (double *) pre_dump[10].data, pre_dump[10].size / NFACE, NFACE);
 
     hydro::kernel::initArtificialViscosity(cnx, cny, cnu, cnv, elvisc, dx, dy,
             du, dv, cnviscx, cnviscy, nel);

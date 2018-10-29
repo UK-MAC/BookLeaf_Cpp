@@ -21,6 +21,7 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
 #include "common/constants.h"
 #include "common/data_control.h"
 
@@ -42,12 +43,15 @@ initAcceleration(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         ndmass(ind) = 0.;
         ndarea(ind) = 0.;
         ndudot(ind) = 0.;
         ndvdot(ind) = 0.;
-    }
+    });
 }
 
 
@@ -74,7 +78,10 @@ scatterAcceleration(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         for (int i = 0; i < ndeln(ind); i++) {
             int const iel = ndel(ndelf(ind) + i);
 
@@ -92,13 +99,13 @@ scatterAcceleration(
             double w = cnmass(iel, icn);
             w = w > zerocut ? w : cnmass(iel, (icn + (NCORN-1)) % NCORN);
             w = w > zerocut ? w : density * cnwt(iel, icn);
-            ndmass(ind) += w;
 
+            ndmass(ind) += w;
             ndarea(ind) += cnwt(iel, icn);
             ndudot(ind) += cnfx(iel, icn);
             ndvdot(ind) += cnfy(iel, icn);
         }
-    }
+    });
 }
 
 
@@ -117,17 +124,20 @@ getAcceleration(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         double const w1 = dencut * ndarea(ind);
 
         double udot = ndmass(ind) > w1 ? ndudot(ind) / ndmass(ind) : 0.;
         double vdot = ndmass(ind) > w1 ? ndvdot(ind) / ndmass(ind) : 0.;
-        double mass = ndmass(ind) > w1 ? ndmass(ind) : std::max(zerocut, w1);
+        double mass = ndmass(ind) > w1 ? ndmass(ind) : BL_MAX(zerocut, w1);
 
         ndudot(ind) = udot;
         ndvdot(ind) = vdot;
         ndmass(ind) = mass;
-    }
+    });
 }
 
 
@@ -147,7 +157,10 @@ applyAcceleration(
 
     double const dt05 = 0.5 * dt;
 
-    for (int ind = 0; ind < nnd; ind++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         double const w1 = ndu(ind);
         double const w2 = ndv(ind);
 
@@ -155,7 +168,7 @@ applyAcceleration(
         ndv(ind) = w2 + dt*ndvbar(ind);
         ndubar(ind) = w1 + dt05*ndubar(ind);
         ndvbar(ind) = w2 + dt05*ndvbar(ind);
-    }
+    });
 }
 
 } // namespace kernel

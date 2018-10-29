@@ -101,8 +101,8 @@ flattenIndex(
             icp = cpnext(icp);
         }
 
-        View<int, VarDim> vicpprev1(cpprev.data(), lncp);
-        View<int, VarDim> vicpprev2(cpprev.data() + 2*lncp, lncp);
+        View<int, VarDim> vicpprev1(cpprev.data, lncp);
+        View<int, VarDim> vicpprev2(cpprev.data + 2*lncp, lncp);
         utils::kernel::sortIndices<int, int>(
                 vicpprev1,
                 vicpprev2,

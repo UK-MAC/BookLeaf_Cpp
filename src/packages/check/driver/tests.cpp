@@ -53,13 +53,13 @@ testSod(
     using constants::NCORN;
 
     // Gather co-ordinates
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDX, DataID::CNX, data);
-    utils::driver::cornerGather(*runtime.sizes, DataID::NDY, DataID::CNY, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDX, DataID::CNX, data);
+    utils::driver::hostCornerGather(*runtime.sizes, DataID::NDY, DataID::CNY, data);
 
     double _basis;
     double _l1[2];
-    View<double, 1> basis(&_basis);
-    View<double, 2> l1(_l1);
+    View<double, 1> basis(&_basis, 1);
+    View<double, 2> l1(_l1, 2);
 
     auto elvolume  = data[DataID::ELVOLUME].chost<double, VarDim>();
     auto eldensity = data[DataID::ELDENSITY].chost<double, VarDim>();
@@ -77,13 +77,13 @@ testSod(
         double ltotal[2];
         int const ldim = 2;
 
-        int typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, basis.data(), nullptr, 0,
+        int typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, basis.data, nullptr, 0,
                 &btotal, TYPH_OP_SUM);
         if (typh_err != TYPH_SUCCESS) {
             assert(false && "unhandled error");
         }
 
-        typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, l1.data(), &ldim, 1, ltotal,
+        typh_err = TYPH_Reduce(TYPH_DATATYPE_REAL, l1.data, &ldim, 1, ltotal,
                 TYPH_OP_SUM);
         if (typh_err != TYPH_SUCCESS) {
             assert(false && "unhandled error");

@@ -71,7 +71,7 @@ computeConnectivity(
     #define IXme(i, j) (index2D((i), (j), no_l-1))
 
     // Set conndata
-    View<int, VarDim, NDAT> conn_data(_connectivity, nel);
+    View<int, VarDim, NDAT> conn_data(_connectivity, nel, NDAT);
 
     int const in1 = mdata.getNodeOrdering() == 1 ? 6 : 4;
     int const in2 = in1 == 6                     ? 4 : 6;
@@ -252,7 +252,7 @@ partitionMesh(
     if (err.failed()) return;
 
     // Distribute mesh data to partition
-    distributeMesh(connectivity, conn_dims, coldata.data(), config, sizes, data,
+    distributeMesh(connectivity, conn_dims, coldata.data, config, sizes, data,
             err);
     if (err.failed()) return;
 

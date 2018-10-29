@@ -31,12 +31,12 @@ main(int argc, char const *argv[])
     int const nel = 2500;
 
     ConstView<int, VarDim, NFACE> elel(
-            (int *) pre_dump[0].data, pre_dump[0].size / NFACE);
+            (int *) pre_dump[0].data, pre_dump[0].size / NFACE, NFACE);
     ConstView<int, VarDim, NFACE> elfc(
-            (int *) pre_dump[1].data, pre_dump[1].size / NFACE);
+            (int *) pre_dump[1].data, pre_dump[1].size / NFACE, NFACE);
 
     ConstView<double, VarDim, NFACE> fcflux(
-            (double *) pre_dump[2].data, pre_dump[2].size / NFACE);
+            (double *) pre_dump[2].data, pre_dump[2].size / NFACE, NFACE);
 
     View<double, VarDim> elflux(
             (double *) pre_dump[3].data, pre_dump[3].size);

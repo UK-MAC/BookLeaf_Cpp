@@ -41,9 +41,9 @@ main(int argc, char const *argv[])
             (double *) pre_dump[4].data, pre_dump[4].size);
 
     View<double, VarDim, NCORN> cnfx(
-            (double *) pre_dump[5].data, pre_dump[5].size / NCORN);
+            (double *) pre_dump[5].data, pre_dump[5].size / NCORN, NCORN);
     View<double, VarDim, NCORN> cnfy(
-            (double *) pre_dump[6].data, pre_dump[6].size / NCORN);
+            (double *) pre_dump[6].data, pre_dump[6].size / NCORN, NCORN);
 
     hydro::kernel::getForcePressure(elpressure, a1, a3, b1, b3, cnfx, cnfy,
             nel);

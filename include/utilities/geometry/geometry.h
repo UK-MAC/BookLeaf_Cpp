@@ -101,8 +101,8 @@ getCentroid(
     double _elx[NCORN] = { cnx(iel, 0), cnx(iel, 1), cnx(iel, 2), cnx(iel, 3) };
     double _ely[NCORN] = { cny(iel, 0), cny(iel, 1), cny(iel, 2), cny(iel, 3) };
 
-    ConstView<double, NCORN> elx(_elx);
-    ConstView<double, NCORN> ely(_ely);
+    ConstView<double, NCORN> elx(_elx, NCORN);
+    ConstView<double, NCORN> ely(_ely, NCORN);
 
     getCentroid(elx, ely, centroid);
 }

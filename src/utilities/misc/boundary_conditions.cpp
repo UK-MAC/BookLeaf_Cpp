@@ -46,8 +46,10 @@ setBoundaryConditions(
 #endif
 
     double const w1 = rcut*rcut;
-    for (int ind = 0; ind < nnd; ind++) {
-
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nnd),
+            BOOKLEAF_DEVICE_LAMBDA (int const ind)
+    {
         switch (ndtype(ind)) {
         case -1:
             ndu(ind) = 0.0;
@@ -66,7 +68,7 @@ setBoundaryConditions(
         double const w2 = ndu(ind)*ndu(ind) + ndv(ind)*ndv(ind);
         ndu(ind) = w2 < w1 ? 0.0 : ndu(ind);
         ndv(ind) = w2 < w1 ? 0.0 : ndv(ind);
-    }
+    });
 }
 
 } // namespace
@@ -82,9 +84,9 @@ setBoundaryConditions(
         DataID idy,
         DataControl &data)
 {
-    auto ndtype = data[DataID::INDTYPE].chost<int, VarDim>();
-    auto x      = data[idx].host<double, VarDim>();
-    auto y      = data[idy].host<double, VarDim>();
+    auto ndtype = data[DataID::INDTYPE].cdevice<int, VarDim>();
+    auto x      = data[idx].device<double, VarDim>();
+    auto y      = data[idy].device<double, VarDim>();
 
     kernel::setBoundaryConditions(sizes.nnd, global.accut, ndtype, x, y);
 }

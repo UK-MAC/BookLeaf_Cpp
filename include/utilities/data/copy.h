@@ -44,9 +44,12 @@ copy(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    for (int i = 0; i < len; i++) {
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, len),
+            BOOKLEAF_DEVICE_LAMBDA (int const i)
+    {
         dst(i) = src(i);
-    }
+    });
 }
 
 
@@ -58,11 +61,18 @@ copy(
         ConstView<T, VarDim, NCORN> src,
         int len)
 {
-    for (int i = 0; i < len; i++) {
+#ifdef BOOKLEAF_CALIPER_SUPPORT
+    CALI_CXX_MARK_FUNCTION;
+#endif
+
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, len),
+            BOOKLEAF_DEVICE_LAMBDA (int const i)
+    {
         for (int icn = 0; icn < NCORN; icn++) {
             dst(i, icn) = src(i, icn);
         }
-    }
+    });
 }
 
 } // namespace kernel

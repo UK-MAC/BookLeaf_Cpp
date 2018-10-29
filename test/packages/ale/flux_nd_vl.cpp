@@ -30,20 +30,20 @@ main(int argc, char const *argv[])
     int const nel = 2500;
 
     ConstView<int, VarDim, NFACE> elel(
-            (int *) pre_dump[0].data, pre_dump[0].size / NFACE);
+            (int *) pre_dump[0].data, pre_dump[0].size / NFACE, NFACE);
     ConstView<int, VarDim, NFACE> elfc(
-            (int *) pre_dump[1].data, pre_dump[1].size / NFACE);
+            (int *) pre_dump[1].data, pre_dump[1].size / NFACE, NFACE);
 
     ConstView<double, VarDim, NCORN> cnbasis(
-            (double *) pre_dump[2].data, pre_dump[2].size / NCORN);
+            (double *) pre_dump[2].data, pre_dump[2].size / NCORN, NCORN);
     ConstView<double, VarDim, NCORN> cndbasis(
-            (double *) pre_dump[3].data, pre_dump[3].size / NCORN);
+            (double *) pre_dump[3].data, pre_dump[3].size / NCORN, NCORN);
 
     ConstView<double, VarDim, NCORN> cnvar(
-            (double *) pre_dump[4].data, pre_dump[4].size / NCORN);
+            (double *) pre_dump[4].data, pre_dump[4].size / NCORN, NCORN);
 
     View<double, VarDim, NCORN> cnflux(
-            (double *) pre_dump[5].data, pre_dump[5].size / NCORN);
+            (double *) pre_dump[5].data, pre_dump[5].size / NCORN, NCORN);
 
     ale::kernel::fluxNdVl(nel, nel, elel, elfc, cnbasis, cndbasis, cnvar,
             cnflux);

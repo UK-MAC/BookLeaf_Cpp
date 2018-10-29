@@ -81,7 +81,7 @@ setRegionKinematics(
     using constants::NDIM;
 
     double _point[NDIM];
-    View<double, NDIM> point(_point);
+    View<double, NDIM> point(_point, NDIM);
 
     switch (kic.geometry) {
     case KinematicsIC::Geometry::RADIAL:

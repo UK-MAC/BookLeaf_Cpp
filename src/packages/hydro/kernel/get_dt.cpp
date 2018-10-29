@@ -24,6 +24,7 @@
 #include <caliper/cali.h>
 #endif
 
+#include "common/cuda_utils.h"
 #include "common/constants.h"
 #include "common/error.h"
 #include "common/data_control.h"
@@ -35,7 +36,8 @@ namespace hydro {
 namespace kernel {
 namespace {
 
-inline double
+double
+BOOKLEAF_DEVICE_FUNCTION
 denom(double x1, double y1, double x2, double y2)
 {
     double w1 = y1 - y2;
@@ -45,7 +47,8 @@ denom(double x1, double y1, double x2, double y2)
 
 
 
-inline double
+double
+BOOKLEAF_DEVICE_FUNCTION
 distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 {
     double w1 = 0.5 * (x3 + x4) - x1;
@@ -55,7 +58,8 @@ distpp(double x3, double y3, double x4, double y4, double x1, double y1)
 
 
 
-inline double
+double
+BOOKLEAF_DEVICE_FUNCTION
 distpl(double x3, double y3, double x4, double y4, double x1, double y1,
         double x2, double y2)
 {
@@ -67,7 +71,8 @@ distpl(double x3, double y3, double x4, double y4, double x1, double y1,
 
 
 // These two kernels were originally located in the geometry utility
-inline void
+void
+BOOKLEAF_DEVICE_FUNCTION
 dlm(
         int iel,
         ConstView<double, VarDim, NCORN> cnx,
@@ -101,7 +106,8 @@ dlm(
 
 
 
-inline void
+void
+BOOKLEAF_DEVICE_FUNCTION
 dln(
         double zcut,
         int iel,
@@ -156,43 +162,75 @@ getDtCfl(
 #endif
 
     // Calculate CFL condition
-    for (int iel = 0; iel < nel; iel++) {
-        double result[NCORN];
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
+        //double result[NCORN];
 
-        int ireg = elreg(iel);
-        if (zdtnotreg[ireg]) {
-            rscratch11(iel) = std::numeric_limits<double>::max();
-            rscratch12(iel) = std::numeric_limits<double>::min();
+        //int ireg = elreg(iel);
+        //if (zdtnotreg[ireg]) {
+            //rscratch11(iel) = NPP_MAXABS_64F;
+            //rscratch12(iel) = NPP_MINABS_64F;
 
-        } else {
-            if (zmidlength[ireg]) dlm(iel, cnx, cny, result);
-            else                  dln(zcut, iel, cnx, cny, result);
+        //} else {
+            //if (zmidlength[ireg]) dlm(iel, cnx, cny, result);
+            //else                  dln(zcut, iel, cnx, cny, result);
 
-            // Minimise result
-            double w1 = result[0];
-            for (int i = 1; i < NCORN; i++) {
-                w1 = (result[i] < w1) ? result[i] : w1;
-            }
+            //// Minimise result
+            //double w1 = result[0];
+            //for (int i = 1; i < NCORN; i++) {
+                //w1 = (result[i] < w1) ? result[i] : w1;
+            //}
 
-            rscratch11(iel) = w1/elcs2(iel);
-            rscratch12(iel) = w1;
+            //rscratch11(iel) = w1/elcs2(iel);
+            //rscratch12(iel) = w1;
+        //}
+
+        int const ireg = elreg(iel);
+
+        double resultm[NCORN];
+        dlm(iel, cnx, cny, resultm);
+
+        double resultn[NCORN];
+        dln(zcut, iel, cnx, cny, resultn);
+
+        double *result = zmidlength[ireg] ? resultm : resultn;
+
+        // Minimise result
+        double w1 = result[0];
+        for (int i = 1; i < NCORN; i++) {
+            w1 = (result[i] < w1) ? result[i] : w1;
         }
-    }
+
+        rscratch11(iel) = w1/elcs2(iel);
+        rscratch12(iel) = w1;
+
+        rscratch11(iel) = zdtnotreg[ireg] ?
+                            NPP_MAXABS_64F : rscratch11(iel);
+        rscratch12(iel) = zdtnotreg[ireg] ?
+                            NPP_MINABS_64F : rscratch12(iel);
+    });
 
     // Find minimum CFL condition
-    int min_idx = 0;
-    for (int iel = 1; iel < nel; iel++) {
-        if (rscratch11(iel) < rscratch11(min_idx)) min_idx = iel;
-    }
+    RAJA::ReduceMinLoc<RAJA_REDUCTION_POLICY, double>
+        minloc(std::numeric_limits<double>::max(), -1);
 
-    double w1 = rscratch11(min_idx);
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
+        minloc.minloc(rscratch11(iel), iel);
+    });
+
+    double w1 = minloc.get();
     if (w1 < 0) {
         FAIL_WITH_LINE(err, "ERROR");
         return;
     }
 
     rdt = cfl_sf*sqrt(w1);
-    idt = min_idx;
+    idt = minloc.getLoc();
     sdt = "     CFL";
 }
 
@@ -217,9 +255,13 @@ getDtDiv(
     CALI_CXX_MARK_FUNCTION;
 #endif
 
-    double w2 = std::numeric_limits<double>::min();
-    int min_idx = 0;
-    for (int iel = 0; iel < nel; iel++) {
+    RAJA::ReduceMaxLoc<RAJA_REDUCTION_POLICY, double>
+        maxloc(-std::numeric_limits<double>::max(), -1);
+
+    RAJA::forall<RAJA_POLICY>(
+            RAJA::RangeSegment(0, nel),
+            BOOKLEAF_DEVICE_LAMBDA (int const iel)
+    {
         double w1 = cnu(iel, 0) * (-b3(iel) + b1(iel)) +
                     cnv(iel, 0) * ( a3(iel) - a1(iel)) +
                     cnu(iel, 1) * ( b3(iel) + b1(iel)) +
@@ -229,13 +271,12 @@ getDtDiv(
                     cnu(iel, 3) * (-b3(iel) - b1(iel)) +
                     cnv(iel, 3) * ( a3(iel) + a1(iel));
 
-        w1 = fabs(w1) / elvolume(iel);
-        min_idx = w1 > w2 ? iel : min_idx;
-        w2 = w1 > w2 ? w1 : w2;
-    }
+        w1 = BL_FABS(w1) / elvolume(iel);
+        maxloc.maxloc(w1, iel);
+    });
 
-    rdt = div_sf/w2;
-    idt = min_idx;
+    rdt = div_sf/maxloc.get();
+    idt = maxloc.getLoc();
     sdt = "     DIV";
 }
 
